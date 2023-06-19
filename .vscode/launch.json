@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Multi-View NeuS IDR training",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/TCNN-HashGrid/dtu_fixed_cameras.conf",
+                "--expname", "TCNN-HashGrid",
+                "--scan_id","65",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                "--calc_image_similarity"
+
+            ]
+        },
+        {
+            "name": "Run Multi-View NeuS IDR evaluation",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/evaluation/eval.py",
+            //"cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--eval_cameras",
+                "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
+                "--scan_id","65",
+                "--checkpoint", "latest",
+                "--eval_rendering"
+            ]
+        }
+    ]
+}
