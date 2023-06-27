@@ -306,5 +306,5 @@ def plot_images(rgb_points, ground_true, path, epoch, plot_nrow, img_res):
     img.save('{0}/rendering_{1}.png'.format(path, epoch))
 
 def lin2img(tensor, img_res):
-    batch_size, channels = tensor.shape
+    batch_size, num_samples, channels = tensor.shape
     return tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])

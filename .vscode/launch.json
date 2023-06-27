@@ -11,13 +11,13 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/TCNN-HashGrid/dtu_fixed_cameras.conf",
-                "--expname", "TCNN-HashGrid",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FourierFeatures/dtu_fixed_cameras.conf",
+                "--expname", "FourierFeatures",
                 "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--calc_image_similarity"
+                //"--calc_image_similarity"
 
             ]
         },

@@ -19,8 +19,7 @@ class ImplicitNetwork(nn.Module):
             bias=1.0,
             skip_in=(),
             weight_norm=True,
-            multires=0,
-            
+            multires=0,            
             embed_type=None,
             log2_max_hash_size=10,
             max_points_per_entry=2,

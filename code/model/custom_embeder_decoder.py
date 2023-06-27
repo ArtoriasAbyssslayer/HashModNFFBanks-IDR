@@ -40,9 +40,11 @@ def get_embedder(input_dims, embed_type, multires,log2_max_hash_size,max_points_
             'include_input': True,
             'd_in': input_dims,
             'd_out': mapping_size,
-            'a_vals': torch.from_numpy(1 / np.arange(1,input_dims+1).astype(np.float32)).to(device=DEVICE),
-            'b_vals': torch.from_numpy(torch.randn((input_dims,mapping_size)).cpu().numpy().astype(np.float32)).to(device=DEVICE),
-            'layer_channels': [mapping_size for _ in range(multires)]
+            'a_vals': torch.nn.Parameter(torch.randn(input_dims,mapping_size)).to(device=DEVICE),
+            'b_vals': torch.nn.Parameter(torch.randn((input_dims,mapping_size))).to(device=DEVICE),
+            'num_hidden_layers': multires,
+            'hidden_dim':mapping_size
+            
         },
         'hashGridEncoderTcnn':{
             'include_input':True,

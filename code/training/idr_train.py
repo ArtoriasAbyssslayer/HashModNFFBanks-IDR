@@ -221,7 +221,7 @@ class IDRTrainRunner():
         # Intialize LPIPS buffer
         lpips = []
         losses = []
-        
+
         for epoch in range(self.start_epoch, self.nepochs + 1):
 
             if epoch in self.alpha_milestones:
@@ -257,10 +257,10 @@ class IDRTrainRunner():
                         'network_object_mask': out['network_object_mask'].detach(),
                         'object_mask': out['object_mask'].detach()
                     })
+
                 batch_size = ground_truth['rgb'].shape[0]
                 model_outputs = utils.merge_output(res, self.total_pixels, batch_size)
-                
-                # Plot Images
+
                 plt.plot(self.model,
                          indices,
                          model_outputs,
@@ -271,14 +271,13 @@ class IDRTrainRunner():
                          self.img_res,
                          **self.plot_conf
                          )
-                
 
                 self.model.train()
                 if self.train_cameras:
                     self.pose_vecs.train()
 
             self.train_dataset.change_sampling_idx(self.num_pixels)
-            
+
             for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
 
                 model_input["intrinsics"] = model_input["intrinsics"].cuda()
@@ -305,8 +304,7 @@ class IDRTrainRunner():
                 self.optimizer.step()
                 if self.train_cameras:
                     self.optimizer_cam.step()
-                    
-                
+
                 print(
                     '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
                         .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
@@ -314,26 +312,31 @@ class IDRTrainRunner():
                                 loss_output['eikonal_loss'].item(),
                                 loss_output['mask_loss'].item(),
                                 self.loss.alpha,
-                                self.scheduler.get_lr()[0]))    
+                                self.scheduler.get_lr()[0]))
             
-                losses = loss.append(loss_output)
-            # Print validation results if self.validation_slope_print is True
+                # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
+                losses.append(loss)
+            
+            # Reach Evaluation Epoch
             if epoch == self.eval_epochs :
+                # Print validation results if self.validation_slope_print is True
+                if self.validation_slope_print:
+                    self.validation_loss_slope(losses)
+                # Calculate model outputs images and the difference between the ground truth images in PSNR terms
                 if self.calc_image_similarity:
-                    self.model_eval()
                     images_dir = '{0}/rendering'.format(self.expdir)
                     utils.mkdir_ifnotexists(images_dir)
                     # Select a specific batch index
                     batch_index = data_index
                     rgb_eval_merged = model_outputs['rgb_values']
                     # Select the corresponding batch from the merged output
-                    rgb_eval = rgb_eval_merged[batch_index]
+                    rgb_eval = rgb_eval_merged[indices]
                     print(rgb_eval.shape)
                 
                 
                     rgb_eval = (rgb_eval + 1.) / 2.
                     
-                    rgb_eval = plt.lin2img(rgb_eval, rgb_eval.shape).detach().cpu().numpy()[0]
+                    # rgb_eval = plt.lin2img(rgb_eval, rgb_eval.shape).detach().cpu().numpy()[0]
                     rgb_eval = rgb_eval.transpose(1, 2, 0)
                     img = Image.fromarray((rgb_eval * 255).astype(np.uint8))
                     img.save('{0}/eval_{1}.png'.format(images_dir,'%03d' % indices[0]))
@@ -350,52 +353,43 @@ class IDRTrainRunner():
 
                     # rgb_eval_masked = rgb_eval * mask
                     # rgb_gt_masked = rgb_gt * mask
-
-                
-                
                     psnr = self.calculate_psnr(rgb_eval, rgb_gt, mask)
                     ssim = self.ssim(rgb_eval, rgb_gt, mask)
                     lpips = self.calculate_lpips(rgb_eval, rgb_gt)
                     psnrs.append(psnr)
                     ssim.append(ssim)
                     lpips.append(lpips)
-                if self.validation_slope_print:
-                    self.validation_loss_slope(losses.item())         
                     
-                 # Calculate model outputs images and the difference between the ground truth images in PSNR terms
+                    print('PSNR: {0}, SSIM: {1}, LPIPS: {2}'.format(np.mean(psnrs), np.mean(ssim), np.mean(lpips)))
+                 
             
                 
             self.scheduler.step()
-               
-               
-        
-        
-        
-        
-            
+   
     # Make the validation slope as the training is finished        
     def validation_loss_slope(self,loss_list):
             import matplotlib.pyplot as plt
             embedder_type = self.model_conf['embedding_network.embed_type']
+             # Calculate the mean loss for each epoch
+            num_epochs = len(loss_list) // self.plot_dataloader.dataset.n_images
+            num_losses_per_epoch = len(loss_list) // num_epochs  # Calculate the number of losses per epoch
+            # arange steps in order to equal the number of epochs in length 
+            steps = np.arange(num_epochs)
+            # mean_losses = [np.mean(losses.detach().cpu().numpy()) for losses in loss_list]
+            # Reshape the loss list to separate losses for each epoch
+            losses = [losses.detach().cpu().numpy() for losses in loss_list]
+            reshaped_losses = np.reshape(losses, (num_epochs, num_losses_per_epoch))
+            # Calculate the mean loss for each epoch
+            mean_losses = np.mean(reshaped_losses, axis=1)
             plt.figure()
-            steps = np.arrange(len(loss_list))
-            loss_array = np.array(loss_list)
-            plt.plot(steps,loss_array,'-o',label='IDR Loss')
+            plt.plot(steps,mean_losses,'-o',label='IDR Loss')
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()
             plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{embedder_type}.png'.format(embedder_type)))
             plt.show(block=False)
-            plt.pause(10)
+            plt.pause(15)
             plt.close() 
-
-            # for epoch,img in zip(epochs,images):
-                
-            #     plt.plot(epochs, rgb_loss_values[:,img], label='RGB Loss')
-            #     plt.plot(epochs, eikonal_loss_values[:,img], label='Eikonal Loss')
-            #     plt.plot(epochs, mask_loss_values[:,img], label='Mask Loss')
-            #     plt.plot(epochs, loss_vals[:,img],)
-                
         
     """ 
         Some metrics that are used for validation during training 
