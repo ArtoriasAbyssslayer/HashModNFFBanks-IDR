@@ -99,7 +99,7 @@ class ImplicitNetwork(nn.Module):
             x = lin(x)
 
             if l < self.num_layers - 2:
-                x = self.softplus(x)
+               x = self.softplus(x)
 
         return x
 

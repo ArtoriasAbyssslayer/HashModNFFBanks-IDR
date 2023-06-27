@@ -18,7 +18,7 @@ class FourierFeaturesMLP(nn.Module):
             Fourier Embedding MLP Model
             Args:
                 d_in(int): Number of Dimensions of the input layer
-                d_out(int): Embedding output layer outputs
+                d_out(int): Embedding output layer embeddings
                 a_vals(torch.Tensor): a values in the fourier feature trans defining the scaling coefficient of each sinusoidal component
                 b_vals(torch.Tensor): b values in the fourier feature trans defining the harmonic freq of each sinusoidal component
                 layer_channels(List): List of integer defining the number of neurons(feature - dimensionality) in each layer - This was not efficient so it was substituted with hidden_dim, num_hidden_layers
@@ -59,19 +59,12 @@ class FourierFeaturesMLP(nn.Module):
         output = self.output_layer(x) 
         if self.include_input:
             output_dim = output.shape[-1] + inputs.shape[-1]
+            embeddings = output.unsqueeze(1).expand(-1,inputs.size(1),-1)
+            embeddings = embeddings.transpose(0,2)
+            embeddings = embeddings.squeeze(2)
+            output = torch.cat([embeddings, inputs[embeddings.shape[0]:inputs.shape[0]][:]], dim=0)
             
-            samples_size = inputs.shape[0]
-            
-            # inputs_flattened = inputs.view(-1)
-            outputs = output.unsqueeze(1).expand(-1,inputs.size(1),-1)
-            inputs = inputs.unsqueeze_(1)
-    
-            outputs = outputs.transpose(0,2)
-            inputs = inputs.transpose(1,2)
-            output = torch.cat([outputs, inputs ], dim=0)
-            output = output.squeeze(2)
             self.embeddings_dim =  output.shape[1]
-            #print(output.shape)
         else:
             self.embeddings_dim = output.shape[-1]
         return output
@@ -94,8 +87,8 @@ class FourierFeaturesMLP(nn.Module):
 class MLP(FourierFeaturesMLP):
     """Unencoded FFN, essentially a standard MLP."""
 
-    def __init__(self, d_in: int, d_out: int, num_layers=3,
-                 num_channels=256):
+    def __init__(self,include_input:bool, d_in: int, d_out: int, num_hidden_layers=3,
+                 hidden_dim=256):
         """Constructor.
         Args:
             d_in (int): Number of dimensions in the input
@@ -105,16 +98,19 @@ class MLP(FourierFeaturesMLP):
             num_channels (int, optional): Number of channels in the MLP.
                                           Defaults to 256.
         """
-        FourierFeaturesMLP.__init__(self, d_in, d_out,
-                                   a_vals=None, b_vals=None,
-                                   layer_channels=[num_channels]*num_layers)
+        
+        FourierFeaturesMLP.__init__(self,include_input, 
+                                    d_in, d_out,
+                                    a_vals=None, 
+                                    b_vals=None,
+                                    num_hidden_layers=num_hidden_layers, hidden_dim= hidden_dim)
 
 
 class BasicFourierMLP(FourierFeaturesMLP):
     """Basic version of FFN in which inputs are projected onto the unit circle."""
 
-    def __init__(self, d_in: int, d_out: int, num_layers=3,
-                 num_channels=256):
+    def __init__(self,include_input:bool, d_in: int, d_out: int, num_hidden_layers=3,
+                 hidden_dim=256):
         """Constructor.
         Args:
             d_in (int): Number of dimensions in the input
@@ -126,15 +122,17 @@ class BasicFourierMLP(FourierFeaturesMLP):
         """
         a_values = torch.ones(d_in)
         b_values = torch.eye(d_in)
-        FourierFeaturesMLP.__init__(self, d_in, d_out,
-                                   a_values, b_values,
-                                   [num_channels] * num_layers)
+        FourierFeaturesMLP.__init__(self,include_input, 
+                                    d_in, d_out,
+                                    a_vals=a_values, 
+                                    b_vals=b_values,
+                                    num_hidden_layers=num_hidden_layers, hidden_dim= hidden_dim)
 
 
 class PositionalFourierMLP(FourierFeaturesMLP):
     """Version of FFN with positional encoding."""
-    def __init__(self, d_in: int, d_out: int, max_log_scale: float,
-                 num_layers=3, num_channels=256, embedding_size=256):
+    def __init__(self,include_input:bool, d_in: int, d_out: int, num_hidden_layers=3,embedding_size=256,
+                 hidden_dim=256):
         """Constructor.
         Args:
             d_in (int): Number of dimensions in the input
@@ -168,8 +166,8 @@ class PositionalFourierMLP(FourierFeaturesMLP):
 class GaussianFourierMLP(FourierFeaturesMLP):
     """Version of a FFN using a full Gaussian matrix for encoding."""
 
-    def __init__(self, d_in: int, d_out: int, sigma: float,
-                 num_layers=3, num_channels=256, embedding_size=256):
+    def __init__(self,include_input:bool, d_in: int, d_out: int, num_hidden_layers=3,
+                 hidden_dim=256):
         """Constructor.
         Args:
             d_in (int): Number of dimensions in the input
@@ -184,11 +182,10 @@ class GaussianFourierMLP(FourierFeaturesMLP):
         """
         b_values = torch.normal(0, sigma, size=(d_in, embedding_size))
         a_values = torch.ones(b_values.shape[1])
-        FourierFeaturesMLP.__init__(self, d_in, d_out,
-                                   a_values, b_values,
-                                   [num_channels] * num_layers)
-if __name__ == "__main__":
-    # Code to test fourier features MLPs
-    pass
-
+        FourierFeaturesMLP.__init__(self,include_input, 
+                                    d_in, d_out,
+                                    a_vals= a_values, 
+                                    b_vals=b_values,
+                                    num_hidden_layers=num_hidden_layers,
+                                    hidden_dim=hidden_dim)
 
