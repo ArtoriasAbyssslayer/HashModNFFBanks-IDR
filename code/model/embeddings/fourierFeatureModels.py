@@ -6,7 +6,6 @@ from typing import List,Optional
 
 '''
     Implementation of Fourier Feature Net based on Fourier Features Paper \href: https://arxiv.org/abs/2006.10739
-    and Github repository: https://github.com/matajoh/fourier_feature_nets/blob/main/fourier_feature_nets/fourier_feature_models.py
 '''
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,13 +60,13 @@ class FourierFeaturesMLP(nn.Module):
             output_dim = output.shape[-1] + inputs.shape[-1]
             embeddings = output.unsqueeze(1).expand(-1,inputs.size(1),-1)
             embeddings = embeddings.transpose(0,2)
-            embeddings = embeddings.squeeze(2)
-            output = torch.cat([embeddings, inputs[embeddings.shape[0]:inputs.shape[0]][:]], dim=0)
+            inputs = inputs.unsqueeze(2)
+            output = torch.cat([embeddings, inputs])
             
             self.embeddings_dim =  output.shape[1]
         else:
             self.embeddings_dim = output.shape[-1]
-        return output
+        return output.squeeze(2)
     
     def save(self, path: str):
         """

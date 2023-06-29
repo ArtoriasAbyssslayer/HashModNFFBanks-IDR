@@ -100,7 +100,7 @@ class RayTracing(nn.Module):
     def sphere_tracing(self, batch_size, num_pixels, sdf, cam_loc, ray_directions, mask_intersect, sphere_intersections):
         ''' Run sphere tracing algorithm for max iterations from both sides of unit sphere intersection '''
        
-
+       
         sphere_intersections_points = cam_loc.reshape(batch_size, 1, 1, 3) + sphere_intersections.unsqueeze(-1) * ray_directions.unsqueeze(2)
         unfinished_mask_start = mask_intersect.reshape(-1).clone()
         unfinished_mask_end = mask_intersect.reshape(-1).clone()
@@ -125,6 +125,7 @@ class RayTracing(nn.Module):
         iters = 0
         
         next_sdf_start = torch.zeros_like(acc_start_dis).cuda()
+        
         next_sdf_start[unfinished_mask_start] = sdf(curr_start_points[unfinished_mask_start])
 
         next_sdf_end = torch.zeros_like(acc_end_dis).cuda()
