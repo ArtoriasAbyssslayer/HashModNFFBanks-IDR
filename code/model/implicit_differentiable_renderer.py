@@ -3,8 +3,8 @@ import torch.nn as nn
 import numpy as np
 
 from utils import rend_util
-from model.embedder import *
-from model.custom_embeder_decoder import get_embedder as get_custom_embedder,Decoder
+from model.embeddings.fourier_encoding import get_embedder
+from model.custom_embeder_decoder import Custom_Embedding_Network,Decoder
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
 
@@ -30,16 +30,20 @@ class ImplicitNetwork(nn.Module):
         super().__init__()
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
-
+        self.feature_vector_size = feature_vector_size
         self.embed_fn = None
-        
+        self.embed_type = embed_type
         if embed_type:
-            print("embed_type",embed_type)
-            embed_fn, input_ch = get_custom_embedder(input_dims=d_in, embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
-                                                    max_points_per_entry=max_points_per_entry,mapping_size=mapping_size,base_resolution=base_resolution,
-                                                    desired_resolution=desired_resolution)
-            self.embed_fn = embed_fn
-            dims[0] = input_ch
+            if multires > 0:
+                print("embed_type",embed_type)
+                embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
+                                                        max_points_per_entry=max_points_per_entry,mapping_size=mapping_size,base_resolution=base_resolution,
+                                                        desired_resolution=desired_resolution)
+                self.embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
+                if self.embed_type != 'FourierFeatures':
+                    dims[0] = input_ch
+                else:
+                    dims[0] = input_ch-3
         else:
             if multires > 0:
                 embed_fn, input_ch = get_embedder(multires)
@@ -54,12 +58,11 @@ class ImplicitNetwork(nn.Module):
                 out_dim = dims[l + 1] - dims[0]
             else:
                 out_dim = dims[l + 1]
-
-            lin = nn.Linear(dims[l], out_dim)
-            # lin = Decoder(dims[l],feature_vector_size,out_dim,self.num_layers,multires)   
+            # lin = Decoder(dims[l],feature_vector_size,out_dim,self.num_layers,multires)
             # if geometric_init:
             #     Decoder.pre_train_sphere(1000)
-              
+            lin = nn.Linear(dims[l], out_dim)
+
             if geometric_init:
                 if l == self.num_layers - 2:
                     torch.nn.init.normal_(lin.weight, mean=np.sqrt(np.pi) / np.sqrt(dims[l]), std=0.0001)
@@ -85,23 +88,24 @@ class ImplicitNetwork(nn.Module):
 
     
     def forward(self, input, compute_grad=False):
-            if self.embed_fn is not None:
-                input = self.embed_fn(input)
+        if self.embed_fn is not None:
+            input = self.embed_fn(input)
 
-            x = input
+        x = input
 
-            for l in range(0, self.num_layers - 1):
-                lin = getattr(self, "lin" + str(l))
+        for l in range(0, self.num_layers - 1):
+            lin = getattr(self, "lin" + str(l))
 
-                if l in self.skip_in:
-                    x = torch.cat([x, input], 1) / np.sqrt(2)
+            if l in self.skip_in:
+                x = torch.cat([x, input], 1) / np.sqrt(2)
 
-                x = lin(x)
+            x = lin(x)
 
-                if l < self.num_layers - 2:
-                    x = self.softplus(x)
+            if l < self.num_layers - 2:
+                x = self.softplus(x)
 
-            return x
+        return x
+                
 
     def gradient(self, x):
         x.requires_grad_(True)
@@ -143,16 +147,20 @@ class RenderingNetwork(nn.Module):
             if multires_view > 0:
                 if self.mode == 'idr':
                     d_in = 3
-                    self.embedview_fn, input_ch = get_custom_embedder(input_dims=d_in, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
+                    embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
                                                             max_points_per_entry=max_points_per_entry,mapping_size=mapping_size,base_resolution=base_resolution,
                                                             desired_resolution=desired_resolution)
-                
-                #dims[0] += (input_ch - 3)
+                    self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
+            
+            if self.embed_type == 'FourierFeatures':
+                dims[0] += (input_ch-2*d_in)
+            else:
+                dims[0] += (input_ch-d_in)
         else:
             if multires_view > 0:
                 self.embedview_fn, input_ch = get_embedder(multires_view)
                 self.embedview_fn = embedview_fn
-                dims[0] += (input_ch - 3)
+                dims[0] += (input_ch - d_in)
 
         self.num_layers = len(dims)
 
@@ -173,12 +181,7 @@ class RenderingNetwork(nn.Module):
             view_dirs = self.embedview_fn(view_dirs)
 
         if self.mode == 'idr':
-            if self.embed_type == 'FourierFeatures':
-                view_dirs = view_dirs[0:view_dirs.shape[0]-self.feature_vector_size :]
-                feature_vectors = feature_vectors[0:feature_vectors.shape[0]-self.feature_vector_size, :]
-                rendering_input = torch.cat([points, view_dirs, normals, feature_vectors], dim=-1)
-            else:
-                rendering_input = torch.cat([points, view_dirs, normals, feature_vectors], dim=-1)
+            rendering_input = torch.cat([points, view_dirs, normals, feature_vectors], dim=-1)
         elif self.mode == 'no_view_dir':
             rendering_input = torch.cat([points, normals, feature_vectors], dim=-1)
         elif self.mode == 'no_normal':
@@ -230,18 +233,10 @@ class IDRNetwork(nn.Module):
         batch_size, num_pixels, _ = ray_dirs.shape
         self.implicit_network.eval()
         with torch.no_grad():
-            a = self.conf.get_config('embedding_network')
-            if a.embed_type == 'FourierFeatures':
-                feature_vector_size = self.conf.feature_vector_size
-                points, network_object_mask, dists = self.ray_tracer(sdf=lambda x: self.implicit_network(x)[feature_vector_size:num_pixels+feature_vector_size, 0],
-                                                                 cam_loc=cam_loc,
-                                                                 object_mask=object_mask,
-                                                                 ray_directions=ray_dirs)
-            else:
-                points, network_object_mask, dists = self.ray_tracer(sdf=lambda x: self.implicit_network(x)[:, 0],
-                                                                 cam_loc=cam_loc,
-                                                                 object_mask=object_mask,
-                                                                 ray_directions=ray_dirs)
+            points, network_object_mask, dists = self.ray_tracer(sdf=lambda x: self.implicit_network(x)[:,0],
+                                                                cam_loc=cam_loc,
+                                                                object_mask=object_mask,
+                                                                ray_directions=ray_dirs)
                     
         self.implicit_network.train()
 
@@ -302,7 +297,6 @@ class IDRNetwork(nn.Module):
             'object_mask': object_mask,
             'grad_theta': grad_theta
         }
-
         return output
 
     def get_rbg_value(self, points, view_dirs):

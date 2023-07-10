@@ -34,7 +34,7 @@ class FourierFeaturesMLP(nn.Module):
         self.include_input = include_input
         self.d_in = d_in
         self.d_out = d_out
-        self.embeddings_dim =  d_in  # Each input dimension is embedded as cosine and sine components
+        self.embeddings_dim = 2* d_in  # Each input dimension is embedded as cosine and sine components
         self.hidden_layers = nn.ModuleList()
         self.hidden_layers.append(nn.Linear(d_in, hidden_dim).to(device=device))
         for _ in range(num_hidden_layers):
@@ -44,13 +44,17 @@ class FourierFeaturesMLP(nn.Module):
     def forward(self, inputs):
         # Compute Fourier features
         embed_fqs = (inputs * math.pi) @ self.b_vals
-        embed_fqs = embed_fqs.transpose(0, 1)
-        embeddings = torch.cat([self.a_vals @ embed_fqs.cos(), self.a_vals @ embed_fqs.sin()], dim=1)
+        
+        embed_fqs = embed_fqs.transpose(0,1)
+        embeddings = torch.cat([self.a_vals @ embed_fqs.cos(), self.a_vals @ embed_fqs.sin()], dim=0)
         
         # Pass through hidden layers
         x = embeddings
         self.hidden_layers[0] = nn.Linear(self.d_in*embeddings.shape[1], self.hidden_layers[0].out_features).to(device=device)
-        x = x.view(-1, self.d_in*embeddings.shape[1])
+        if x.shape[1] == 0:
+            return torch.empty(inputs.shape[0], self.d_out).to(device=device)
+        else:  
+            x = x.view(-1, self.d_in*embeddings.shape[1])
         for layer in self.hidden_layers:
             x = torch.relu(layer(x))
         
@@ -61,12 +65,15 @@ class FourierFeaturesMLP(nn.Module):
             embeddings = output.unsqueeze(1).expand(-1,inputs.size(1),-1)
             embeddings = embeddings.transpose(0,2)
             inputs = inputs.unsqueeze(2)
-            output = torch.cat([embeddings, inputs])
+            embed_sin = embeddings[:,:,1]
+            embed_cos = embeddings[:,:,0]
+            output_sin = torch.cat([embed_sin, inputs.squeeze(2)])
+            output_cos = torch.cat([embed_cos, inputs.squeeze(2)])
+            output = torch.cat([output_cos, output_sin], dim=1)
             
-            self.embeddings_dim =  output.shape[1]
         else:
             self.embeddings_dim = output.shape[-1]
-        return output.squeeze(2)
+        return output
     
     def save(self, path: str):
         """

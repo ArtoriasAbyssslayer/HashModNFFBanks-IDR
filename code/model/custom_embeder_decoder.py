@@ -2,13 +2,12 @@ import torch
 import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
-from model.embeddings.fourierFeatureModels import *
-from model.embeddings.fourierFilterBanks import FourierFilterBanksMLP
+from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
+from model.embeddings.fourierFilterBanks import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-def get_embedder(input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,mapping_size,base_resolution,desired_resolution):
-    
+class Custom_Embedding_Network:
     """
         This class is responsible for selecting the embedding model and initializing the network object
         The Fourier Features Embendding Models (FourierFeaturesMLP,GaussianMLP,PositionalFourierMLP) are initialized with the same parameters
@@ -17,68 +16,61 @@ def get_embedder(input_dims, embed_type, multires,log2_max_hash_size,max_points_
         
             input: (Optional) include Input for having some input 
     """
-    embed_kwargs = {
-        'multi_resolution': {
-            'include_input': True,
-            'in_dim': input_dims,
-            # 'max_freq_log2': multires-1,
-            'n_levels':multires,
-            'max_points_per_level': max_points_per_entry,
-            'log2_hashmap_size': log2_max_hash_size,
-            'base_resolution': base_resolution,
-            'desired_resolution': desired_resolution            
-            
-        },
-        'fourier_filter_banks':{
-            'include_input':True,
-            'in_dim': input_dims,
-            'num_outputs': desired_resolution,
-            'layer_channels':multires,
-            'num_freqs': 5,
-        },
-        'fourier_mlp': {
-            'include_input': True,
-            'd_in': input_dims,
-            'd_out': mapping_size,
-            'a_vals': torch.nn.Parameter(torch.randn(input_dims,mapping_size)).to(device=DEVICE),
-            'b_vals': torch.nn.Parameter(torch.randn((input_dims,mapping_size))).to(device=DEVICE),
-            'num_hidden_layers': multires,
-            'hidden_dim':mapping_size
-            
-        },
-        'hashGridEncoderTcnn':{
-            'include_input':True,
-            'in_dim': input_dims,
-            'embed_type': embed_type,
-            'n_levels': multires,
-            'max_points_per_level': max_points_per_entry,
-            'log2_hashmap_size': log2_max_hash_size,
-            'base_resolution': base_resolution,
-            'per_level_scale': 2.0,
-        },
-    }
-    
-    
-    embed_models = {
-        'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
-        'FFB': (FourierFilterBanksMLP, 'fourier_filter_banks'),
-        'FourierFeatures': (FourierFeaturesMLP, 'fourier_mlp'),
-        'GaussianFourier': (GaussianFourierMLP, 'fourier_mlp'),
-        'PositionalEncoding':(PositionalFourierMLP,'forurier_mlp'),
-        'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
-    }
-    
-    if embed_type not in embed_models:
-        raise ValueError("Not a valid embedding model type")
-    EmbedderClass, model_key = embed_models[embed_type]
-    selected_kwargs = embed_kwargs[model_key]
-    
-    embedder_obj = EmbedderClass(**selected_kwargs)
+    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,mapping_size,base_resolution,desired_resolution):
+        embed_kwargs = {
+            'multi_resolution': {
+                'include_input': True,
+                'in_dim': input_dims,
+                # 'max_freq_log2': multires-1,
+                'n_levels':multires,
+                'max_points_per_level': max_points_per_entry,
+                'log2_hashmap_size': log2_max_hash_size,
+                'base_resolution': base_resolution,
+                'desired_resolution': desired_resolution            
+                
+            },
+            'fourier_filter_banks':{
+                'include_input':True,
+                'in_dim': input_dims,
+                'num_outputs': desired_resolution,
+                'layer_channels':multires,
+                'num_freqs': 5,
+            },
+            'fourier_encoding': {
+                'include_input': False,
+                'input_dims': input_dims,
+                'max_freq_log2': multires-1,
+                'num_freqs': multires,
+                'log_sampling': True,
+                'periodic_fns': [torch.sin, torch.cos],
+            },
+            'hashGridEncoderTcnn':{
+                'include_input':True,
+                'in_dim': input_dims,
+                'embed_type': embed_type,
+                'n_levels': multires,
+                'max_points_per_level': max_points_per_entry,
+                'log2_hashmap_size': log2_max_hash_size,
+                'base_resolution': base_resolution,
+                'per_level_scale': 2.0,
+            },
+        }
+        embed_models = {
+            'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
+            'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
+            'FourierFeatures': (FourierFeatures, 'fourier_encoding'),
+            'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+        }   
+        if embed_type not in embed_models:
+            raise ValueError("Not a valid embedding model type")
+        EmbedderClass, model_key = embed_models[embed_type]
+        selected_kwargs = embed_kwargs[model_key]
+        self.embedder_obj = EmbedderClass(**selected_kwargs)
+        self.embeddings_dim = self.embedder_obj.embeddings_dim
     # Apply Embedding to the Input
-    def embed(x, eo=embedder_obj): 
-        return eo(x)
+    def embed(self,x): 
+        return  self.embedder_obj(x)
     
-    return embed, embedder_obj.embeddings_dim
 
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 
 # MLP + Positional Encoding

@@ -23,7 +23,7 @@ class IDRTrainRunner():
         
         
         # Evaluate while training Parameters 
-        eval_epochs = 5
+        eval_epochs = 50
         self.eval_epochs = eval_epochs
         self.validation_slope_print = kwargs['validation_slope_print']
         self.calc_image_similarity = kwargs['calc_image_similarity']

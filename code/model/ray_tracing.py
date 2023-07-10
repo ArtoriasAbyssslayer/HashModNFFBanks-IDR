@@ -31,7 +31,7 @@ class RayTracing(nn.Module):
                 ):
 
         batch_size, num_pixels, _ = ray_directions.shape
-        
+
         sphere_intersections, mask_intersect = rend_util.get_sphere_intersection(cam_loc, ray_directions, r=self.object_bounding_sphere)
 
         curr_start_points, unfinished_mask_start, acc_start_dis, acc_end_dis, min_dis, max_dis = \
@@ -99,8 +99,7 @@ class RayTracing(nn.Module):
 
     def sphere_tracing(self, batch_size, num_pixels, sdf, cam_loc, ray_directions, mask_intersect, sphere_intersections):
         ''' Run sphere tracing algorithm for max iterations from both sides of unit sphere intersection '''
-       
-       
+
         sphere_intersections_points = cam_loc.reshape(batch_size, 1, 1, 3) + sphere_intersections.unsqueeze(-1) * ray_directions.unsqueeze(2)
         unfinished_mask_start = mask_intersect.reshape(-1).clone()
         unfinished_mask_end = mask_intersect.reshape(-1).clone()
@@ -108,7 +107,7 @@ class RayTracing(nn.Module):
         # Initialize start current points
         curr_start_points = torch.zeros(batch_size * num_pixels, 3).cuda().float()
         curr_start_points[unfinished_mask_start] = sphere_intersections_points[:,:,0,:].reshape(-1,3)[unfinished_mask_start]
-        acc_start_dis = torch.zeros(batch_size * (num_pixels)).cuda().float()
+        acc_start_dis = torch.zeros(batch_size * num_pixels).cuda().float()
         acc_start_dis[unfinished_mask_start] = sphere_intersections.reshape(-1,2)[unfinished_mask_start,0]
 
         # Initialize end current points
@@ -123,9 +122,8 @@ class RayTracing(nn.Module):
 
         # Iterate on the rays (from both sides) till finding a surface
         iters = 0
-        
+
         next_sdf_start = torch.zeros_like(acc_start_dis).cuda()
-        
         next_sdf_start[unfinished_mask_start] = sdf(curr_start_points[unfinished_mask_start])
 
         next_sdf_end = torch.zeros_like(acc_end_dis).cuda()
