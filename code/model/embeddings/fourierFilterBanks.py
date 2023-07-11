@@ -2,9 +2,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import List, Tuple
+
 from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.tcunn_implementations import hashGridEncoderTcnn as MRHashGridEncTcnn
+
+
+
+
+# class FFB_encoder(nn.Module):
+#     def __init__(self,d_in, network_config, encoding_net_config,bound):
+#         super().__init__()
+        
 """
     Filter banks MLP is based on the paper Fourier Filter Banks
     Essentially manage the gridEncoding as a low frequency encoding (LPF) and the FourierFeaturesMLP as a high frequency encoding (HPF)
@@ -31,19 +40,14 @@ class FourierFilterBanks(nn.Module):
             log2_hashmap_size(int): Hashmap size for MultiResHashGridMLP
             base_resolution(int): Base resolution for MultiResHashGridMLP
             desired_resolution(int): Desired resolution for MultiResHashGridMLP
-            // Optional Parameters for Fourier Features MLPs
-            a_vals(torch.Tensor): a values in the fourier feature trans defining the scaling coefficient of each sinusoidal component [Scale]
-            b_vals(torch.Tensor): b values in the fourier feature trans defining the harmonic freq of each sinusoidal component [Freq]
+
     """
     def __init__(self,
                  include_input:bool,
                  num_inputs:int,
                  num_outputs:int,
                  n_levels:int,
-                 max_points_per_level:int,
-                 a_vals,
-                 b_vals,
-                 layer_channels:List[int]):
+                 max_points_per_level:int):
 
         super(FourierFilterBanks, self).__init__()
         self.include_input = include_input
