@@ -14,7 +14,7 @@
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
                 "--scan_id","65",
-                //"--checkpoint", "latest",
+                "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"

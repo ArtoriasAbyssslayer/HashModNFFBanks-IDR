@@ -90,7 +90,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             self.embeddings_dim = self.output_dim    
     def forward(self,x):
         if self.include_input == True:
-            return torch.cat([x,self.grid_encoder(x)])
+            return torch.cat([x,self.grid_encoder(x)],1)
         else:
             return self.grid_encoder(x)
        

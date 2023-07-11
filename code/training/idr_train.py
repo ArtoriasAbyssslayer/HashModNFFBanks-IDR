@@ -23,7 +23,7 @@ class IDRTrainRunner():
         
         
         # Evaluate while training Parameters 
-        eval_epochs = 50
+        eval_epochs = 25
         self.eval_epochs = eval_epochs
         self.validation_slope_print = kwargs['validation_slope_print']
         self.calc_image_similarity = kwargs['calc_image_similarity']
@@ -277,46 +277,6 @@ class IDRTrainRunner():
                     self.pose_vecs.train()
 
             self.train_dataset.change_sampling_idx(self.num_pixels)
-
-            for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
-
-                model_input["intrinsics"] = model_input["intrinsics"].cuda()
-                model_input["uv"] = model_input["uv"].cuda()
-                model_input["object_mask"] = model_input["object_mask"].cuda()
-
-                if self.train_cameras:
-                    pose_input = self.pose_vecs(indices.cuda())
-                    model_input['pose'] = pose_input
-                else:
-                    model_input['pose'] = model_input['pose'].cuda()
-
-                model_outputs = self.model(model_input)
-                loss_output = self.loss(model_outputs, ground_truth)
-
-                loss = loss_output['loss']
-
-                self.optimizer.zero_grad()
-                if self.train_cameras:
-                    self.optimizer_cam.zero_grad()
-
-                loss.backward()
-
-                self.optimizer.step()
-                if self.train_cameras:
-                    self.optimizer_cam.step()
-
-                print(
-                    '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
-                        .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
-                                loss_output['rgb_loss'].item(),
-                                loss_output['eikonal_loss'].item(),
-                                loss_output['mask_loss'].item(),
-                                self.loss.alpha,
-                                self.scheduler.get_lr()[0]))
-            
-                # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
-                losses.append(loss)
-            
             # Reach Evaluation Epoch
             if epoch == self.eval_epochs :
                 # Print validation results if self.validation_slope_print is True
@@ -361,11 +321,50 @@ class IDRTrainRunner():
                     lpips.append(lpips)
                     
                     print('PSNR: {0}, SSIM: {1}, LPIPS: {2}'.format(np.mean(psnrs), np.mean(ssim), np.mean(lpips)))
-                 
+            for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
+
+                model_input["intrinsics"] = model_input["intrinsics"].cuda()
+                model_input["uv"] = model_input["uv"].cuda()
+                model_input["object_mask"] = model_input["object_mask"].cuda()
+
+                if self.train_cameras:
+                    pose_input = self.pose_vecs(indices.cuda())
+                    model_input['pose'] = pose_input
+                else:
+                    model_input['pose'] = model_input['pose'].cuda()
+
+                model_outputs = self.model(model_input)
+                loss_output = self.loss(model_outputs, ground_truth)
+
+                loss = loss_output['loss']
+
+                self.optimizer.zero_grad()
+                if self.train_cameras:
+                    self.optimizer_cam.zero_grad()
+
+                loss.backward()
+
+                self.optimizer.step()
+                if self.train_cameras:
+                    self.optimizer_cam.step()
+
+                print(
+                    '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
+                        .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
+                                loss_output['rgb_loss'].item(),
+                                loss_output['eikonal_loss'].item(),
+                                loss_output['mask_loss'].item(),
+                                self.loss.alpha,
+                                self.scheduler.get_lr()[0]))
             
-                
+                # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
+                losses.append(loss)
             self.scheduler.step()
-   
+            
+    """
+        During Training - Metrics Scripts
+    """
+    
     # Make the validation slope as the training is finished        
     def validation_loss_slope(self,loss_list):
             import matplotlib.pyplot as plt
