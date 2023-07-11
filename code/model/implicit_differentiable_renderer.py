@@ -30,7 +30,7 @@ class ImplicitNetwork(nn.Module):
         super().__init__()
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
-        self.feature_vector_size = feature_vector_size
+        
         self.embed_fn = None
         self.embed_type = embed_type
         if embed_type:
@@ -105,7 +105,6 @@ class ImplicitNetwork(nn.Module):
                 x = self.softplus(x)
 
         return x
-                
 
     def gradient(self, x):
         x.requires_grad_(True)
@@ -159,7 +158,6 @@ class RenderingNetwork(nn.Module):
         else:
             if multires_view > 0:
                 self.embedview_fn, input_ch = get_embedder(multires_view)
-                self.embedview_fn = embedview_fn
                 dims[0] += (input_ch - d_in)
 
         self.num_layers = len(dims)
@@ -172,10 +170,8 @@ class RenderingNetwork(nn.Module):
                 lin = nn.utils.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
-
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
-
     def forward(self, points, normals, view_dirs, feature_vectors):
         if self.embedview_fn is not None:
             view_dirs = self.embedview_fn(view_dirs)
@@ -203,7 +199,6 @@ class RenderingNetwork(nn.Module):
 class IDRNetwork(nn.Module):
     def __init__(self, conf):
         super().__init__()
-        self.conf  = conf 
         self.feature_vector_size = conf.get_int('feature_vector_size')
         if conf.get_config('embedding_network') is not None:
             implicit_network_kwargs = conf.get_config('implicit_network')
@@ -231,13 +226,13 @@ class IDRNetwork(nn.Module):
         ray_dirs, cam_loc = rend_util.get_camera_params(uv, pose, intrinsics)
 
         batch_size, num_pixels, _ = ray_dirs.shape
+
         self.implicit_network.eval()
         with torch.no_grad():
-            points, network_object_mask, dists = self.ray_tracer(sdf=lambda x: self.implicit_network(x)[:,0],
-                                                                cam_loc=cam_loc,
-                                                                object_mask=object_mask,
-                                                                ray_directions=ray_dirs)
-                    
+            points, network_object_mask, dists = self.ray_tracer(sdf=lambda x: self.implicit_network(x)[:, 0],
+                                                                 cam_loc=cam_loc,
+                                                                 object_mask=object_mask,
+                                                                 ray_directions=ray_dirs)
         self.implicit_network.train()
 
         points = (cam_loc.unsqueeze(1) + dists.reshape(batch_size, num_pixels, 1) * ray_dirs).reshape(-1, 3)
@@ -297,6 +292,7 @@ class IDRNetwork(nn.Module):
             'object_mask': object_mask,
             'grad_theta': grad_theta
         }
+
         return output
 
     def get_rbg_value(self, points, view_dirs):

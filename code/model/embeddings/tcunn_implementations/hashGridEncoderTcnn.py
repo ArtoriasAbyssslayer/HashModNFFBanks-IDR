@@ -87,14 +87,10 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 self.embeddings_dim = self.in_dim + self.output_dim
         else:
             self.output_dim = self.n_levels * self.max_points_per_level
-            self.embeddings_dim = self.output_dim   
-            
-        
-        ### Create 
-         
+            self.embeddings_dim = self.output_dim    
     def forward(self,x):
         if self.include_input == True:
-            return torch.cat([x,self.grid_encoder(x)],dim=-1)
+            return torch.cat([x,self.grid_encoder(x)])
         else:
             return self.grid_encoder(x)
        

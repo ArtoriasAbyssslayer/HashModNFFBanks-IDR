@@ -11,8 +11,8 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGridTCNN/dtu_fixed_cameras.conf",
-                "--expname", "HashGridTcnn",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
+                "--expname", "HashGrid",
                 "--scan_id","65",
                 //"--checkpoint", "latest",
                 //"--train_cameras",

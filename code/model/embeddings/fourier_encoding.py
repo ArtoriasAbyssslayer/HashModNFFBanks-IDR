@@ -47,7 +47,7 @@ def get_embedder(multires):
         'periodic_fns': [torch.sin, torch.cos],
     }
 
-    embedder_obj = Embedder(**embed_kwargs)
+    embedder_obj = FourierEncoding(**embed_kwargs)
     def embed(x, eo=embedder_obj): return eo.embed(x)
     return embed, embedder_obj.out_dim
 

@@ -14,7 +14,7 @@ import torch.nn as nn
 
 # ---- constants
 HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737,4506014050,1234123232,454534535,14324134,151234151513,143135152134,5153415135,1234142124,1541351351]
-
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # repeat the same array to increase the length of hash primes for large dimension inputs
 def _get_primes(d: int):
     if  d < len(HASH_PRIMES):
@@ -97,7 +97,7 @@ class _HashGridMLP(nn.Module):
             "Hashing is not supported for more than {len(PRIMES)} - input dimensions"
         # use nn.Embedding pytorch layer as a simple lookup table of hash
         # values
-        self.embedding_layer = nn.Embedding(hashmap_size, n_feats)
+        self.embedding_layer = nn.Embedding(hashmap_size, n_feats).to(DEVICE)
         nn.init.kaiming_uniform_(self.embedding_layer.weight, a=5 ** 0.5)
 
         # initialize primes tensor
@@ -109,7 +109,7 @@ class _HashGridMLP(nn.Module):
         # calculate the number of neighbors for each point in the source point
         # cloud.
         n_neighbors = 1 << self.in_dim
-        print(n_neighbors)
+        
         # create neighbors array 0 to neigbors-1
         neighbors = np.arange(n_neighbors, dtype=np.int32).reshape((-1, 1))
         # create dimenstion Level  array
@@ -133,8 +133,9 @@ class _HashGridMLP(nn.Module):
         xf = x_f.unsqueeze(dim=-2)  # (b...,1,dim)
 
         # to match the input batch shape
+    
         bin_mask = self.bin_mask.reshape(
-            (1,) * base_res_dims + self.bin_mask.shape)  # (1..., neigbors,dim)
+            (1,) * base_res_dims + self.bin_mask.shape).to(DEVICE)  # (1..., neigbors,dim)
         # get neighbors' indices and weights on each dim
         indeces = torch.where(bin_mask, xi, xi + 1)  # (b...,neighbors,dim)
         weights = torch.where(bin_mask, 1 - xf, xf)  # //
@@ -142,7 +143,8 @@ class _HashGridMLP(nn.Module):
         # calculate the weights product
         w = weights.prod(dim=-1, keepdim=True) # (b..., neig, 1)
         # hash neigbors' id and lookup table
-        hash_ids = hash_func(indeces, self.primes, self.hashmap_size)
+        hash_ids = hash_func(indeces, self.primes.to(DEVICE), self.hashmap_size) # (b...,neighbors
+        hash_ids = hash_ids.to(DEVICE)
         neighbors_data = self.embedding_layer(hash_ids)  # (b...,neighbors)
         return torch.sum(neighbors_data * w, dim=-2)  # (b...,feat)
 
