@@ -63,7 +63,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             }
         """
         if self.embed_type == 'HashGridTcnn':
-                otype = "Grid"
+                otype = "HashGrid"
                 type = "Hash"
 
         self.grid_encoder = tcnn.Encoding(
@@ -79,7 +79,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 "base_sigma": 8.0,
                 "exp_sigma": 1.5,
                 "grid_embedding_std": 0.001,
-                "interpolation": "Smoothstep"
+                "interpolation": "Linear"
             }
         )
         self.grid_levels = self.n_levels

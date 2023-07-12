@@ -341,11 +341,3 @@ class IDRTrainRunner():
             plt.ylabel('Loss')
             plt.legend()
             plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{embedder_type}.png'.format(embedder_type)))
-            plt.show(3)
-            plt.close() 
-    
-
-          
-           
-            
-    
