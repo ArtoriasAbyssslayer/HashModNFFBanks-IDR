@@ -7,6 +7,7 @@ from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
 
+
 class IDRTrainRunner():
     def __init__(self,**kwargs):
         torch.set_default_dtype(torch.float32)
@@ -321,6 +322,7 @@ class IDRTrainRunner():
     # Make the validation slope as the training is finished        
     def validation_loss_slope(self,loss_list):
             import matplotlib.pyplot as plt
+            import numpy as np 
             embedder_type = self.model_conf['embedding_network.embed_type']
              # Calculate the mean loss for each epoch
             num_epochs = len(loss_list) // self.plot_dataloader.dataset.n_images
