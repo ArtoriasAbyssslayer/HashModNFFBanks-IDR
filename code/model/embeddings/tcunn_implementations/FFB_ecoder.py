@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
-
 import tinycudann as tcnn 
 import math 
 
-from ..fourierFeatureModels import FourierFeaturesMLP
+from model.embeddings.fourier_encoding import FourierEncoding
 from hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as HashEncoderTcnn
+from .Sine import Sine,sine_init,first_layer_sine_init
 
 
 

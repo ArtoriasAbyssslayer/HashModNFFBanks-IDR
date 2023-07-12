@@ -63,12 +63,14 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             }
         """
         if self.embed_type == 'HashGridTcnn':
-                self.embed_type = 'HashGrid'
+                otype = "Grid"
+                type = "Hash"
 
         self.grid_encoder = tcnn.Encoding(
             n_input_dims=self.in_dim,
             encoding_config={
-                'otype': self.embed_type,
+                "otype": otype,
+                "type": type,
                 "n_levels": int(self.n_levels),
                 "n_features_per_level": self.max_points_per_level,
                 'log2_hashmap_size': self.log2_hashmap_size,
@@ -77,7 +79,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 "base_sigma": 8.0,
                 "exp_sigma": 1.5,
                 "grid_embedding_std": 0.001,
-                "interpolation": "Linear"
+                "interpolation": "Smoothstep"
             }
         )
         self.grid_levels = self.n_levels
@@ -90,7 +92,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             self.embeddings_dim = self.output_dim    
     def forward(self,x):
         if self.include_input == True:
-            return torch.cat([x,self.grid_encoder(x)],1)
+            return torch.cat([x,self.grid_encoder(x)],dim=-1)
         else:
             return self.grid_encoder(x)
        

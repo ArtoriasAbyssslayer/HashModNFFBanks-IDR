@@ -158,7 +158,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
     z = z.astype(np.float32)
 
-    verts, faces, normals, values = measure.marching_cubes_lewiner(
+    verts, faces, normals, values = measure.marching_cubes(
         volume=z.reshape(grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
                          grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
         level=0,
@@ -208,7 +208,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
         z = z.astype(np.float32)
 
-        verts, faces, normals, values = measure.marching_cubes(
+        verts, faces, normals, values = measure.marching_cubes_lewiner(
             volume=z.reshape(grid_aligned['xyz'][1].shape[0], grid_aligned['xyz'][0].shape[0],
                              grid_aligned['xyz'][2].shape[0]).transpose([1, 0, 2]),
             level=0,

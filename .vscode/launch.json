@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Multi-View NeuS IDR training",
+            "name": "Run Multi-View IDR training",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
@@ -11,8 +11,8 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
-                "--expname", "HashGrid",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGridTCNN/dtu_fixed_cameras.conf",
+                "--expname", "HashGridTCNN",
                 "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",

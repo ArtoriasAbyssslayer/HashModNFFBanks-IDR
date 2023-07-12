@@ -16,7 +16,7 @@ def load_rgb(path):
     return img
 
 def load_mask(path):
-    alpha = imageio.imread(path,mode='L')
+    alpha = imageio.imread(path, as_gray=True)
     alpha = skimage.img_as_float32(alpha)
     object_mask = alpha > 127.5
 
@@ -179,3 +179,4 @@ def get_depth(points, pose):
     points_cam = torch.inverse(pose).bmm(points_hom)
     depth = points_cam[:, 2, :][:, :, None]
     return depth
+

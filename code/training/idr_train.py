@@ -3,10 +3,10 @@ from datetime import datetime
 from pyhocon import ConfigFactory
 import sys
 import torch
-from PIL import Image
+from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
-import numpy as np
+
 class IDRTrainRunner():
     def __init__(self,**kwargs):
         torch.set_default_dtype(torch.float32)
@@ -18,17 +18,18 @@ class IDRTrainRunner():
         self.exps_folder_name = kwargs['exps_folder_name']
         self.GPU_INDEX = kwargs['gpu_index']
         self.train_cameras = kwargs['train_cameras']
+
         self.expname = self.conf.get_string('train.expname') + kwargs['expname']
         scan_id = kwargs['scan_id'] if kwargs['scan_id'] != -1 else self.conf.get_int('dataset.scan_id', default=-1)
         
         
         # Evaluate while training Parameters 
-        eval_epochs = 25
-        self.eval_epochs = eval_epochs
         self.validation_slope_print = kwargs['validation_slope_print']
-        self.calc_image_similarity = kwargs['calc_image_similarity']
-        
-        
+        self.calc_image_similarity = kwargs['calc_image_similarity']  
+        if self.validation_slope_print:
+            eval_epochs = 25
+            self.eval_epochs = eval_epochs
+            
         if scan_id != -1:
             self.expname = self.expname + '_{0}'.format(scan_id)
 
@@ -90,11 +91,7 @@ class IDRTrainRunner():
 
         self.train_dataset = utils.get_class(self.conf.get_string('train.dataset_class'))(self.train_cameras,
                                                                                           **dataset_conf)
-        
-        
-        
-        
-        
+
         print('Finish loading data ...')
 
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset,
@@ -107,13 +104,8 @@ class IDRTrainRunner():
                                                            shuffle=True,
                                                            collate_fn=self.train_dataset.collate_fn
                                                            )
-        # Load embedding arguments
-        self.model_conf = self.conf.get_config('model')
-            
-        self.model = utils.get_class(self.conf.get_string('train.model_class'))(conf=self.model_conf)
-       
-        
-       
+
+        self.model = utils.get_class(self.conf.get_string('train.model_class'))(conf=self.conf.get_config('model'))
         if torch.cuda.is_available():
             self.model.cuda()
 
@@ -165,16 +157,13 @@ class IDRTrainRunner():
         self.n_batches = len(self.train_dataloader)
         self.plot_freq = self.conf.get_int('train.plot_freq')
         self.plot_conf = self.conf.get_config('plot')
-       
+
         self.alpha_milestones = self.conf.get_list('train.alpha_milestones', default=[])
         self.alpha_factor = self.conf.get_float('train.alpha_factor', default=0.0)
-        
         for acc in self.alpha_milestones:
             if self.start_epoch > acc:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-        
-        
-        
+
     def save_checkpoints(self, epoch):
         torch.save(
             {"epoch": epoch, "model_state_dict": self.model.state_dict()},
@@ -211,7 +200,7 @@ class IDRTrainRunner():
             torch.save(
                 {"epoch": epoch, "pose_vecs_state_dict": self.pose_vecs.state_dict()},
                 os.path.join(self.checkpoints_path, self.cam_params_subdir, "latest.pth"))
-    
+
     def run(self):
         print("training...")
         # Intialize PSNR buffer 
@@ -220,8 +209,7 @@ class IDRTrainRunner():
         ssim = []
         # Intialize LPIPS buffer
         lpips = []
-        losses = []
-
+        losses = []  
         for epoch in range(self.start_epoch, self.nepochs + 1):
 
             if epoch in self.alpha_milestones:
@@ -277,50 +265,7 @@ class IDRTrainRunner():
                     self.pose_vecs.train()
 
             self.train_dataset.change_sampling_idx(self.num_pixels)
-            # Reach Evaluation Epoch
-            if epoch == self.eval_epochs :
-                # Print validation results if self.validation_slope_print is True
-                if self.validation_slope_print:
-                    self.validation_loss_slope(losses)
-                # Calculate model outputs images and the difference between the ground truth images in PSNR terms
-                if self.calc_image_similarity:
-                    images_dir = '{0}/rendering'.format(self.expdir)
-                    utils.mkdir_ifnotexists(images_dir)
-                    # Select a specific batch index
-                    batch_index = data_index
-                    rgb_eval_merged = model_outputs['rgb_values']
-                    # Select the corresponding batch from the merged output
-                    rgb_eval = rgb_eval_merged[indices]
-                    print(rgb_eval.shape)
-                
-                
-                    rgb_eval = (rgb_eval + 1.) / 2.
-                    
-                    # rgb_eval = plt.lin2img(rgb_eval, rgb_eval.shape).detach().cpu().numpy()[0]
-                    rgb_eval = rgb_eval.transpose(1, 2, 0)
-                    img = Image.fromarray((rgb_eval * 255).astype(np.uint8))
-                    img.save('{0}/eval_{1}.png'.format(images_dir,'%03d' % indices[0]))
 
-                    rgb_gt = ground_truth['rgb']
-                    
-                    rgb_gt = (rgb_gt + 1.) / 2.
-                    rgb_gt = plt.lin2img(rgb_gt, rgb_gt.shape).numpy()[0]
-                    rgb_gt = rgb_gt.transpose(1, 2, 0)
-
-                    mask = model_input['object_mask']
-                    mask = plt.lin2img(mask.unsqueeze(-1),mask.shape).cpu().numpy()[0]
-                    mask = mask.transpose(1, 2, 0)
-
-                    # rgb_eval_masked = rgb_eval * mask
-                    # rgb_gt_masked = rgb_gt * mask
-                    psnr = self.calculate_psnr(rgb_eval, rgb_gt, mask)
-                    ssim = self.ssim(rgb_eval, rgb_gt, mask)
-                    lpips = self.calculate_lpips(rgb_eval, rgb_gt)
-                    psnrs.append(psnr)
-                    ssim.append(ssim)
-                    lpips.append(lpips)
-                    
-                    print('PSNR: {0}, SSIM: {1}, LPIPS: {2}'.format(np.mean(psnrs), np.mean(ssim), np.mean(lpips)))
             for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
 
                 model_input["intrinsics"] = model_input["intrinsics"].cuda()
@@ -356,11 +301,17 @@ class IDRTrainRunner():
                                 loss_output['mask_loss'].item(),
                                 self.loss.alpha,
                                 self.scheduler.get_lr()[0]))
-            
-                # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
-                losses.append(loss)
-            self.scheduler.step()
-            
+            # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
+                losses.append(loss) 
+            if epoch == self.eval_epochs:
+                if self.validation_loss_slope:
+                    validation_loss_slope(losses)
+                if self.calc_image_similarity:
+                    # Todo implement psnr,ssim,lpips calculation for given images
+                    pass
+                
+            self.scheduler.step()     
+         
     """
         During Training - Metrics Scripts
     """
@@ -373,7 +324,7 @@ class IDRTrainRunner():
             num_epochs = len(loss_list) // self.plot_dataloader.dataset.n_images
             num_losses_per_epoch = len(loss_list) // num_epochs  # Calculate the number of losses per epoch
             # arange steps in order to equal the number of epochs in length 
-            steps = np.arange(num_epochs)
+            steps = np.arange(1,num_epochs+1)
             # mean_losses = [np.mean(losses.detach().cpu().numpy()) for losses in loss_list]
             # Reshape the loss list to separate losses for each epoch
             losses = [losses.detach().cpu().numpy() for losses in loss_list]
@@ -386,52 +337,11 @@ class IDRTrainRunner():
             plt.ylabel('Loss')
             plt.legend()
             plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{embedder_type}.png'.format(embedder_type)))
-            plt.show(block=False)
-            plt.pause(15)
+            plt.show(3)
             plt.close() 
-        
-    """ 
-        Some metrics that are used for validation during training 
-        - PSNR(Peak Signal to Noise Ration), 
-        - SSIM(structural similarity index measure ), 
-        - LPIPS(Learned Perceptual Image Patch Similarity) 
-    """
-    def calculate_psnr(self,img1, img2, mask):
-        import numpy as np 
-        import math 
-        # img1 and img2 have range [0, 1]
-        img1 = img1.astype(np.float64)
-        img2 = img2.astype(np.float64)
-        mse = np.mean((img1 - img2)**2) * (img2.shape[0] * img2.shape[1]) / mask.sum()
-        if mse == 0:
-            return float('inf')
-        return 20 * math.log10(1.0 / math.sqrt(mse))
-    def ssim(self,image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
-        from torchmetrics import StructuralSimilarityIndexMeasure as ssim 
-        value = ssim(image_pred, image_ground_truth, multichannel=True)
-        if valid_mask is not None:
-            value = value[valid_mask]
-        if reduction == 'mean':
-            return torch.mean(value)
-        return value
-    def calculate_lpips(self,img1, img2):
-        import lpips
-        # Convert the images to tensors
-        img1_tensor = torch.from_numpy(img1.transpose((2, 0, 1))).unsqueeze(0).float()
-        img2_tensor = torch.from_numpy(img2.transpose((2, 0, 1))).unsqueeze(0).float()
+    
 
-        # Normalize the image tensors to the range [0, 1]
-        img1_tensor = img1_tensor / 255.0
-        img2_tensor = img2_tensor / 255.0
-
-        # Create an instance of the LPIPS model
-        lpips_model = lpips.LPIPS(net='vgg')
-
-        # Calculate the LPIPS distance
-        lpips_distance = lpips_model(img1_tensor, img2_tensor).item()
-
-        return lpips_distance
-
-        
+          
+           
             
-            
+    
