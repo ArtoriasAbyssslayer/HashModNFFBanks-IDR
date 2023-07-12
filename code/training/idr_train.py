@@ -105,6 +105,8 @@ class IDRTrainRunner():
                                                            collate_fn=self.train_dataset.collate_fn
                                                            )
 
+        
+        self.model_conf = self.conf.get_config('model')
         self.model = utils.get_class(self.conf.get_string('train.model_class'))(conf=self.conf.get_config('model'))
         if torch.cuda.is_available():
             self.model.cuda()
