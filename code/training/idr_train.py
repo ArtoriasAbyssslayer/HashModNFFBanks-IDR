@@ -304,8 +304,8 @@ class IDRTrainRunner():
             # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
                 losses.append(loss) 
             if epoch == self.eval_epochs:
-                if self.validation_loss_slope:
-                    validation_loss_slope(losses)
+                if self.validation_slope_print:
+                    self.validation_loss_slope(losses)
                 if self.calc_image_similarity:
                     # Todo implement psnr,ssim,lpips calculation for given images
                     pass
