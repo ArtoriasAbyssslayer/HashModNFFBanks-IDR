@@ -1,6 +1,6 @@
 import os
 import yaml
-with open(os.getcwd()+"/HashModNFFBanks-IDR/environment.yml") as file_handle:
+with open("./environment.yml") as file_handle:
     environment_data = yaml.safe_load(file_handle)
 
 for dependency in environment_data["dependencies"]:

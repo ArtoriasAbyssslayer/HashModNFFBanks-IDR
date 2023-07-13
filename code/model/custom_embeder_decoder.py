@@ -16,7 +16,7 @@ class Custom_Embedding_Network:
         
             input: (Optional) include Input for having some input 
     """
-    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,mapping_size,base_resolution,desired_resolution):
+    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution):
         embed_kwargs = {
             'multi_resolution': {
                 'include_input': True,
@@ -32,14 +32,18 @@ class Custom_Embedding_Network:
             'fourier_filter_banks':{
                 'include_input':True,
                 'in_dim': input_dims,
+                'feature_dims': max_points_per_entry,
                 'num_outputs': desired_resolution,
-                'layer_channels':multires,
-                'num_freqs': 5,
+                'num_levels': multires,
+                "per_level_scale": 2.0,
+                "base_sigma": 8.0,
+                "exp_sigma": 1.5,
+                "grid_embedding_std": 0.001,
             },
             'fourier_encoding': {
                 'include_input': False,
                 'input_dims': input_dims,
-                'max_freq_log2': multires-1,
+                'max_freq_log2': log2_max_hash_size,
                 'num_freqs': multires,
                 'log_sampling': True,
                 'periodic_fns': [torch.sin, torch.cos],
@@ -75,11 +79,11 @@ class Custom_Embedding_Network:
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 
 # MLP + Positional Encoding
 class Decoder(torch.nn.Module):
-    def __init__(self, input_dims = 3, internal_dims = 128, output_dims = 4, hidden = 5, multires = 2,desired_resolution=64, embed_type = 'PositionalEncoding'):
+    def __init__(self, input_dims = 3, feature_dims=2,internal_dims = 128, output_dims = 4, hidden = 5, multires = 2,base_resolution=64,desired_resolution=512,embed_type = 'FourierFeatures'):
         super().__init__()
         self.embed_fn = None
         if multires > 0:
-            embed_fn, input_ch = get_embedder(input_dims, embed_type, multires,internal_dims,desired_resolution)
+            embed_fn, input_ch = Custom_Embedding_Network(input_dims, embed_type, multires,multires-1,feature_dims,base_resolution,desired_resolution)
             self.embed_fn = embed_fn
             input_dims = input_ch
 
