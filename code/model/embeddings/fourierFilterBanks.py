@@ -1,18 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import List, Tuple
-
 from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
-from model.embeddings.tcunn_implementations import hashGridEncoderTcnn as MRHashGridEncTcnn
-
-
-
-
-# class FFB_encoder(nn.Module):
-#     def __init__(self,d_in, network_config, encoding_net_config,bound):
-#         super().__init__()
+from model.embeddings.tcunn_implementations import hashGridEncoderTcnn as HashGridTCNN
         
 """
     Filter banks MLP is based on the paper Fourier Filter Banks
@@ -20,11 +11,6 @@ from model.embeddings.tcunn_implementations import hashGridEncoderTcnn as MRHash
     Then we make multiple level of encodings and get a multi-resolution embeddings and sum them up to
 
 """
-import torch
-import torch.nn as nn
-from typing import Optional, List
-
-
 class FourierFilterBanks(nn.Module):
     """
         FourierFilterBanks Constructor
@@ -43,44 +29,44 @@ class FourierFilterBanks(nn.Module):
 
     """
     def __init__(self,
-                 include_input:bool,
-                 num_inputs:int,
-                 num_outputs:int,
-                 n_levels:int,
-                 max_points_per_level:int):
+                 GridEncoderNetConfig,
+                 bound):
 
         super(FourierFilterBanks, self).__init__()
-        self.include_input = include_input
-        self.num_inputs = num_inputs
-        self.num_outputs = num_outputs
-        self.n_levels = n_levels
-        self.max_points_per_level = max_points_per_level
-        self.a_vals = a_vals
-        self.b_vals = b_vals
-        self.layer_channels = layer_channels
+        self.bound = bound
+        self.include_input = GridEncoderNetConfig['include_input']
+        num_inputs = GridEncoderNetConfig['num_inputs']
+        num_outputs = GridEncoderNetConfig['num_outputs']
+        n_levels = GridEncoderNetConfig['n_levels']
+        self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
 
 
         if layer_channels is None:
             layer_channels = [num_inputs] * (n_levels + 1)
         self.mlp_layers = nn.ModuleList([nn.Linear(layer_channels[i], layer_channels[i+1]) for i in range(n_levels)])
         self.out_layer = nn.Linear(layer_channels[-1], num_outputs)
-
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
         # Compute Fourier features
         Foruier_Grid_features = []
         for i in range(self.n_levels):
             x = self.mlp_layers[i](input)
+            grid_features = HashGridTCNN(GridEncoderNetConfig)
             grid_features = MultiResHashGridMLP(x, self.max_points_per_level)
-            fourier_grid_features = FourierFeaturesMLP(grid_features.shape[-1], self.mlp_layers[i].shape[-1],a_vals=self.a_vals,b_vals=self.b_vals,layer_channels=self.layer_channels)
-            Foruier_Grid_features.append(fourier_grid_features)
-        IndermediateOutputs = [None] * self.n_levels
+            grid_ff = FourierFeatures(grid_features.shape[-1], self.mlp_layers[i].shape[-1])
+            Foruier_Grid_features.append(grid_ff)
+        self.Fourier_Grid_features = Foruier_Grid_features
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        IndermediateOutputs = []
+        x = input / self.bound # Bound the input between [-1,1]
         # Sum Fourier features with L_i MLP outputs
         for i in range(self.n_levels):
             if i == 0:
-                IndermediateOutputs[i] = Foruier_Grid_features[i] + self.mlp_layers[i](x)
+                x = self.mlp_layers[i](x)
+                IndermediateOutputs[i] = self.Foruier_Grid_features[i].embed(x)
             else:
-                IndermediateOutputs[i] = Foruier_Grid_features[i] + self.mlp_layers[i](IndermediateOutputs[i-1])
-        x = torch.cat(IndermediateOutputs, dim=-1)
+                x = self.mlp_layers[i](x)
+                x_high = self.Foruier_Grid_features[i].embed(x)
+                IndermediateOutputs[i] = self.Foruier_Grid_features[i].embed(x_high)
+        x = sum(IndermediateOutputs)
         output = self.out_layer(x)
         if self.include_input:
             output_dim = output.shape[-1] + input.shape[-1]

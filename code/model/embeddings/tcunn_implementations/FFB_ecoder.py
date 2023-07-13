@@ -11,46 +11,21 @@ from hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as HashEncoderTcnn
 
 
 class FFB_encoder(nn.Module):
-    def __init__(self,
-                 in_dim:int,
-                 include_input:bool,
-                 feature_dims:int,
-                 base_resolution,
-                 num_outputs,
-                 per_level_scale,
-                 n_levels,
-                 base_sigma,
-                 exp_sigma,
-                 grid_embed_std,
-                 bound
-                 ):
+    def __init__(self,HashGridEncoderConfig,bound):
         super().__init__()
-        self.in_dim = in_dim
+        self.in_dim = HashGridEncoderConfig['in_dim']
         self.bound = bound 
-        self.n_levels = n_levels
-        self.feature_dims = feature_dims
-        self.multires = n_levels
+        self.n_levels = HashGridEncoderConfig['n_levels']
+        self.feature_dims = HashGridEncoderConfig['feature_dims']
         # HashTcnn Encoder init
         grid_level = int(self.num_sin_layers - 2)        
-        self.grid_encoder = tcnn.Encoding(
-            n_input_dims=in_dim,
-            encoding_config={
-                "otype": "HashGrid",
-                "n_levels": self.n_levels,
-                "n_features_per_level": self.feature_dims,
-                "base_resolution": base_resolution,
-                "base_sigma": base_sigma,
-                "exp_sigma": exp_sigma,
-                "log2_hasmap_size": n_levels-1,
-                "per_level_scale": per_level_scale,
-            }
-        )
+        self.grid_encoder = HashEncoderTcnn(HashGridEncoderConfig)
         self.grid_level = grid_level
         print(f"Grid encoder levels: {self.grid_level}")
         # FourierFeatureEncoding init
-        self.num_frequencies = n_levels
-        self.ff_enc = FFenc(include_input,in_dim,n_levels-1,self.num_frequencies,log_sampling=True,periodic_fns=[torch.sin,torch.cos])
-        ffenc_dims = self.ff_enc.embeddings_dim + [in_dim]
+        self.num_frequencies = self.n_levels
+        self.ff_enc = FFenc(HashGridEncoderConfig['include_input'],self.in_dim,self.n_levels-1,self.num_frequencies,log_sampling=True,periodic_fns=[torch.sin,torch.cos])
+        ffenc_dims = self.ff_enc.embeddings_dim + [self.in_dim]
         self.num_sin_layers = len(ffenc_dims)
         assert self.num_sin_layers > 3, "The layer number (SIREN branch) shoudl be greater than 3 "
         
@@ -62,9 +37,9 @@ class FFB_encoder(nn.Module):
         ffn_sigma_list = []
         self.ffn_sigma_list = []
         for i in range(grid_level):
-            ffn_A = torch.randn((feature_dims,ffenc_dims[2+i]),requires_grad=True) # * base_sigma * exp_sigma ** i
+            ffn_A = torch.randn((self.feature_dims,ffenc_dims[2+i]),requires_grad=True) # * base_sigma * exp_sigma ** i
             ffn_list.append(ffn_A)
-            self.ffn_sigma_list.append(base_sigma * exp_sigma ** i)
+            self.ffn_sigma_list.append(HashGridEncoderConfig['base_sigma'] * HashGridEncoderConfig['exp_sigma'] ** i)
         self.register_buffer("ffn_A", torch.stack(ffn_list,dim=0))
         ### The low-frequency MLP part is handled with fourier feature encoding
         for layer in range(0,self.num_sin_layers - 1):

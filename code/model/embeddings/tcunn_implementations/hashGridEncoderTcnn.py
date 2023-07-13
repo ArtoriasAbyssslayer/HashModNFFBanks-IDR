@@ -15,7 +15,12 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                  max_points_per_level: int,
                  log2_hashmap_size: int,
                  base_resolution: int,
+                 desired_resolution: int,
+                 base_sigma: float,
+                 exp_sigma: float,
+                 grid_embedding_std: float,
                  per_level_scale: float):
+        
         super().__init__()
         self.in_dim = in_dim
         self.include_input = include_input
@@ -76,9 +81,9 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 'log2_hashmap_size': self.log2_hashmap_size,
                 'base_resolution': self.base_resolution,
                 'per_level_scale': self.per_level_scale,
-                "base_sigma": 8.0,
-                "exp_sigma": 1.5,
-                "grid_embedding_std": 0.001,
+                "base_sigma": base_sigma,
+                "exp_sigma": exp_sigma,
+                "grid_embedding_std": grid_embedding_std,
                 "interpolation": "Linear"
             }
         )

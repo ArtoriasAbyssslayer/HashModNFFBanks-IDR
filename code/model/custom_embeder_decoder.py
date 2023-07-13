@@ -16,12 +16,11 @@ class Custom_Embedding_Network:
         
             input: (Optional) include Input for having some input 
     """
-    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution):
+    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         embed_kwargs = {
             'multi_resolution': {
                 'include_input': True,
                 'in_dim': input_dims,
-                # 'max_freq_log2': multires-1,
                 'n_levels':multires,
                 'max_points_per_level': max_points_per_entry,
                 'log2_hashmap_size': log2_max_hash_size,
@@ -30,15 +29,21 @@ class Custom_Embedding_Network:
                 
             },
             'fourier_filter_banks':{
-                'include_input':True,
-                'in_dim': input_dims,
-                'feature_dims': max_points_per_entry,
-                'num_outputs': desired_resolution,
-                'num_levels': multires,
-                "per_level_scale": 2.0,
-                "base_sigma": 8.0,
-                "exp_sigma": 1.5,
-                "grid_embedding_std": 0.001,
+                'HashGridEncoderConfig':{
+                    'include_input':True,
+                    'in_dim': input_dims,
+                    'embed_type': embed_type,
+                    'n_levels': multires,
+                    'feature_dims': max_points_per_entry,
+                    'log2_hashmap_size': log2_max_hash_size,
+                    'base_resolution': base_resolution,
+                    'desired_resolution': desired_resolution,
+                    "base_sigma": 8.0,
+                    "exp_sigma": 1.5,
+                    "grid_embedding_std": 0.001,
+                    'per_level_scale': 2.0,
+                },
+                'bound': bound,
             },
             'fourier_encoding': {
                 'include_input': False,
@@ -56,6 +61,10 @@ class Custom_Embedding_Network:
                 'max_points_per_level': max_points_per_entry,
                 'log2_hashmap_size': log2_max_hash_size,
                 'base_resolution': base_resolution,
+                'desired_resolution': desired_resolution,
+                "base_sigma": 8.0,
+                "exp_sigma": 1.5,
+                "grid_embedding_std": 0.001,
                 'per_level_scale': 2.0,
             },
         }
