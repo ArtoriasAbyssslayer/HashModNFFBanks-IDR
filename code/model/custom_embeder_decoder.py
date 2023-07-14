@@ -5,6 +5,7 @@ from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.fourierFilterBanks import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network:
@@ -28,13 +29,13 @@ class Custom_Embedding_Network:
                 'desired_resolution': desired_resolution            
                 
             },
-            'fourier_filter_banks':{
+            'FFB_TCNN':{
                 'HashGridEncoderConfig':{
                     'include_input':True,
                     'in_dim': input_dims,
-                    'embed_type': embed_type,
-                    'n_levels': multires,
-                    'feature_dims': max_points_per_entry,
+                    'embed_type': 'HashGridTcnn',
+                    'n_levels': multires-1,
+                    'max_points_per_level': max_points_per_entry,
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
@@ -51,7 +52,7 @@ class Custom_Embedding_Network:
                 'max_freq_log2': log2_max_hash_size,
                 'num_freqs': multires,
                 'log_sampling': True,
-                'periodic_fns': [torch.sin, torch.cos],
+                'periodic_fns': [torch.sin, torch.cos]
             },
             'hashGridEncoderTcnn':{
                 'include_input':True,
@@ -73,6 +74,7 @@ class Custom_Embedding_Network:
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'FourierFeatures': (FourierFeatures, 'fourier_encoding'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+            'FFBTcnn':(FFB_encoder,'FFB_TCNN')
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")

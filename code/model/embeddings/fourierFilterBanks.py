@@ -6,28 +6,13 @@ from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.tcunn_implementations import hashGridEncoderTcnn as HashGridTCNN
         
 """
-    Filter banks MLP is based on the paper Fourier Filter Banks
+    FourierFilterBanks is based on the paper Fourier Filter Banks
     Essentially manage the gridEncoding as a low frequency encoding (LPF) and the FourierFeaturesMLP as a high frequency encoding (HPF)
     Then we make multiple level of encodings and get a multi-resolution embeddings and sum them up to
 
 """
 class FourierFilterBanks(nn.Module):
-    """
-        FourierFilterBanks Constructor
-        Args:
-            in_dim(int): Embedding input layer dimensionality
-            num_outputs(int): Embedding output layer outputs
-            layer_channels(List): List of integer defining the dimensionality of each layer
 
-
-            n_levels(int): Number of levels for MultiResHashGridMLP
-            // Optional Arguments for MultiResHashGridMLP
-            max_points_per_level(int): Maximum number of points per level for MultiResHashGridMLP
-            log2_hashmap_size(int): Hashmap size for MultiResHashGridMLP
-            base_resolution(int): Base resolution for MultiResHashGridMLP
-            desired_resolution(int): Desired resolution for MultiResHashGridMLP
-
-    """
     def __init__(self,
                  GridEncoderNetConfig,
                  bound):

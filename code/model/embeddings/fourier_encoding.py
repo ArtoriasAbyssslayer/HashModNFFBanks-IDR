@@ -30,7 +30,8 @@ class FourierEncoding(nn.Module):
         self.out_dim = out_dim
         self.embeddings_dim = out_dim
     def embed(self,inputs):
-        return torch.cat([fn(inputs) for fn in self.embed_fns], -1)
+        ff_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)
+        return torch.cat([inputs, ff_embeds], -1)
     def __call__(self,inputs):
         return self.embed(inputs=inputs)
         

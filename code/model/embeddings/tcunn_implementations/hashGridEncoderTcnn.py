@@ -75,7 +75,6 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             n_input_dims=self.in_dim,
             encoding_config={
                 "otype": otype,
-                "type": type,
                 "n_levels": int(self.n_levels),
                 "n_features_per_level": self.max_points_per_level,
                 'log2_hashmap_size': self.log2_hashmap_size,
@@ -84,7 +83,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 "base_sigma": base_sigma,
                 "exp_sigma": exp_sigma,
                 "grid_embedding_std": grid_embedding_std,
-                "interpolation": "Linear"
+                "InterpolationType": "bilinear"
             }
         )
         self.grid_levels = self.n_levels

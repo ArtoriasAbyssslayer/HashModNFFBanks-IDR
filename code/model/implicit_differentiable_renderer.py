@@ -25,7 +25,7 @@ class ImplicitNetwork(nn.Module):
             max_points_per_entry=2,
             base_resolution=64,
             desired_resolution=None,
-            mapping_size=256,
+            bound:float=0.5
     ):
         super().__init__()
 
@@ -37,8 +37,8 @@ class ImplicitNetwork(nn.Module):
             if multires > 0:
                 print("embed_type",embed_type)
                 embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
-                                                        max_points_per_entry=max_points_per_entry,mapping_size=mapping_size,base_resolution=base_resolution,
-                                                        desired_resolution=desired_resolution)
+                                                        max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
+                                                        desired_resolution=desired_resolution,bound=0.5)
                 self.embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                 if self.embed_type != 'FourierFeatures':
                     dims[0] = input_ch
@@ -132,9 +132,9 @@ class RenderingNetwork(nn.Module):
             embed_type=None,
             log2_max_hash_size=10,
             max_points_per_entry=2,
-            mapping_size=256,
             base_resolution=64,
             desired_resolution=1024,
+            bound:float=0.5
     ):
         super().__init__()
         self.feature_vector_size = feature_vector_size
@@ -147,8 +147,8 @@ class RenderingNetwork(nn.Module):
                 if self.mode == 'idr':
                     d_in = 3
                     embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
-                                                            max_points_per_entry=max_points_per_entry,mapping_size=mapping_size,base_resolution=base_resolution,
-                                                            desired_resolution=desired_resolution)
+                                                            max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
+                                                            desired_resolution=desired_resolution,bound=0.5)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
             
             if self.embed_type == 'FourierFeatures':
