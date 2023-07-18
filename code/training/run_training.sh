@@ -1,0 +1,1 @@
+OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES=1 python exp_runner.py --exp_name=HashGrid-NSR --scan_id=65 --checkpoint=latest 

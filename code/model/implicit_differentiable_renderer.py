@@ -33,6 +33,8 @@ class ImplicitNetwork(nn.Module):
         
         self.embed_fn = None
         self.embed_type = embed_type
+        self.multires = multires
+        self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -40,10 +42,14 @@ class ImplicitNetwork(nn.Module):
                                                         max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
                                                         desired_resolution=desired_resolution,bound=0.5)
                 self.embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
+                
                 if self.embed_type != 'FourierFeatures':
-                    dims[0] = input_ch
+                    # num_eoc ~ number of extra channels due to embeddings
+                    #self.num_eoc = int((input_ch - d_in) / 2)
+                    dims[0] =  self.input_ch # input_ch #
                 else:
-                    dims[0] = input_ch-3
+                    self.num_eoc = int((input_ch - d_in) / 2)
+                    dims[0] = d_in + self.num_eoc # input_ch #
         else:
             if multires > 0:
                 embed_fn, input_ch = get_embedder(multires)
@@ -89,8 +95,21 @@ class ImplicitNetwork(nn.Module):
     
     def forward(self, input, compute_grad=False):
         if self.embed_fn is not None:
-            input = self.embed_fn(input)
-
+            input_enc = self.embed_fn(input)
+            # nfeats_eachband = int(input_enc.shape[1] / self.multires)   # 6
+            # N = int(self.multires/2)
+            # inputs_enc, weight = coarseToFineRes(self.progress.data,input_enc,N)
+            # inputs_enc = inputs_enc.view(-1, self.multires, nfeats_eachband)[:,:N,:].view([-1,self.num_eoc])
+            
+            
+            # # Apply weights to input encoding
+            # input_enc = input_enc.view(-1, self.multires, nfeats_eachband)[:, :N, :].view([-1, self.num_eoc]).contiguous()
+            # input_enc = (input_enc.view(-1, N) * weight[:N]).view([-1, self.num_eoc])
+            # flag = weight[:N].tile(input_enc.shape[0], nfea_eachband,1).transpose(1,2).contiguous().view([-1, self.num_eoc])        
+            # # select the encoding with the highest weight
+            # inputs_enc = torch.where(flag > 0.01, inputs_enc, input_enc)
+            # # Concaenate input encoding with inputs 
+            # input = torch.cat([input, inputs_enc], dim=-1)  # [B,...,6L+3]
         x = input
 
         for l in range(0, self.num_layers - 1):
@@ -140,6 +159,10 @@ class RenderingNetwork(nn.Module):
         self.feature_vector_size = feature_vector_size
         self.mode = mode
         dims = [d_in + feature_vector_size] + dims + [d_out]
+        # add pose
+        self.multires_view = multires_view
+        self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
+        
         self.embed_type = embed_type
         self.embedview_fn = None
         if embed_type:
@@ -154,7 +177,7 @@ class RenderingNetwork(nn.Module):
             if self.embed_type == 'FourierFeatures':
                 dims[0] += (input_ch-2*d_in)
             else:
-                dims[0] += (input_ch-d_in)
+                dims[0] += (input_ch - 3)
         else:
             if multires_view > 0:
                 self.embedview_fn, input_ch = get_embedder(multires_view)
@@ -175,7 +198,9 @@ class RenderingNetwork(nn.Module):
     def forward(self, points, normals, view_dirs, feature_vectors):
         if self.embedview_fn is not None:
             view_dirs = self.embedview_fn(view_dirs)
-
+            view_dirs_enc, weight = coarseToFineRes(0.5 * self.progress.data, view_dirs_enc, self.multires_view)
+            view_dirs = torch.cat([view_dirs, view_dirs_enc], dim=-1)  # [B,...,6L+3]
+            
         if self.mode == 'idr':
             rendering_input = torch.cat([points, view_dirs, normals, feature_vectors], dim=-1)
         elif self.mode == 'no_view_dir':
@@ -304,3 +329,17 @@ class IDRNetwork(nn.Module):
         rgb_vals = self.rendering_network(points, normals, view_dirs, feature_vectors)
 
         return rgb_vals
+
+# Implementation of the coarse-to-fine resolution scheme/encoding  
+def coarseToFineRes(progress_data,inputs,L):  #[B,...,N]
+    barf_c2f = [0.1, 0.5]
+    if barf_c2f is not None:
+        # set weights for differnt frequency bands
+        start,end = barf_c2
+        alpha = (progress_data - start) / (end - start)*L
+        k = torch.arange(L, dtype=torch.float32, device=inputs.device)
+        weight = (1 - (alpha - k).clamp_(min=0, max=1).mul_(np.pi).cos_()) / 2
+        # apply weights
+        shape = inputs.shape
+        input_enc = (inputs.view(-1, L, int(shape[1]/L)) * weight.tile(int(shape[1]/L),1).T).view(*shape)
+    return input_enc, weight      
