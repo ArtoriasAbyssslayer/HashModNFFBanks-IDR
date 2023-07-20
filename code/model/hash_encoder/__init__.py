@@ -1,1 +1,1 @@
-from .hashgridencoder import MultiResHashGridEncoderCUDA
+from .hashgridencoder import MultiResolutionHashEncoderCUDA

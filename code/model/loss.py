@@ -35,6 +35,19 @@ class IDRLoss(nn.Module):
         mask_loss = (1 / self.alpha) * F.binary_cross_entropy_with_logits(sdf_pred.squeeze(), gt, reduction='sum') / float(object_mask.shape[0])
         return mask_loss
 
+
+    def mape_loss(self, sdf_output, network_object_mask, object_mask):
+        # pred, target: [B, 1], torch tenspr
+        mask = ~(network_object_mask & object_mask)
+        if mask.sum() == 0:
+            return torch.tensor(0.0).cuda().float()
+        sdf_pred = -self.alpha * sdf_output[mask]
+        gt = object_mask[mask].float()
+        difference = (sdf_pred - gt).abs()
+        scale = 1 / (gt.abs())
+        loss = difference * scale
+
+        return loss.mean()
     def forward(self, model_outputs, ground_truth):
         rgb_gt = ground_truth['rgb'].cuda()
         network_object_mask = model_outputs['network_object_mask']
@@ -43,14 +56,13 @@ class IDRLoss(nn.Module):
         rgb_loss = self.get_rgb_loss(model_outputs['rgb_values'], rgb_gt, network_object_mask, object_mask)
         mask_loss = self.get_mask_loss(model_outputs['sdf_output'], network_object_mask, object_mask)
         eikonal_loss = self.get_eikonal_loss(model_outputs['grad_theta'])
-
+        mask_mape_loss = self.mape_loss(model_outputs['sdf_output'], network_object_mask, object_mask)
         loss = rgb_loss + \
-               self.eikonal_weight * eikonal_loss + \
-               self.mask_weight * mask_loss
-
+               self.eikonal_weight * eikonal_loss +\
+               self.mask_weight * mask_loss + mask_mape_loss/self.mask_weight
         return {
             'loss': loss,
             'rgb_loss': rgb_loss,
             'eikonal_loss': eikonal_loss,
-            'mask_loss': mask_loss,
+            'mask_loss': mask_loss
         }

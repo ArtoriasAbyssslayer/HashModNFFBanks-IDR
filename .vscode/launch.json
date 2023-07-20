@@ -91,7 +91,7 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FourierFeature/dtu_fixed_cameras.conf",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FourierFeatures/dtu_fixed_cameras.conf",
                 "--expname", "FourierFeatureEnc",
                 "--scan_id","65",
                 "--checkpoint", "latest",

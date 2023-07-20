@@ -70,9 +70,8 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         if self.embed_type == 'HashGridTcnn':
                 otype = "HashGrid"
                 type = "Hash"
-        self.grid_encoder = tcnn.NetworkWithInputEncoding(
+        self.grid_encoder = tcnn.Encoding(
             n_input_dims=self.in_dim,
-            n_output_dims=self.n_levels * self.max_points_per_level,
             encoding_config={
                 "otype": otype,
                 "n_levels": int(self.n_levels),
@@ -83,32 +82,9 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 "base_sigma": base_sigma,
                 "exp_sigma": exp_sigma,
                 "grid_embedding_std": grid_embedding_std,
-                "InterpolationType": "billinear"
-            },
-            network_config={
-                "otype": "CutlassMLP",
-                "activation": "ReLU",
-                "output_activation": "None",
-                "n_neurons": 128,
-                "n_hidden_layers": self.n_levels + 1
+                "InterpolationType": "linear"
             }
-            
         ).to(device)
-        # self.grid_encoder = tcnn.Encoding(
-        #     n_input_dims=self.in_dim,
-        #     encoding_config={
-        #         "otype": otype,
-        #         "n_levels": int(self.n_levels),
-        #         "n_features_per_level": self.max_points_per_level,
-        #         'log2_hashmap_size': self.log2_hashmap_size,
-        #         'base_resolution': self.base_resolution,
-        #         'per_level_scale': self.per_level_scale,
-        #         "base_sigma": base_sigma,
-        #         "exp_sigma": exp_sigma,
-        #         "grid_embedding_std": grid_embedding_std,
-        #         "InterpolationType": "bilinear"
-        #     }
-        # ).to(device)
         self.grid_levels = self.n_levels
         # print(f"Selected Grid Encoder Levels: {self.grid_levels}")
         if(self.include_input == True):

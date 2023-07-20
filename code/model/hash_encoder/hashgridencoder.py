@@ -1,18 +1,18 @@
 import numpy as np
 
-import torch 
+import torch
 import torch.nn as nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
+from torch.cuda.amp import custom_bwd, custom_fwd 
 
-
-from .backend import _backend 
-
+from .backend import _backend
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class _hash_encoder(Function):
     @staticmethod 
     @custom_fwd(cast_inputs=torch.half)
-    def forward(ctx,inputs,embeddings,offsets,per_level_scale,base_resolution,calc_grad_input=False):
+    def forward(ctx,inputs,embeddings,offsets,per_level_scale,base_resolution,calc_grad_input=True):
         # inputs: [B,D] float in [0,1]
         # embeddings: [s0, C], float 
         # offsets: [L+1], int 
@@ -38,49 +38,49 @@ class _hash_encoder(Function):
             dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
             
         
-        _backend.hash_encoder_fwd(inputs, embeddings, offsets, ouputs, B, D, C, L, S, H, calc_grad_input)
+        _backend.hash_encode_fwd(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_input, dy_dx)
         
         # permute back to [B, L*C]
         outputs = outputs.permute(1,0,2).reshape(B,L * C)
         
         ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
         ctx.dims = [B, D, C, L, S, H]
-        ctx.calc_grad_inputs = calc_grad_inputs
+        ctx.calc_grad_inputs = calc_grad_input
 
         return outputs
     
     
-        @staticmethod
-        @once_differentiable
-        @custom_bwd
+    @staticmethod
+    @once_differentiable
+    @custom_bwd
+    
+    def backward(ctx,grad):
         
-        def backward(ctx,grad):
+        inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
+        B, D, C, L, S, H = ctx.dims
+        calc_grad_inputs = ctx.calc_grad_inputs
+        
+        # grad: [B, L * C]  ----> [L, B, C]
+        grad = grad.view(B, L, C).permute(1,0,2).contiguous()
+        
+        grad_embeddings = torch.zeros_like(embeddings)
+        
+        if calc_grad_inputs:
+            grad_inputs = torch.zeros_like(inputs)  
+        else:
+            grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
             
-            inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
-            B, D, C, L, S, H = ctx.dims
-            calc_grad_inputs = ctx.calc_grad_inputs
-            
-            # grad: [B, L * C]  ----> [L, B, C]
-            grad = grad.view(B, L, C).permute(1,0,2).contiguous()
-            
-            grad_embeddings = torch.zeros_like(embeddings)
-            
-            if calc_grad_inputs:
-                grad_inputs = torch.zeros_like(inputs)  
-            else:
-                grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
-                
-            
-            _backend.hash_encoder_bwd(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
-            
-            
-            if calc_grad_input:
-                return grad_inputs, grad_embeddings, None, None, None, None
-            else: 
-                return None, grad_embeddings, None, None, None, None
+        
+        _backend.hash_encode_bwd(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
+        
+        
+        if calc_grad_inputs:
+            return grad_inputs, grad_embeddings, None, None, None, None
+        else: 
+            return None, grad_embeddings, None, None, None, None
             
 
-hash_encode = _hash_encode.apply    
+hash_encode = _hash_encoder.apply    
         
         
         
@@ -114,14 +114,14 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
             offsets.append(offset)
             offset += params_in_level
         offsets.append(offset)
-        offsets = torch.from_numpy(np.array(offsets, dtype=np.int32))
+        offsets = torch.from_numpy(np.array(offsets, dtype=np.int32)).to(DEVICE)
         self.register_buffer('offsets', offsets)
         
         self.n_params = offsets[-1] * level_dim
 
         # parameters
-        self.embeddings = nn.Parameter(torch.empty(offset, level_dim))
-
+        self.embeddings = nn.Parameter(torch.empty(offset, level_dim)).to(DEVICE)
+        self.embeddings_dim = self.output_dim
         self.reset_parameters()
     
     def reset_parameters(self):
