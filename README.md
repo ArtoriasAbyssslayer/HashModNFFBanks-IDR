@@ -8,7 +8,7 @@ for using each of the embedders needed. Also there are pretrained models.
 This repository applies spatial input encoding with multi resolution spatial embeddings as proposed in instant-ngp [Paper](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf) 
 
 ## Neural Fourier Filter Banks
-Apart from spatial encoding a frequency decomposition of the input is made coherently with the multi-resolution hash enmbedding. This is done to capture the High Frequency input content of the Input images and the surface state and render it eventually to the finished recostructed surface. The method adopts the wavelet decomposition concept as proposed in the Neural Fourier Filter Banks [Paper]()
+Apart from spatial encoding a frequency decomposition of the input is made coherently with the multi-resolution hash enmbedding. This is done to capture the High Frequency input content of the Input images and the surface state and render it eventually to the finished recostructed surface. The method adopts the wavelet decomposition concept as proposed in the Neural Fourier Filter Banks [Paper](https://arxiv.org/abs/2212.01735)
 
 
 ## Style Modulated Embeddings
