@@ -1,8 +1,5 @@
 # HashModFFBanks-IDR
-
-This repository is a branch to the HashModFFBanks-NeuS project which applies the same Embedding Networks for better SDF inputs on IDR (Implicit Differentiable Rendering).
-Bellow there is the coressponding info the Implict Neural Surface Reconstruction Project of Lior Yariv and there are appropriate configs Files 
-for using each of the embedders needed. Also there are pretrained models.
+This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and focuses on neural encoding High Frequency 3D content for fast SDF convergence. This is a branch to the HashModNFFBanks-Neus Project that applies the same neural encoding on volumetric rendering models which are forked from NEUS. 
 
 ## HASH ENCODING - NSR(Neural Surface Reconstruction)
 This repository applies spatial input encoding with multi resolution spatial embeddings as proposed in instant-ngp [Paper](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf) 
