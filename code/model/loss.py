@@ -44,7 +44,7 @@ class IDRLoss(nn.Module):
         sdf_pred = -self.alpha * sdf_output[mask]
         gt = object_mask[mask].float()
         difference = (sdf_pred - gt).abs()
-        scale = 1 / (gt.abs())
+        scale = 1 / (gt.abs()* 1e-5 + 1)
         loss = difference * scale
 
         return loss.mean()
