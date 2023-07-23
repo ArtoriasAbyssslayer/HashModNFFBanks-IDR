@@ -3,17 +3,13 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
 """
     Based on Ending Hsiao work on hashGridEmbedding image Features based on instant-ngp hashGridEncoding
-
     https://github.com/Ending2015a/hash-grid-encoding
 
 """
-
-
 # ---- constants
-HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737,4506014050,1234123232,454534535,14324134,151234151513,143135152134,5153415135,1234142124,1541351351]
+HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # repeat the same array to increase the length of hash primes for large dimension inputs
 def _get_primes(d: int):
@@ -40,7 +36,7 @@ class Frequency(nn.Module):
         self.n_levels = n_levels
         assert self.n_levels > 0
 
-        freqs = 2. ** torch.linspace(0., n_levels - 1, n_levels)
+        freqs = 2. ** torch.linspace(0., n_levels - 1, n_levels).to(DEVICE)
         self.register_buffer('freqs', freqs)
 
         # ---
@@ -98,7 +94,7 @@ class _HashGridMLP(nn.Module):
         # use nn.Embedding pytorch layer as a simple lookup table of hash
         # values
         self.embedding_layer = nn.Embedding(hashmap_size, n_feats).to(DEVICE)
-        nn.init.kaiming_uniform_(self.embedding_layer.weight, a=5 ** 0.5)
+        nn.init.uniform_(self.embedding_layer.weight, a=-0.0001, b=0.0001)
 
         # initialize primes tensor
         primes = torch.tensor(hash_pri, dtype=torch.int64)
@@ -111,7 +107,7 @@ class _HashGridMLP(nn.Module):
         n_neighbors = 1 << self.in_dim
         
         # create neighbors array 0 to neigbors-1
-        neighbors = np.arange(n_neighbors, dtype=np.int32).reshape((-1, 1))
+        neighbors = np.arange(n_neighbors, dtype=np.int32).reshape((-1, 1)) 
         # create dimenstion Level  array
         dims = np.arange(self.in_dim, dtype=np.int64).reshape((1, -1))
 
@@ -140,7 +136,7 @@ class _HashGridMLP(nn.Module):
         indeces = torch.where(bin_mask, xi, xi + 1)  # (b...,neighbors,dim)
         weights = torch.where(bin_mask, 1 - xf, xf)  # //
 
-        # calculate the weights product
+        # calculate the weights product - attention mechanism
         w = weights.prod(dim=-1, keepdim=True) # (b..., neig, 1)
         # hash neigbors' id and lookup table
         hash_ids = hash_func(indeces, self.primes.to(DEVICE), self.hashmap_size) # (b...,neighbors
@@ -215,8 +211,7 @@ class MultiResHashGridMLP(nn.Module):
             embed = []
             for level in self.levels:
                 embed.append(level(x))
-            embed = torch.cat(embed,dim=-1)
-            # embed = torch.cat([level(x) for level in self.levels], dim=-1)
+            embed = torch.cat(embed,dim=-1).to(DEVICE)
             return torch.cat([x, embed], dim=-1)
         else:
             return torch.cat([level(x) for level in self.levels], dim=-1)

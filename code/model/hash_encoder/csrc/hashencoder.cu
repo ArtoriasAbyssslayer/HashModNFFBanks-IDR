@@ -27,12 +27,11 @@
 // CUDA = 61 Pascal Architecture 
 // Define atomicAdd function for __half2 type (Pascal architecture)
 // just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
- __device__ inline at::Half atomicAdd(at::Half *address, at::Half val) {
-  // requires CUDA >= 10 and ARCH >= 70
-  // this is very slow compared to float or __half2, never use it.
-  //return atomicAdd(reinterpret_cast<__half*>(address), val);
+__device__ inline at::Half atomicAdd(at::Half* address, at::Half val) {
+  // Error: CUDA arch 6.1 does not support FP16 atomics
+  // Add appropriate error handling or fallback logic here
+  return *address + val; // Dummy implementation
 }
-
 
 
 
