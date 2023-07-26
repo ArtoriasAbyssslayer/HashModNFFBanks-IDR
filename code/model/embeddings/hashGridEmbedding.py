@@ -13,7 +13,7 @@ import torch.nn as nn
 
 
 # ---- constants
-HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737,4506014050,1234123232,454534535,14324134,151234151513,143135152134,5153415135,1234142124,1541351351]
+HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # repeat the same array to increase the length of hash primes for large dimension inputs
 def _get_primes(d: int):
