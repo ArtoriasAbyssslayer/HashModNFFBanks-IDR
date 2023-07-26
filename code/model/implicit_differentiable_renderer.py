@@ -110,13 +110,13 @@ class ImplicitNetwork(nn.Module):
             lin = getattr(self, "lin" + str(l))
 
             if l in self.skip_in:
-                x = torch.cat([x, input], 1) / np.sqrt(2.2)
+                x = torch.cat([x, input], 1) / np.sqrt(2)
 
             x = lin(x)
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-                
+        x[:,0] = torch.tanh(x[:,0])
         return x
 
     def gradient(self, x):

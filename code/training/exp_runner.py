@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
-    parser.add_argument('--nepoch', type=int, default=2000, help='number of epochs to train for')
+    parser.add_argument('--nepoch', type=int, default=1000, help='number of epochs to train for')
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--expname', type=str, default='')
     parser.add_argument('--gpu', type=str, default='auto', help='GPU to use [default: GPU auto]')
