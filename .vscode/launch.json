@@ -31,7 +31,7 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB/dtu_fixed_cameras.conf",
                 "--expname", "NFFB",
                 "--scan_id","65",
                 "--checkpoint", "latest",
@@ -94,6 +94,26 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
+                "--scan_id","65",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                //"--calc_image_similarity"
+
+            ]
+        },
+        {
+            "name": "IDR training CUDA Hash Grid Encoding",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
+                "--expname", "HashGridCUDA",
                 "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",
