@@ -11,12 +11,14 @@ import torch.nn as nn
 # ---- constants
 HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# save tensor to gpu slow 
+primes = torch.tensor(HASH_PRIMES).to(DEVICE)
 # repeat the same array to increase the length of hash primes for large dimension inputs
-def _get_primes(d: int):
+def _get_primes(d: torch.Tensor):
     if  d < len(HASH_PRIMES):
         return HASH_PRIMES[:d]
     else:
-        repeated_hash_primes = np.tile(HASH_PRIMES, (d - len(HASH_PRIMES), 1))
+        repeated_hash_primes = torch.tile(HASH_PRIMES, (d - len(HASH_PRIMES), 1))
         stacked_array = repeated_hash_primes.flatten()
         return stacked_array
 
@@ -71,78 +73,58 @@ class _HashGridMLP(nn.Module):
         Single Resolution Grid HashEmbedding Net
 
         Inputs:
-            - in_dim : Input dimensions supports <= len(PRIMES)
-            - feats: Lookup table hash value size
-            - hashmap_size: Size of the grid
+            - dim : Input dimensions supports <= len(PRIMES)
+            - n_features: Lookup table hash value size - max_points_per_level
+            - hashmap_size: Size of the grid 
             - resolution: HashGrid Resolution
         Return:
             - forward->interpolated hash ids embeddings of the Inputs
         Training achieved due to the weight - lookup table mapping that nn.Embedding does and bpp is applicable
     """
 
-    def __init__(
-            self, in_dim: int, n_feats: int,
-            hashmap_size: int, resolution: float):
+    def __init__(self,dim: int,n_features: int,hashmap_size: int,resolution: float):
         super().__init__()
-        self.in_dim = in_dim
-        self.n_feats = n_feats
+        self.dim = dim
+        self.n_features = n_features
         self.hashmap_size = hashmap_size
         self.resolution = resolution
-        hash_pri = _get_primes(in_dim)
-        assert self.in_dim <= len(hash_pri), \
-            "Hashing is not supported for more than {len(PRIMES)} - input dimensions"
-        # use nn.Embedding pytorch layer as a simple lookup table of hash
-        # values
-        self.embedding_layer = nn.Embedding(hashmap_size, n_feats).to(DEVICE)
-        nn.init.uniform_(self.embedding_layer.weight, a=-0.0001, b=0.0001)
+        
+        # you can add more primes for supporting more dimensions
+        assert self.dim <= len(HASH_PRIMES), \
+        f"HashGrid only supports < {len(HASH_PRIMES)}-D inputs"
 
-        # initialize primes tensor
-        primes = torch.tensor(hash_pri, dtype=torch.int64)
-        self.register_buffer('primes', primes, persistent=False)
+        # create look-up table
+        embedding = nn.Embedding(hashmap_size, n_features)
+        nn.init.uniform_(embedding.weight, a=-0.0001, b=0.0001)
+        self.embedding = embedding.to(DEVICE)
+        self.primes = primes
 
         # create interpolation binary mask
-
-        # calculate the number of neighbors for each point in the source point
-        # cloud.
-        n_neighbors = 1 << self.in_dim
-        
-        # create neighbors array 0 to neigbors-1
-        neighbors = np.arange(n_neighbors, dtype=np.int32).reshape((-1, 1)) 
-        # create dimenstion Level  array
-        dims = np.arange(self.in_dim, dtype=np.int64).reshape((1, -1))
-
-        bin_mask = torch.tensor(
-            neighbors & (
-                1 << dims) == 0,
-            dtype=bool)  # (neig,dim)
+        n_neigs = 1 << self.dim
+        neigs = np.arange(n_neigs, dtype=np.int64).reshape((-1, 1))
+        dims = np.arange(self.dim, dtype=np.int64).reshape((1, -1))
+        bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool).to(DEVICE) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
 
     def forward(self, x: torch.Tensor):
-        
-        # x:(b...,dim), torch.float32, range:[0,1]
-        base_res_dims = len(x.shape[:-1])
-        
+        # x: (b..., dim), torch.float32, range: [0, 1]
+        bdims = len(x.shape[:-1])
         x = x * self.resolution
-        x_i = x.long()
-        x_f = x - x_i.float().detach()
-        xi = x_i.unsqueeze(dim=-2)  # (b...,1,dim)
-        xf = x_f.unsqueeze(dim=-2)  # (b...,1,dim)
-
+        xi = x.long()
+        xf = x - xi.float().detach()
+        xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
+        xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
         # to match the input batch shape
-    
-        bin_mask = self.bin_mask.reshape(
-            (1,) * base_res_dims + self.bin_mask.shape).to(DEVICE)  # (1..., neigbors,dim)
+        bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape) # (1..., neig, dim)
         # get neighbors' indices and weights on each dim
-        indeces = torch.where(bin_mask, xi, xi + 1)  # (b...,neighbors,dim)
-        weights = torch.where(bin_mask, 1 - xf, xf)  # //
-
-        # calculate the weights product - attention mechanism
-        w = weights.prod(dim=-1, keepdim=True) # (b..., neig, 1)
-        # hash neigbors' id and lookup table
-        hash_ids = hash_func(indeces, self.primes.to(DEVICE), self.hashmap_size) # (b...,neighbors
-        hash_ids = hash_ids.to(DEVICE)
-        neighbors_data = self.embedding_layer(hash_ids)  # (b...,neighbors)
-        return torch.sum(neighbors_data * w, dim=-2)  # (b...,feat)
+        inds = torch.where(bin_mask, xi, xi+1) # (b..., neig, dim)
+        ws = torch.where(bin_mask, 1-xf, xf) # (b...., neig, dim)
+        # aggregate nehgibors' interp weights - attention mechanism 
+        w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
+        # hash neighbors' id and look up table
+        hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
+        neig_data = self.embedding(hash_ids) # (b..., neig, feat)
+        return torch.sum(neig_data * w, dim=-2) # (b..., feat)
 
 
 class MultiResHashGridMLP(nn.Module):
@@ -188,11 +170,11 @@ class MultiResHashGridMLP(nn.Module):
                 2 ** log2_hashmap_size)
             levels.append(
                 _HashGridMLP(
-                    in_dim=self.in_dim,
-                    n_feats=self.max_points_per_level,
-                    hashmap_size=self.hashmap_size,
-                    resolution=resolution))
-            self.levels = nn.ModuleList(levels)
+                    self.in_dim,
+                    self.max_points_per_level,
+                    self.hashmap_size,
+                    resolution))
+            self.levels = nn.Sequential(*levels).to(DEVICE)
 
             self.input_dim = in_dim
             
@@ -208,10 +190,11 @@ class MultiResHashGridMLP(nn.Module):
     def forward(self, x: torch.Tensor):
         if self.include_input == True:
             # print (" Hash Encoding Input")
+            x = x.to(DEVICE)
             embed = []
             for level in self.levels:
                 embed.append(level(x))
-            embed = torch.cat(embed,dim=-1).to(DEVICE)
+            embed = torch.cat(embed,dim=-1)
             return torch.cat([x, embed], dim=-1)
         else:
             return torch.cat([level(x) for level in self.levels], dim=-1)
