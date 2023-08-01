@@ -16,7 +16,9 @@ The higher level of the SDF input optimization for better convergence is made th
  
 The NSR base models are based on IDR with some modifications to stable capture the 3D High Frequency Content. <br><br> IDR is presented bellow. 
 
-## Project Outline 
+## IDR - Project Outline 
+Note: Most of the code of IDR is borrowed from IDR original [repository](https://github.com/lioryariv/idr) with minor modifications so the focus on the project is directed to the input encoding Networks and the 
+convergence optimization of IDR. Bellow are some original IDR notes modified to apply to the current project.
 
 <!-- <p align="center">
   <img width="100%" src="media/teaser.gif"/>
