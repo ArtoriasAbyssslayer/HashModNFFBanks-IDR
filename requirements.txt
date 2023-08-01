@@ -12,4 +12,8 @@ plotly==4.10.0
 pyhocon==0.3.55
 retrying==1.3.3
 scs==2.1.2
-trimesh==3.8.8
+trimesh
+imageio==2.5.0
+
+
+
