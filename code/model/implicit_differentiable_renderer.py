@@ -91,20 +91,6 @@ class ImplicitNetwork(nn.Module):
     def forward(self, input, compute_grad=False):
         if self.embed_fn is not None:
             input = self.embed_fn(input)
-            # nfeats_eachband = int(input_enc.shape[1] / self.multires)   # 6
-            # N = int(self.multires/2)
-            # inputs_enc, weight = coarseToFineRes(self.progress.data,input_enc,N)
-            # inputs_enc = inputs_enc.view(-1, self.multires, nfeats_eachband)[:,:N,:].view([-1,self.num_eoc])
-            
-            
-            # # Apply weights to input encoding
-            # input_enc = input_enc.view(-1, self.multires, nfeats_eachband)[:, :N, :].view([-1, self.num_eoc]).contiguous()
-            # input_enc = (input_enc.view(-1, N) * weight[:N]).view([-1, self.num_eoc])
-            # flag = weight[:N].tile(input_enc.shape[0], nfea_eachband,1).transpose(1,2).contiguous().view([-1, self.num_eoc])        
-            # # select the encoding with the highest weight
-            # inputs_enc = torch.where(flag > 0.01, inputs_enc, input_enc)
-            # # Concaenate input encoding with inputs 
-            # input = torch.cat([input, inputs_enc], dim=-1)  # [B,...,6L+3]
         x = input
 
         for l in range(0, self.num_layers - 1):
@@ -158,7 +144,7 @@ class RenderingNetwork(nn.Module):
         self.multires_view = multires_view
         self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
         
-        self.embed_type = embed_type
+        self.embed_type = 'FourierFeatures'
         self.embedview_fn = None
         if embed_type:
             if multires_view > 0:
@@ -189,12 +175,6 @@ class RenderingNetwork(nn.Module):
     def forward(self, points, normals, view_dirs, feature_vectors):
         if self.embedview_fn is not None:
             view_dirs = self.embedview_fn(view_dirs)
-
-        # if self.embedview_fn is not None:
-        #     view_dirs = self.embedview_fn(view_dirs)
-        #     view_dirs_enc, weight = coarseToFineRes(0.5 * self.progress.data, view_dirs_enc, self.multires_view)
-        #     view_dirs = torch.cat([view_dirs, view_dirs_enc], dim=-1)  # [B,...,6L+3]
-            
         if self.mode == 'idr':
             rendering_input = torch.cat([points, view_dirs, normals, feature_vectors], dim=-1)
         elif self.mode == 'no_view_dir':
