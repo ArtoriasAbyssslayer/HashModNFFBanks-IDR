@@ -5,5 +5,6 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "utility": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/harry/Documents/HashModNFFB-IDR/code/model/hash_encoder"
 }
