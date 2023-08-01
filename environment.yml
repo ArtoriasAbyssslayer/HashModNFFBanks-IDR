@@ -1,4 +1,4 @@
-name: idr
+name: hashmodnsr
 channels:
   - pytorch
   - defaults
