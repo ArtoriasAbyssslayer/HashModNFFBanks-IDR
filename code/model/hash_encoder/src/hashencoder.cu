@@ -2,7 +2,18 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
+
 #include <ATen/cuda/CUDAContext.h>
+#define TORCH_EXTENSION_NAME warp_perspective
+#define TORCH_EXTENSION_VERSION 1.0.0
+#define TORCH_EXTENSION_BUILD ONNX_BUILD_OPERATOR
+#define TORCH_EXTENSION_CUDA 1
+#define TORCH_EXTENSION_KERNEL_TYPE uint8_t
+#define TORCH_EXTENSION_CTOR GridKernelImpl
+#define TORCH_EXTENSION_CUDA_INCLUDE "warp_perspective.h"
+#define TORCH_EXTENSION_CUDA_EXTRA_CFLAGS --gpu-architecture=sm_61
+#include <torch/extension.h>
+
 #include <torch/torch.h>
 #include <torch/extension.h>
 
@@ -13,6 +24,8 @@
 #include <cstdio>
 
 
+
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be a contiguous tensor")
 #define CHECK_IS_INT(x) TORCH_CHECK(x.scalar_type() == at::ScalarType::Int, #x " must be an int tensor")
@@ -21,9 +34,13 @@
 
 // requires CUDA >= 10 and ARCH >= 70
 // this is very slow compared to float or __half2, do not use!
-static inline  __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
-  return atomicAdd(reinterpret_cast<__half*>(address), val);
+// just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
+__device__ inline at::Half atomicAdd(at::Half *address, at::Half val) {
+// requires CUDA >= 10 and ARCH >= 70
+// this is very slow compared to float or __half2, never use it.
+//return atomicAdd(reinterpret_cast<__half*>(address), val);
 }
+
 
 
 template <typename T>

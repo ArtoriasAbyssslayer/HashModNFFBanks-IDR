@@ -144,7 +144,7 @@ class RenderingNetwork(nn.Module):
         self.multires_view = multires_view
         self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
         
-        self.embed_type = 'FourierFeatures'
+        self.embed_type = 'Fourier Features'
         self.embedview_fn = None
         if embed_type:
             if multires_view > 0:

@@ -35,7 +35,7 @@ class _hash_encode(Function):
         else:
             dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
 
-        _backend.hash_encode_fwd(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
+        _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
 
         # permute back to [B, L * C]
         outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
@@ -65,7 +65,7 @@ class _hash_encode(Function):
         else:
             grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
 
-        _backend.hash_encode_bwd(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
+        _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
 
         if calc_grad_inputs:
             return grad_inputs, grad_embeddings, None, None, None, None
@@ -77,7 +77,7 @@ hash_encode = _hash_encode.apply
 
 
 class MultiResolutionHashEncoderCUDA(nn.Module):
-    def __init__(self, input_dim=3, num_levels=16, level_dim=2, per_level_scale=2, base_resolution=16, log2_hashmap_size=19, desired_resolution=None):
+    def __init__(self, include_input=True, input_dim=3, num_levels=16, level_dim=2, per_level_scale=2, base_resolution=16, log2_hashmap_size=19, desired_resolution=None):
         super().__init__()
 
         # the finest resolution desired at the last level, if provided, overridee per_level_scale
@@ -91,7 +91,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.output_dim = num_levels * level_dim
-
+        self.include_input = include_input
         if level_dim % 2 != 0:
             print('[WARN] detected HashGrid level_dim % 2 != 0, which will cause very slow backward is also enabled fp16! (maybe fix later)')
 
@@ -113,7 +113,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
 
         # parameters
         self.embeddings = nn.Parameter(torch.empty(offset, level_dim))
-
+        self.embeddings_dim = self.output_dim + self.input_dim
         self.reset_parameters()
     
     def reset_parameters(self):
@@ -134,10 +134,11 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         prefix_shape = list(inputs.shape[:-1])
         inputs = inputs.view(-1, self.input_dim)
         
-        outputs = hash_encode(inputs, self.embeddings, self.offsets, self.per_level_scale, self.base_resolution, inputs.requires_grad)
+        outputs = hash_encode(inputs, self.embeddings.to(inputs.device), self.offsets.to(inputs.device), self.per_level_scale, self.base_resolution, inputs.requires_grad)
         
         outputs = outputs.view(prefix_shape + [self.output_dim])
-
+        if self.include_input:
+            outputs = torch.cat([inputs, outputs],dim=-1)
         #print('outputs', outputs.shape, outputs.dtype, outputs.min().item(), outputs.max().item())
 
         return outputs
