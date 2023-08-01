@@ -1,4 +1,3 @@
-// Cuda Implementation OF Grid Encoding based on Instant NGP code
 #include <cuda.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -13,26 +12,18 @@
 #include <stdint.h>
 #include <cstdio>
 
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be a contiguous tensor")
 #define CHECK_IS_INT(x) TORCH_CHECK(x.scalar_type() == at::ScalarType::Int, #x " must be an int tensor")
 #define CHECK_IS_FLOATING(x) TORCH_CHECK(x.scalar_type() == at::ScalarType::Float || x.scalar_type() == at::ScalarType::Half || x.scalar_type() == at::ScalarType::Double, #x " must be a floating tensor")
 
 
-
-
-
-
 // requires CUDA >= 10 and ARCH >= 70
-// CUDA = 61 Pascal Architecture 
-// Define atomicAdd function for __half2 type (Pascal architecture)
-// just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
-__device__ inline at::Half atomicAdd(at::Half* address, at::Half val) {
-  // Error: CUDA arch 6.1 does not support FP16 atomics
-  // Add appropriate error handling or fallback logic here
-  return *address + val; // Dummy implementation
+// this is very slow compared to float or __half2, do not use!
+static inline  __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
+  return atomicAdd(reinterpret_cast<__half*>(address), val);
 }
-
 
 
 template <typename T>
