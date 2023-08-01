@@ -12,7 +12,7 @@
             "args": [
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
-                "--expname", "NFFB",
+                "--expname", "NFFBTcnn",
                 "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",

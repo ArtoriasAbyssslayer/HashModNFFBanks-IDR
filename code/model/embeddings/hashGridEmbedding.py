@@ -96,14 +96,14 @@ class _HashGridMLP(nn.Module):
         # create look-up table
         embedding = nn.Embedding(hashmap_size, n_features)
         nn.init.uniform_(embedding.weight, a=-0.0001, b=0.0001)
-        self.embedding = embedding.to(DEVICE)
+        self.embedding = embedding
         self.primes = primes
 
         # create interpolation binary mask
         n_neigs = 1 << self.dim
         neigs = np.arange(n_neigs, dtype=np.int64).reshape((-1, 1))
         dims = np.arange(self.dim, dtype=np.int64).reshape((1, -1))
-        bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool).to(DEVICE) # (neig, dim)
+        bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
 
     def forward(self, x: torch.Tensor):
@@ -190,7 +190,6 @@ class MultiResHashGridMLP(nn.Module):
     def forward(self, x: torch.Tensor):
         if self.include_input == True:
             # print (" Hash Encoding Input")
-            x = x.to(DEVICE)
             embed = []
             for level in self.levels:
                 embed.append(level(x))

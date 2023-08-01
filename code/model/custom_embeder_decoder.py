@@ -6,17 +6,15 @@ from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.fourierFilterBanks import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
-#from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
+from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network:
     """
         This class is responsible for selecting the embedding model and initializing the network object
-        The Fourier Features Embendding Models (FourierFeaturesMLP,GaussianMLP,PositionalFourierMLP) are initialized with the same parameters
-        
-        Args:
-        
-            input: (Optional) include Input for having some input 
+        * The Fourier Features Embendding Models  are initialized with the same parameters as positional encoding
+        * HashGrid parameters are initialized based on Nvidia's implementation of HashGrid Encoding (Neural Graphics Primitives)
+        * The neural fourier filter banks models are initialized with the hashgrid parameters and the positional encoding parameters
     """
     def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         embed_kwargs = {
@@ -85,7 +83,7 @@ class Custom_Embedding_Network:
             'FourierFeatures': (FourierFeatures, 'fourier_encoding'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
-            #'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
+            'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")

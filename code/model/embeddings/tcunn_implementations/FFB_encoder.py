@@ -74,6 +74,7 @@ class FFB_encoder(nn.Module):
         else:
             self.embeddings_dim = ffenc_dims[-1]
         ### Some SIREN initialization stuff 
+        self.include_input = include_input
 
     def init_ffenc(self):
         for layer in range(0, self.num_sin_layers-1):
@@ -115,24 +116,29 @@ class FFB_encoder(nn.Module):
         grid_x = torch.bmm(grid_x, 2 * math.pi * ffn_A)
         grid_x = torch.sin(grid_x)
 
-        x_out = torch.zeros(x.shape[0], self.embeddings_dim, device=in_pos.device)
+        x_out = torch.zeros(x.shape[0], self.embeddings_dim-self.in_dim, device=in_pos.device)
 
         ### Grid encoding
         # x = self.ff_enc.embed(x)
         # x = x[..., x.shape[-1]-3:x.shape[-1]]
         for layer in range(0, self.num_sin_layers - 1):
-            fourier_lin= getattr(self, "ff_lin" + str(layer))
-            # Apply embedding function to input instead of SIREN activation
-            x = fourier_lin(x)
-            x = self.sin_activation(x)
+                ff_lin = getattr(self, "ff_lin" + str(layer))
+                x = ff_lin(x)
+                x = self.sin_activation(x)
 
-            if layer > 0:
-                x = grid_x[layer-1] + x
-                fourier_lin_high = getattr(self, "ff_lin_high" + str(layer-1))
-                x_high = fourier_lin_high(x)
-                x_high = self.sin_activation_high(x_high)
-                #x_high = self.ff_enc.embed(x_high)
-                x_out = x_out + x_high[..., :self.ffenc_dims[layer]+self.in_dim] + x_high[..., self.ffenc_dims[layer]+self.in_dim:]
+                if layer > 0:
+                    x = grid_x[layer-1] + x
 
-        x = x_out
-        return x
+                    sin_lin_high = getattr(self, "ff_lin_high" + str(layer-1))
+                    x_high = sin_lin_high(x)
+                    x_high = self.sin_activation_high(x_high)
+                    x_high = torch.split(x_high, self.ffenc_dims[layer+1], dim=-1)
+                    x_low = x_high[0] 
+                    x_high = x_high[1] 
+                    x_out = x_out + x_low + x_high
+                
+                
+        if self.include_input:
+            x_out = torch.cat([in_pos,x_out], dim=-1)
+        
+        return x_out

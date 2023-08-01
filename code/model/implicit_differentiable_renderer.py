@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 from utils import rend_util
 from model.embeddings.fourier_encoding import get_embedder
@@ -86,7 +87,7 @@ class ImplicitNetwork(nn.Module):
             setattr(self, "lin" + str(l), lin)
 
         self.softplus = nn.Softplus(beta=100)
-
+        self.tanh = nn.Tanh()
     def forward(self, input, compute_grad=False):
         if self.embed_fn is not None:
             input = self.embed_fn(input)
@@ -116,7 +117,7 @@ class ImplicitNetwork(nn.Module):
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = torch.tanh(x[:,0])
+        x[:,0] = self.tanh(x[:,0])
         return x
 
     def gradient(self, x):

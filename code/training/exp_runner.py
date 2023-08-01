@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
-        gpu = deviceIDs[0]
+        gpu = 0
     else:
         gpu = opt.gpu
 
