@@ -5,7 +5,7 @@ This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and
 This repository applies spatial input encoding with multi resolution spatial embeddings as proposed in instant-ngp [Paper](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf) 
 
 ## Neural Fourier Filter Banks
-Apart from spatial encoding a frequency decomposition of the input is made coherently with the multi-resolution hash enmbedding. This is done to capture the High Frequency input content of the supervision images by applying 3D input differential points to high frequency maps and approximate eventually intersection points w.r.t the high frequency content of the surface arround the area. The method adopts the wavelet decomposition concept as proposed in the Neural Fourier Filter Banks [Paper](https://arxiv.org/abs/2212.01735)
+Apart from spatial encoding a frequency decomposition of the input is made coherently with the multi-resolution hash enmbedding. This is done to capture the High Frequency input content of the supervision images by embedding 3D input differential points to high frequency maps and make the SDF approximate faster the intersection points (of the surface) w.r.t the high frequency content of the surface arround the area. The method adopts the wavelet decomposition concept as proposed in the Neural Fourier Filter Banks [Paper](https://arxiv.org/abs/2212.01735)
 
 
 ## Style Modulated Embeddings
