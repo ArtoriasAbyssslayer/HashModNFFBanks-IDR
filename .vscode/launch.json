@@ -72,7 +72,7 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashEncCUDA/dtu_fixed_cameras.conf",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
                 "--scan_id","65",
                 "--checkpoint", "latest",
