@@ -103,7 +103,7 @@ class ImplicitNetwork(nn.Module):
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = self.tanh(x[:,0]/np.sqrt(2))
+        x[:,0] = self.tanh(x[:,0]*np.sqrt(0.55))
         return x
 
     def gradient(self, x):

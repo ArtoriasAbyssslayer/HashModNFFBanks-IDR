@@ -63,26 +63,6 @@
             ]
         },
         {
-            "name": "IDR training CUDA HashGrid",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/code/training/exp_runner.py",
-            "cwd": "${workspaceFolder}/code",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
-                "--expname", "HashGridCUDA",
-                "--scan_id","65",
-                //"--checkpoint", "latest",
-                //"--train_cameras",
-                "--validation_slope_print",
-                //"--calc_image_similarity"
-
-            ]
-        },
-        {
             "name": "IDR training Multi Resolution Hash Grid Encoding",
             "type": "python",
             "request": "launch",
@@ -112,14 +92,15 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
+                "--nepoch", "500",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
-                "--scan_id","65",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
+                "--is_continue"
 
             ]
         },
@@ -135,7 +116,7 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FourierFeatures/dtu_fixed_cameras.conf",
                 "--expname", "FourierFeatureEnc",
-                "--scan_id","65",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",

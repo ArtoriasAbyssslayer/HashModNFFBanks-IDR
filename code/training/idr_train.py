@@ -205,7 +205,7 @@ class IDRTrainRunner():
                 os.path.join(self.checkpoints_path, self.cam_params_subdir, "latest.pth"))
 
     def run(self):
-        self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, 'logs'))
+        
         print("training...")
         # Intialize PSNR buffer 
         psnrs = []
@@ -214,8 +214,9 @@ class IDRTrainRunner():
         # Intialize LPIPS buffer
         lpips = []
         losses = []  
+        
         for epoch in range(self.start_epoch, self.nepochs + 1):
-
+            self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
 
@@ -296,7 +297,7 @@ class IDRTrainRunner():
                 self.optimizer.step()
                 if self.train_cameras:
                     self.optimizer_cam.step()
-
+                
                 print(
                     '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
                         .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
@@ -313,7 +314,12 @@ class IDRTrainRunner():
                 if self.calc_image_similarity:
                     # Todo implement psnr,ssim,lpips calculation for given images
                     pass
-                
+            self.writer.add_scalar('Loss/loss',loss.item(), epoch)
+            self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
+            self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
+            self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
+            # TODO: Add PSNR,SSIM,LPIPS and add them to the tensorboard
+            # self.writer.add_scalar('Statistics/psnr', psnr,  epoch)    
             self.scheduler.step()     
          
     """
