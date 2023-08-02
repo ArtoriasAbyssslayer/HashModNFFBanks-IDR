@@ -4,12 +4,12 @@ class FourierEncoding(nn.Module):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.create_embedding_fn()
-
+        self.include_input = kwargs['include_input']
     def create_embedding_fn(self):
         embed_fns = []
         d = self.kwargs['input_dims']
         out_dim = 0
-        if self.kwargs['include_input']:
+        if self.include_input:
             embed_fns.append(lambda x: x)
         out_dim += d
 
@@ -32,7 +32,10 @@ class FourierEncoding(nn.Module):
     # Custom embed function in order to use to for simple Frequency Embedding
     def embed(self,inputs):
         ff_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)
-        return ff_embeds
+        if self.include_input:
+            return torch.cat([inputs, ff_embeds], -1)
+        else:
+            return ff_embeds
     def __call__(self,inputs):
         return self.embed(inputs=inputs)
         
