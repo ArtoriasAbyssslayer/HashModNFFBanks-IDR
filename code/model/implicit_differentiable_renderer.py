@@ -309,7 +309,7 @@ def coarseToFineRes(progress_data,inputs,L):  #[B,...,N]
     barf_c2f = [0.1, 0.5]
     if barf_c2f is not None:
         # set weights for differnt frequency bands
-        start,end = barf_c2
+        start,end = barf_c2f
         alpha = (progress_data - start) / (end - start)*L
         k = torch.arange(L, dtype=torch.float32, device=inputs.device)
         weight = (1 - (alpha - k).clamp_(min=0, max=1).mul_(np.pi).cos_()) / 2
