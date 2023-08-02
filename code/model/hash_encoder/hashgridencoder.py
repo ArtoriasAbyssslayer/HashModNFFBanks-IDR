@@ -77,7 +77,7 @@ hash_encode = _hash_encode.apply
 
 
 class MultiResolutionHashEncoderCUDA(nn.Module):
-    def __init__(self, include_input=True, input_dim=3, num_levels=16, level_dim=2, per_level_scale=2, base_resolution=16, log2_hashmap_size=19, desired_resolution=None):
+    def __init__(self, input_dim=3, num_levels=16, level_dim=2, per_level_scale=2, base_resolution=16, log2_hashmap_size=19, desired_resolution=None):
         super().__init__()
 
         # the finest resolution desired at the last level, if provided, overridee per_level_scale
@@ -91,7 +91,6 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.output_dim = num_levels * level_dim
-        self.include_input = include_input
         if level_dim % 2 != 0:
             print('[WARN] detected HashGrid level_dim % 2 != 0, which will cause very slow backward is also enabled fp16! (maybe fix later)')
 
@@ -117,7 +116,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.reset_parameters()
     
     def reset_parameters(self):
-        std = 1e-4
+        std = 1e-3
         self.embeddings.data.uniform_(-std, std)
 
     def __repr__(self):
@@ -137,8 +136,8 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         outputs = hash_encode(inputs, self.embeddings.to(inputs.device), self.offsets.to(inputs.device), self.per_level_scale, self.base_resolution, inputs.requires_grad)
         
         outputs = outputs.view(prefix_shape + [self.output_dim])
-        if self.include_input:
-            outputs = torch.cat([inputs, outputs],dim=-1)
+        
+        outputs = torch.cat([inputs, outputs],dim=-1)
         #print('outputs', outputs.shape, outputs.dtype, outputs.min().item(), outputs.max().item())
 
         return outputs

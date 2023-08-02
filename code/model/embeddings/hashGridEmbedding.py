@@ -190,11 +190,9 @@ class MultiResHashGridMLP(nn.Module):
     def forward(self, x: torch.Tensor):
         if self.include_input == True:
             # print (" Hash Encoding Input")
-            embed = []
-            for level in self.levels:
-                embed.append(level(x))
-            embed = torch.cat(embed,dim=-1)
-            return torch.cat([x, embed], dim=-1)
+            self.embeddings_dim = self.input_dim + self.output_dim
+            return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
+          
         else:
             return torch.cat([level(x) for level in self.levels], dim=-1)
            

@@ -6,7 +6,7 @@ import torch
 from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
-
+from torch.utils.tensorboard import SummaryWriter
 
 class IDRTrainRunner():
     def __init__(self,**kwargs):
@@ -205,6 +205,7 @@ class IDRTrainRunner():
                 os.path.join(self.checkpoints_path, self.cam_params_subdir, "latest.pth"))
 
     def run(self):
+        self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, 'logs'))
         print("training...")
         # Intialize PSNR buffer 
         psnrs = []

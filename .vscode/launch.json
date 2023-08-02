@@ -75,7 +75,7 @@
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
                 "--scan_id","65",
-                "--checkpoint", "latest",
+                //"--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
@@ -94,11 +94,11 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
-                "--scan_id","65",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]

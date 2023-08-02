@@ -44,7 +44,7 @@ class ImplicitNetwork(nn.Module):
                 embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                 self.embed_model = embed_model
                 self.embed_fn = embed_fn
-                dims[0] = input_ch
+                dims[0] = input_ch 
                 
         else:
             if multires > 0:
@@ -103,7 +103,7 @@ class ImplicitNetwork(nn.Module):
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = self.tanh(x[:,0])
+        x[:,0] = self.tanh(x[:,0]/2.0)
         return x
 
     def gradient(self, x):
@@ -144,7 +144,7 @@ class RenderingNetwork(nn.Module):
         self.multires_view = multires_view
         self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
         
-        self.embed_type = 'Fourier Features'
+        self.embed_type = embed_type
         self.embedview_fn = None
         if embed_type:
             if multires_view > 0:
@@ -154,7 +154,7 @@ class RenderingNetwork(nn.Module):
                                                             max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
                                                             desired_resolution=desired_resolution,bound=0.5)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
-                    dims[0] += (input_ch - 3)
+                    dims[0] += (input_ch - d_in)
         else:
             if multires_view > 0:
                 self.embedview_fn, input_ch = get_embedder(multires_view)

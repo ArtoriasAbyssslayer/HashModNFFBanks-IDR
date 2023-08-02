@@ -4,8 +4,8 @@ import numpy as np
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.fourierFilterBanks import FourierFilterBanks
-from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
+#from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+#from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
 from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -47,7 +47,7 @@ class Custom_Embedding_Network:
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
-                    "base_sigma": 16.0,
+                    "base_sigma": 8.0,
                     "exp_sigma": 1.26,
                     "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
@@ -81,8 +81,8 @@ class Custom_Embedding_Network:
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'FourierFeatures': (FourierFeatures, 'fourier_encoding'),
-            'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
-            'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
+            #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+            #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
         }   
         if embed_type not in embed_models:
