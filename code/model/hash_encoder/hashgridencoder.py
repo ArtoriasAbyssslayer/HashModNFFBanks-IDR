@@ -116,7 +116,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.reset_parameters()
     
     def reset_parameters(self):
-        std = 1e-5
+        std = 1e-4
         self.embeddings.data.uniform_(-std, std)
 
     def __repr__(self):

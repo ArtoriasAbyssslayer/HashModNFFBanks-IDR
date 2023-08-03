@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
-from model.embeddings.fourierFilterBanks import FourierFilterBanks
+from model.embeddings.nffb import FourierFilterBanks
 #from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 #from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
 from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
@@ -16,7 +16,7 @@ class Custom_Embedding_Network:
         * HashGrid parameters are initialized based on Nvidia's implementation of HashGrid Encoding (Neural Graphics Primitives)
         * The neural fourier filter banks models are initialized with the hashgrid parameters and the positional encoding parameters
     """
-    def __init__(self,input_dims, embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
+    def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         embed_kwargs = {
             'MultiResHashEncoderCUDA':{
                 'input_dim': input_dims,
@@ -42,7 +42,8 @@ class Custom_Embedding_Network:
                     'include_input':True,
                     'in_dim': input_dims,
                     'embed_type': 'HashGridTcnn',
-                    'n_levels': multires-1,
+                    'network_dims': network_dims,
+                    'n_levels': multires,
                     'max_points_per_level': max_points_per_entry,
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
@@ -99,19 +100,19 @@ class Custom_Embedding_Network:
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 
 # MLP + Positional Encoding
 class Decoder(torch.nn.Module):
-    def __init__(self, input_dims = 3, feature_dims=2,internal_dims = 128, output_dims = 4, hidden = 5, multires = 2,base_resolution=64,desired_resolution=512,embed_type = 'FourierFeatures'):
+    def __init__(self, input_dims,internal_dims, output_dims, hidden,embed_fn,skip_in):
         super().__init__()
-        self.embed_fn = None
-        if multires > 0:
-            embed_fn, input_ch = Custom_Embedding_Network(input_dims, embed_type, multires,multires-1,feature_dims,base_resolution,desired_resolution)
-            self.embed_fn = embed_fn
-            input_dims = input_ch
-
-        net = (torch.nn.Linear(input_dims, internal_dims, bias=False), torch.nn.ReLU())
-        for i in range(hidden-1):
-            net = net + (torch.nn.Linear(internal_dims, internal_dims, bias=False), torch.nn.ReLU())
-        net = net + (torch.nn.Linear(internal_dims, output_dims, bias=False),)
-        self.net = torch.nn.Sequential(*net)
+        self.embed_fn = embed_fn
+        net = (torch.nn.Linear(input_dims, internal_dims[1], bias=False), torch.nn.ReLU())
+        for i in range(2,hidden-2):
+            if i in skip_in:
+                output_dims = internal_dims[i+1] - internal_dims[0]
+            else:
+                output_dims = internal_dims[i+1]
+            net = net + (torch.nn.Linear(internal_dims[i], internal_dims[i+1], bias=False), torch.nn.ReLU())
+            
+        net = net + (torch.nn.Linear(internal_dims[hidden-2], output_dims, bias=False),torch.nn.Tanh())
+        self.net = torch.nn.Sequential(*net).to(DEVICE)
 
     def forward(self, p):
         if self.embed_fn is not None:

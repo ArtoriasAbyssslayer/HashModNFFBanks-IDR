@@ -1,2 +1,2 @@
 cd code
-OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES=1 python /training/exp_runner.py --nepoch 500 --conf confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf --expname CUDAHashGridNSR --scan_id 122 --checkpoint latest --validation_slope_print
+OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES=1 python ./training/exp_runner.py --nepoch 500 --conf ./confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf --expname CUDAHashGridNSR --scan_id 122 --checkpoint latest --validation_slope_print

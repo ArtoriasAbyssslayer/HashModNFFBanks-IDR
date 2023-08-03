@@ -38,7 +38,7 @@ class ImplicitNetwork(nn.Module):
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
-                embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
+                embed_model = Custom_Embedding_Network(input_dims=d_in,network_dims=dims,embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
                                                         max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
                                                         desired_resolution=desired_resolution,bound=0.5)
                 embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
@@ -54,15 +54,28 @@ class ImplicitNetwork(nn.Module):
 
         self.num_layers = len(dims)
         self.skip_in = skip_in
-    
+        #------custom decoder mlp-------#
+        # for l in range(0, self.num_layers - 1):
+        #     if l + 1 in self.skip_in:
+        #         out_dim = dims[l + 1] - dims[0]
+        #     else:
+        #         out_dim = dims[l + 1]
+        # lin = Decoder(dims[0],dims,out_dim,self.num_layers,embed_fn=self.embed_fn,skip_in=self.skip_in)
+        # if geometric_init:
+        #     lin.pre_train_sphere(self.num_layers)
+        # net = lin.net
+        # for l in range(0,self.num_layers-1):
+        #     setattr(self, "lin" + str(l), net[l])
+        
+        #------custom decoder mlp-------#
+        
+        #---- Classic IDR Implicit Geometric Reguralization Network ----#
         for l in range(0, self.num_layers - 1):
             if l + 1 in self.skip_in:
                 out_dim = dims[l + 1] - dims[0]
             else:
                 out_dim = dims[l + 1]
-            # lin = Decoder(dims[l],feature_vector_size,out_dim,self.num_layers,multires)
-            # if geometric_init:
-            #     Decoder.pre_train_sphere(1000)
+
             lin = nn.Linear(dims[l], out_dim)
 
             if geometric_init:
@@ -87,7 +100,6 @@ class ImplicitNetwork(nn.Module):
             setattr(self, "lin" + str(l), lin)
 
         self.softplus = nn.Softplus(beta=100)
-        self.tanh = nn.Tanh()
     def forward(self, input, compute_grad=False):
         if self.embed_fn is not None:
             input = self.embed_fn(input)
@@ -103,7 +115,7 @@ class ImplicitNetwork(nn.Module):
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = self.tanh(x[:,0]*np.sqrt(0.55))
+        x[:,0] = F.tanh(x[:,0]/np.sqrt(2))
         return x
 
     def gradient(self, x):
@@ -150,7 +162,7 @@ class RenderingNetwork(nn.Module):
             if multires_view > 0:
                 if self.mode == 'idr':
                     d_in = 3
-                    embed_model = Custom_Embedding_Network(input_dims=d_in, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
+                    embed_model = Custom_Embedding_Network(input_dims=d_in,network_dims=dims, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
                                                             max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
                                                             desired_resolution=desired_resolution,bound=0.5)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
