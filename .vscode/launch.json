@@ -92,7 +92,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--nepoch", "500",
+                "--nepoch", "1000",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
                 "--scan_id","122",
@@ -100,7 +100,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                "--is_continue"
+                "--is_continue",
 
             ]
         },

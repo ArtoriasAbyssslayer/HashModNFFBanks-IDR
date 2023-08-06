@@ -7,7 +7,7 @@ _src_path = os.path.dirname(os.path.abspath(__file__))
 __all__ = ['_backend']
 
 _backend = load(name='_hash_encoder',
-                extra_cflags=['-O3', '-std=c++17'],
+                extra_cflags=['-O3', '-std=c++14'],
                 extra_cuda_cflags=[
                     '-O3', '-std=c++14',
                     '--gpu-architecture=sm_61',

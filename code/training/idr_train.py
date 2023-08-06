@@ -7,7 +7,7 @@ from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
 from torch.utils.tensorboard import SummaryWriter
-
+os.environ["TORCH_USE_CUDA_DSA"] = "1"
 class IDRTrainRunner():
     def __init__(self,**kwargs):
         torch.set_default_dtype(torch.float32)
