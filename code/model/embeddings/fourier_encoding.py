@@ -3,8 +3,9 @@ import torch.nn as nn
 class FourierEncoding(nn.Module):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        self.create_embedding_fn()
         self.include_input = kwargs['include_input']
+        self.create_embedding_fn()
+        
     def create_embedding_fn(self):
         embed_fns = []
         d = self.kwargs['input_dims']

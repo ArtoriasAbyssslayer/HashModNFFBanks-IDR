@@ -139,5 +139,5 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         
         outputs = torch.cat([inputs, outputs],dim=-1)
         #print('outputs', outputs.shape, outputs.dtype, outputs.min().item(), outputs.max().item())
-
+        torch.cuda.empty_cache()
         return outputs
