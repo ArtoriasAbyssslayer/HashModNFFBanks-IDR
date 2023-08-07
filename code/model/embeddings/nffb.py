@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 
 from model.embeddings.fourier_encoding import FourierEncoding as FFenc
-from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA
+from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 
 class FourierFilterBanks(nn.Module):
