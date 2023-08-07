@@ -107,24 +107,25 @@ class _HashGridMLP(nn.Module):
         self.register_buffer('bin_mask', bin_mask, persistent=False)
 
     def forward(self, x: torch.Tensor):
-        # x: (b..., dim), torch.float32, range: [0, 1]
-        bdims = len(x.shape[:-1])
-        x = x * self.resolution
-        xi = x.long()
-        xf = x - xi.float().detach()
-        xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
-        xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
-        # to match the input batch shape
-        bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape) # (1..., neig, dim)
-        # get neighbors' indices and weights on each dim
-        inds = torch.where(bin_mask, xi, xi+1) # (b..., neig, dim)
-        ws = torch.where(bin_mask, 1-xf, xf) # (b...., neig, dim)
-        # aggregate nehgibors' interp weights - attention mechanism 
-        w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
-        # hash neighbors' id and look up table
-        hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
-        neig_data = self.embedding(hash_ids) # (b..., neig, feat)
-        return torch.sum(neig_data * w, dim=-2) # (b..., feat)
+        with torch.no_grad():
+            # x: (b..., dim), torch.float32, range: [0, 1]
+            bdims = len(x.shape[:-1])
+            x = x * self.resolution
+            xi = x.long()
+            xf = x - xi.float().detach()
+            xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
+            xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
+            # to match the input batch shape
+            bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape) # (1..., neig, dim)
+            # get neighbors' indices and weights on each dim
+            inds = torch.where(bin_mask, xi, xi+1) # (b..., neig, dim)
+            ws = torch.where(bin_mask, 1-xf, xf) # (b...., neig, dim)
+            # aggregate nehgibors' interp weights - attention mechanism 
+            w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
+            # hash neighbors' id and look up table
+            hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
+            neig_data = self.embedding(hash_ids) # (b..., neig, feat)
+            return torch.sum(neig_data * w, dim=-2) # (b..., feat)
 
 
 class MultiResHashGridMLP(nn.Module):
@@ -188,14 +189,14 @@ class MultiResHashGridMLP(nn.Module):
         # In forard return concatenated emmbedding grids in each level
         # resolution.
     def forward(self, x: torch.Tensor):
+              
         if self.include_input == True:
             # print (" Hash Encoding Input")
             
             self.embeddings_dim = self.input_dim + self.output_dim
             torch.cuda.empty_cache()
-            gc. collect()
             return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
-          
+        
         else:
             torch.cuda.empty_cache()
             gc. collect()
