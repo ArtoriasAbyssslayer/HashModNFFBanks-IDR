@@ -11,66 +11,69 @@ from .backend import _backend
 class _hash_encode(Function):
     @staticmethod
     @custom_fwd(cast_inputs=torch.half)
+    
     def forward(ctx, inputs, embeddings, offsets, per_level_scale, base_resolution, calc_grad_inputs=False):
-        # inputs: [B, D], float in [0, 1]
-        # embeddings: [sO, C], float
-        # offsets: [L + 1], int
-        # RETURN: [B, F], float
+        with torch.no_grad():
+            # inputs: [B, D], float in [0, 1]
+            # embeddings: [sO, C], float
+            # offsets: [L + 1], int
+            # RETURN: [B, F], float
 
-        inputs = inputs.contiguous()
-        embeddings = embeddings.contiguous()
-        offsets = offsets.contiguous()
+            inputs = inputs.contiguous()
+            embeddings = embeddings.contiguous()
+            offsets = offsets.contiguous()
 
-        B, D = inputs.shape # batch size, coord dim
-        L = offsets.shape[0] - 1 # level
-        C = embeddings.shape[1] # embedding dim for each level
-        S = np.log2(per_level_scale) # resolution multiplier at each level, apply log2 for later CUDA exp2f
-        H = base_resolution # base resolution
+            B, D = inputs.shape # batch size, coord dim
+            L = offsets.shape[0] - 1 # level
+            C = embeddings.shape[1] # embedding dim for each level
+            S = np.log2(per_level_scale) # resolution multiplier at each level, apply log2 for later CUDA exp2f
+            H = base_resolution # base resolution
 
-        # L first, optimize cache for cuda kernel, but needs an extra permute later
-        outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
+            # L first, optimize cache for cuda kernel, but needs an extra permute later
+            outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
 
-        if calc_grad_inputs:
-            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
-        else:
-            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
+            if calc_grad_inputs:
+                dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
+            else:
+                dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
 
-        _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
+            _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
 
-        # permute back to [B, L * C]
-        outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
+            # permute back to [B, L * C]
+            outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
 
-        ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
-        ctx.dims = [B, D, C, L, S, H]
-        ctx.calc_grad_inputs = calc_grad_inputs
+            ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
+            ctx.dims = [B, D, C, L, S, H]
+            ctx.calc_grad_inputs = calc_grad_inputs
 
-        return outputs
+            return outputs
     
     @staticmethod
     #@once_differentiable
     @custom_bwd
     def backward(ctx, grad):
+        # call torch.no_grad() because pytorch will accumulate the grad by default 
+        with torch.no_grad():
+            inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
+            B, D, C, L, S, H = ctx.dims
+            calc_grad_inputs = ctx.calc_grad_inputs
 
-        inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
-        B, D, C, L, S, H = ctx.dims
-        calc_grad_inputs = ctx.calc_grad_inputs
+            # grad: [B, L * C] --> [L, B, C]
+            grad = grad.view(B, L, C).permute(1, 0, 2).contiguous()
 
-        # grad: [B, L * C] --> [L, B, C]
-        grad = grad.view(B, L, C).permute(1, 0, 2).contiguous()
+            grad_embeddings = torch.zeros_like(embeddings)
 
-        grad_embeddings = torch.zeros_like(embeddings)
+            if calc_grad_inputs:
+                grad_inputs = torch.zeros_like(inputs)
+            else:
+                grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
 
-        if calc_grad_inputs:
-            grad_inputs = torch.zeros_like(inputs)
-        else:
-            grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
+            _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
 
-        _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
-
-        if calc_grad_inputs:
-            return grad_inputs, grad_embeddings, None, None, None, None
-        else:
-            return None, grad_embeddings, None, None, None, None
+            if calc_grad_inputs:
+                return grad_inputs, grad_embeddings, None, None, None, None
+            else:
+                return None, grad_embeddings, None, None, None, None
 
 
 hash_encode = _hash_encode.apply

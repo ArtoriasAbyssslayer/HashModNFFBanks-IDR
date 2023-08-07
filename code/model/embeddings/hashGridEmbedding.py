@@ -199,7 +199,6 @@ class MultiResHashGridMLP(nn.Module):
         
         else:
             torch.cuda.empty_cache()
-            gc. collect()
             return torch.cat([level(x) for level in self.levels], dim=-1)
            
         
