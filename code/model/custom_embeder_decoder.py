@@ -6,7 +6,7 @@ from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
 from model.embeddings.nffb import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
-from model.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
+from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network:

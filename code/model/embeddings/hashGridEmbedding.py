@@ -111,8 +111,10 @@ class _HashGridMLP(nn.Module):
             # x: (b..., dim), torch.float32, range: [0, 1]
             bdims = len(x.shape[:-1])
             x = x * self.resolution
-            xi = x.long()
+            # detach tensors for memory handling 
+            xi = x.long().detach()
             xf = x - xi.float().detach()
+            # to match the input batch shape unsqueeze 
             xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
             xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
             # to match the input batch shape
@@ -176,14 +178,11 @@ class MultiResHashGridMLP(nn.Module):
                     self.hashmap_size,
                     resolution))
             self.levels = nn.Sequential(*levels).to(DEVICE)
-
             self.input_dim = in_dim
-            
             if(include_input == True):
                 self.output_dim = self.n_levels * self.max_points_per_level
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
-                self.output_dim = self.n_levels * self.max_points_per_level
                 self.embeddings_dim = self.output_dim   
             
         # In forard return concatenated emmbedding grids in each level

@@ -91,7 +91,8 @@ class RayTracing(nn.Module):
 
             curr_start_points[mask] = min_mask_points
             acc_start_dis[mask] = min_mask_dist
-
+        # Free up cached cuda tensors to avoid OOM
+        torch.cuda.empty_cache()
         return curr_start_points, \
                network_object_mask, \
                acc_start_dis
