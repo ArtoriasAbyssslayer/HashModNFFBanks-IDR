@@ -91,7 +91,7 @@ class Custom_Embedding_Network:
         embed_models = {
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
-            'positional_encoding': (PositionalEncoding, 'positional_encoding'),
+            'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),

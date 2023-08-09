@@ -125,6 +125,26 @@
             ]
         },
         {
+            "name": "IDR training Positional Encoding",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+
+                "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
+                "--expname", "FourierFeatureEnc",
+                "--scan_id","122",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                //"--calc_image_similarity"
+
+            ]
+        },
+        {
             "name": "Run Multi-View IDR evaluation",
             "type": "python",
             "request": "launch",

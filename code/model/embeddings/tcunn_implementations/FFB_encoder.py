@@ -3,7 +3,7 @@ import torch.nn as nn
 import tinycudann as tcnn 
 import math 
 from .Sine import *
-from model.embeddings.fourier_encoding import FourierEncoding as FFenc
+from model.embeddings.frequency_enc import FourierFeature as FFenc
 from .hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as HashEncoderTcnn
 
 

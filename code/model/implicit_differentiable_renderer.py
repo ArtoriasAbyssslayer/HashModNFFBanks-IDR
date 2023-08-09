@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from utils import rend_util
-from model.embeddings.fourier_encoding import get_embedder
+from model.embeddings.frequency_enc import get_embedder
 from model.custom_embeder_decoder import Custom_Embedding_Network,Decoder
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork

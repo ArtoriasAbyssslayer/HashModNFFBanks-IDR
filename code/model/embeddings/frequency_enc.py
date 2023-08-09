@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 class PositionalEncoding(nn.Module):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -46,11 +47,10 @@ class FourierFeature(nn.Module):
         super().__init__()
         self.register_buffer('B', torch.randn(input_dims, channels) * sigma, True)
         self.channels = channels
-        self.out_dim = 2 * self.channels + 3 if include_input else 2 * self.channels
+        self.embeddings_dim  = 2 * self.channels + 3 if include_input else 2 * self.channels
         self.include_input = include_input
-    
     def forward(self, x):
-        xp = torch.matmul(2 * np.pi * x, self.B)
+        xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
         return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
 #SHencoder 
 class SHEncoder(nn.Module):
@@ -64,7 +64,7 @@ class SHEncoder(nn.Module):
         assert self.input_dims == 3
         assert self.degree >= 1 and self.degree <= 5
 
-        self.out_dim = degree ** 2
+        self.embeddings_dim  = degree ** 2
 
         self.C0 = 0.28209479177387814
         self.C1 = 0.4886025119029199
@@ -148,7 +148,7 @@ def get_embedder(multires):
         'periodic_fns': [torch.sin, torch.cos],
     }
 
-    embedder_obj = FourierFeature(**embed_kwargs)
+    embedder_obj = PositionalEncoding(**embed_kwargs)
     def embed(x, eo=embedder_obj): return eo.embed(x)
     return embed, embedder_obj.out_dim
 
