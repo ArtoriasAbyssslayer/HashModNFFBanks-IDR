@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import FourierFeature,PositionalEncoding,SHEncoder
-from model.embeddings.nffb import FourierFilterBanks
+from model.embeddings.nffb3d import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
@@ -53,6 +53,7 @@ class Custom_Embedding_Network:
                     "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
+                'bound': bound
             },
             'FourierFeature':{
                 'channels': network_dims[0],

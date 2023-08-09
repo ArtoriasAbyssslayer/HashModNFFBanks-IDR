@@ -112,7 +112,7 @@ class ImplicitNetwork(nn.Module):
                 x = torch.cat([x, input], 1) / np.sqrt(2)
 
             x = lin(x)
-
+            
             if l < self.num_layers - 2:
                 x = self.softplus(x)
         x[:,0] = F.tanh(x[:,0]/2) 

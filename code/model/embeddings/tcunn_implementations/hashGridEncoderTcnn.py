@@ -1,4 +1,3 @@
-
 import numpy as np
 
 import torch
@@ -10,9 +9,9 @@ class MultiResHashGridEncoderTcnn(nn.Module):
     def __init__(self, 
                  include_input: bool,
                  in_dim: int,
+                 network_dims: list,
                  embed_type: str,
                  n_levels: int,
-                 network_dims: list,
                  max_points_per_level: int,
                  log2_hashmap_size: int,
                  base_resolution: int,
@@ -31,7 +30,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.per_level_scale = per_level_scale
-        self.network_dims = network_dims
+        
         # --- Hash Primes ---
         
         
@@ -69,18 +68,20 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             }
         """
         if self.embed_type == 'HashGridTcnn':
-                otype = "HashGrid"
+                otype = "Grid"
                 type = "Hash"
         self.grid_encoder = tcnn.Encoding(
             n_input_dims=self.in_dim,
             encoding_config={
                 "otype": otype,
+                "type": type,
                 "n_levels": int(self.n_levels),
                 "n_features_per_level": self.max_points_per_level,
                 'log2_hashmap_size': self.log2_hashmap_size,
                 'base_resolution': self.base_resolution,
                 'per_level_scale': self.per_level_scale,
                 'exp_sigma': exp_sigma,
+                'hidden_dims': network_dims,
             }
         )
         self.grid_levels = self.n_levels
@@ -92,11 +93,9 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             self.output_dim = self.n_levels * self.max_points_per_level
             self.embeddings_dim = self.output_dim    
     def forward(self,x):
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
         if self.include_input == True:
-            hash_embed_x = self.grid_encoder(x)
-            torch.cuda.empty_cache()
-            return torch.cat([x,hash_embed_x],dim=-1)
+            return torch.cat([x,self.grid_encoder(x)],dim=-1)
         else:
             return self.grid_encoder(x)
-       
-                 

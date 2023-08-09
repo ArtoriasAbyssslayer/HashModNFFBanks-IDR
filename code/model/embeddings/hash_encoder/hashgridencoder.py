@@ -53,31 +53,29 @@ class _hash_encode(Function):
     @custom_bwd
     def backward(ctx, grad):
         # call torch.no_grad() because pytorch will accumulate the grad by default 
-        with torch.no_grad():
-            inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
-            B, D, C, L, S, H = ctx.dims
-            calc_grad_inputs = ctx.calc_grad_inputs
+        inputs, embeddings, offsets, dy_dx = ctx.saved_tensors
+        B, D, C, L, S, H = ctx.dims
+        calc_grad_inputs = ctx.calc_grad_inputs
 
-            # grad: [B, L * C] --> [L, B, C]
-            grad = grad.view(B, L, C).permute(1, 0, 2).contiguous()
+        # grad: [B, L * C] --> [L, B, C]
+        grad = grad.view(B, L, C).permute(1, 0, 2).contiguous()
 
-            grad_embeddings = torch.zeros_like(embeddings)
+        grad_embeddings = torch.zeros_like(embeddings)
 
-            if calc_grad_inputs:
-                grad_inputs = torch.zeros_like(inputs)
-            else:
-                grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
+        if calc_grad_inputs:
+            grad_inputs = torch.zeros_like(inputs)
+        else:
+            grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
 
-            _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
+        _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
 
-            if calc_grad_inputs:
-                return grad_inputs, grad_embeddings, None, None, None, None
-            else:
-                return None, grad_embeddings, None, None, None, None
+        if calc_grad_inputs:
+            return grad_inputs, grad_embeddings, None, None, None, None
+        else:
+            return None, grad_embeddings, None, None, None, None
 
 
 hash_encode = _hash_encode.apply
-
 
 class MultiResolutionHashEncoderCUDA(nn.Module):
     def __init__(self, input_dim=3, num_levels=16, level_dim=2, per_level_scale=2, base_resolution=16, log2_hashmap_size=19, desired_resolution=None):

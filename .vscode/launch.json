@@ -121,7 +121,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-
+                "--is_continue"
             ]
         },
         {
@@ -141,21 +141,22 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-
+                "--is_continue"
             ]
         },
         {
             "name": "Run Multi-View IDR evaluation",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/evaluation/eval.py",
-            //"cwd": "${workspaceFolder}/code",
+            "program": "${workspaceFolder}/code/evaluation/eval.py",
+            "cwd": "${workspaceFolder}/code",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
+                "--expname", "HashGrid",
                 "--eval_cameras",
-                "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
-                "--scan_id","65",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 "--eval_rendering"
             ]

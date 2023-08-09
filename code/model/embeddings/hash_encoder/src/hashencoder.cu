@@ -35,13 +35,17 @@
 // requires CUDA >= 10 and ARCH >= 70
 // this is very slow compared to float or __half2, do not use!
 // just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
-__device__ inline at::Half atomicAdd(at::Half *address, at::Half val) {
-// requires CUDA >= 10 and ARCH >= 70
-// this is very slow compared to float or __half2, never use it.
-//return atomicAdd(reinterpret_cast<__half*>(address), val);
+__device__ inline __half2 atomicAddHalf2(__half2 *address, __half2 val) {
+    return __hadd2(*address, val);
 }
 
-
+__device__ inline float atomicAdd(c10::Half *address, c10::Half val) {
+    __half2 *address_h2 = reinterpret_cast<__half2*>(address);
+    __half2 val_h2 = __floats2half2_rn(static_cast<float>(val), static_cast<float>(val));
+    __half2 result_h2 = atomicAddHalf2(address_h2, val_h2);
+    __half result_half = __half(__low2float(result_h2));
+    return static_cast<float>(result_half);
+}
 
 template <typename T>
 static inline __host__ __device__ T div_round_up(T val, T divisor) {
@@ -56,7 +60,7 @@ __device__ uint32_t fast_hash(const uint32_t pos_grid[D]) {
 	// While 1 is technically not a good prime for hashing (or a prime at all), it helps memory coherence
 	// and is sufficient for our use case of obtaining a uniformly colliding index from high-dimensional
 	// coordinates.
-    constexpr uint32_t primes[7] = { 1, 2654435761, 805459861, 3674653429, 2097192037, 1434869437, 2165219737 };
+    constexpr uint32_t primes[7] = { 1, 2654435761, 805459861, 3674653429, 2097192037, 1434869437, 21652197373 };
 
 	uint32_t result = 0;
 	#pragma unroll

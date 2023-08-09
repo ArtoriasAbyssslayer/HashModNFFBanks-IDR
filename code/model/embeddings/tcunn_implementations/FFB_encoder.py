@@ -27,12 +27,10 @@ class FFB_encoder(nn.Module):
         n_frequencies = self.n_levels
         include_input = HashGridEncoderConfig['include_input']
         FFenc_kwargs = {
-            'include_input': include_input,
+            'channels': HashGridEncoderConfig['network_dims'][0],
+            'sigma': 1.0,
             'input_dims': self.in_dim,
-            'max_freq_log2': n_frequencies -1,
-            'num_freqs': n_frequencies ,
-            'log_sampling': True,
-            'periodic_fns': [torch.sin, torch.cos],
+            'include_input': include_input
         }
         self.ff_enc = FFenc(**FFenc_kwargs)
         ffenc_dims = [self.in_dim]+[128]*n_frequencies 
@@ -125,7 +123,8 @@ class FFB_encoder(nn.Module):
                 ff_lin = getattr(self, "ff_lin" + str(layer))
                 x = ff_lin(x)
                 x = self.sin_activation(x)
-
+                x_low = torch.zeros_like(x_out)
+                x_high = torch.zeros_like(x_out)
                 if layer > 0:
                     x = grid_x[layer-1] + x
 
