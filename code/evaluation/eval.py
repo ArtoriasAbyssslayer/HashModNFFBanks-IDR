@@ -15,6 +15,7 @@ import utils.plots as plt
 from utils import rend_util
 
 def evaluate(**kwargs):
+    
     torch.set_default_dtype(torch.float32)
 
     conf = ConfigFactory.parse_file(kwargs['conf'])
@@ -22,12 +23,13 @@ def evaluate(**kwargs):
     evals_folder_name = kwargs['evals_folder_name']
     eval_cameras = kwargs['eval_cameras']
     eval_rendering = kwargs['eval_rendering']
-
+    
+    
     expname = conf.get_string('train.expname') + kwargs['expname']
     scan_id = kwargs['scan_id'] if kwargs['scan_id'] != -1 else conf.get_int('dataset.scan_id', default=-1)
     if scan_id != -1:
         expname = expname + '_{0}'.format(scan_id)
-
+    
     if kwargs['timestamp'] == 'latest':
         if os.path.exists(os.path.join('../', kwargs['exps_folder_name'], expname)):
             timestamps = os.listdir(os.path.join('../', kwargs['exps_folder_name'], expname))
@@ -118,7 +120,7 @@ def evaluate(**kwargs):
 
         # Taking the biggest connected component
         components = mesh.split(only_watertight=False)
-        areas = np.array([c.area for c in components], dtype=np.float)
+        areas = np.array([c.area for c in components], dtype=float)
         mesh_clean = components[areas.argmax()]
         mesh_clean.export('{0}/surface_world_coordinates_{1}.ply'.format(evaldir, epoch), 'ply')
 
@@ -237,7 +239,6 @@ def calculate_psnr(img1, img2, mask):
     return 20 * math.log10(1.0 / math.sqrt(mse))
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--expname', type=str, default='', help='The experiment name to be evaluated.')
@@ -252,7 +253,7 @@ if __name__ == '__main__':
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')
 
     opt = parser.parse_args()
-
+    print(opt)
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]

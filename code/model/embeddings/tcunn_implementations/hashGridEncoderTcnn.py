@@ -97,6 +97,6 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             torch.cuda.empty_cache()
             return torch.cat([x,hash_embed_x],dim=-1)
         else:
-            return self.grid_encoder(x).to(x.device)
+            return self.grid_encoder(x)
        
                  

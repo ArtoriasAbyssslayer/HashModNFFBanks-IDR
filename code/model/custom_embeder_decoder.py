@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
-from model.embeddings.fourier_encoding import FourierEncoding as FourierFeatures
+from model.embeddings.frequency_enc import FourierFeature,PositionalEncoding,SHEncoder
 from model.embeddings.nffb import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
@@ -53,19 +53,29 @@ class Custom_Embedding_Network:
                     "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
-                'bound': bound,
             },
-            'fourier_encoding': {
-                'include_input': True,
+            'FourierFeature':{
+                'channels': network_dims[0],
+                'sigma': 1.0,
                 'input_dims': input_dims,
-                'max_freq_log2': log2_max_hash_size,
-                'num_freqs': multires,
-                'log_sampling': True,
-                'periodic_fns': [torch.sin, torch.cos]
+                'include_input': True
+            },
+            'spherical_harmonics':{
+                'input_dims': input_dims,
+                'degree': 4
+            },
+            'positional_encoding':{               
+            'include_input': True,
+            'input_dims': input_dims,
+            'max_freq_log2': log2_max_hash_size,
+            'num_freqs': multires,
+            'log_sampling': True,
+            'periodic_fns': [torch.sin, torch.cos]
             },
             'hashGridEncoderTcnn':{
                 'include_input':True,
                 'in_dim': input_dims,
+                'network_dims': network_dims,
                 'embed_type': embed_type,
                 'n_levels': multires,
                 'max_points_per_level': max_points_per_entry,
@@ -81,7 +91,8 @@ class Custom_Embedding_Network:
         embed_models = {
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
-            'FourierFeatures': (FourierFeatures, 'fourier_encoding'),
+            'positional_encoding': (PositionalEncoding, 'positional_encoding'),
+            'FourierFeatures':(FourierFeature,'FourierFeature'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),

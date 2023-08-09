@@ -5,20 +5,13 @@ import torch.nn as nn
 
 from model.embeddings.nffb import FourierFilterBanks as FFB_encoder
 from model.embeddings.tcunn_implementations.Sine import sine_init
-
-
-        
-        
         
         
 
 class NFFB(nn.Module):
     def __init__(self,config):
-        super().__init__()
-        self.3d_encoder = FFB_encoder(GridEncoderNetConfig=config,bound=0.5)
-
+        self.3D_encoder = FFB_encoder(GridEncoderNetConfig=config,bound=0.5)
         enc_out_dim = self.3d_encoder.output_dim
-        
         self.out_lin = nn.Linear(enc_out_dim, 1)
 
         self.init_ouput([256, 256, 256, 256, 256, 256])

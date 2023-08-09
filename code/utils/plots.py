@@ -114,7 +114,7 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
     points = grid['grid_points']
 
     z = []
-    for i, pnts in enumerate(torch.split(points, 100000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
@@ -152,7 +152,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     z = []
     points = grid['grid_points']
 
-    for i, pnts in enumerate(torch.split(points, 100000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
@@ -170,7 +170,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
     mesh_low_res = trimesh.Trimesh(verts, faces, normals)
     components = mesh_low_res.split(only_watertight=False)
-    areas = np.array([c.area for c in components], dtype=np.float)
+    areas = np.array([c.area for c in components], dtype=float)
     mesh_low_res = components[areas.argmax()]
 
     recon_pc = trimesh.sample.sample_surface(mesh_low_res, 10000)[0]
@@ -180,7 +180,8 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     s_mean = recon_pc.mean(dim=0)
     s_cov = recon_pc - s_mean
     s_cov = torch.mm(s_cov.transpose(0, 1), s_cov)
-    vecs = torch.eig(s_cov, True)[1].transpose(0, 1)
+    eigenvalues, eigenvectors = torch.linalg.eig(s_cov)
+    vecs = eigenvectors.real.transpose(0, 1)
     if torch.det(vecs) < 0:
         vecs = torch.mm(torch.tensor([[1, 0, 0], [0, 0, 1], [0, 1, 0]]).cuda().float(), vecs)
     helper = torch.bmm(vecs.unsqueeze(0).repeat(recon_pc.shape[0], 1, 1),
@@ -191,7 +192,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     grid_points = grid_aligned['grid_points']
 
     g = []
-    for i, pnts in enumerate(torch.split(grid_points, 100000, dim=0)):
+    for i, pnts in enumerate(torch.split(grid_points, 5000, dim=0)):
         g.append(torch.bmm(vecs.unsqueeze(0).repeat(pnts.shape[0], 1, 1).transpose(1, 2),
                            pnts.unsqueeze(-1)).squeeze() + s_mean)
     grid_points = torch.cat(g, dim=0)
@@ -199,7 +200,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     # MC to new grid
     points = grid_points
     z = []
-    for i, pnts in enumerate(torch.split(points, 100000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
