@@ -7,7 +7,7 @@ from model.embeddings.frequency_enc import get_embedder
 from model.custom_embeder_decoder import Custom_Embedding_Network,Decoder
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
-
+from model.density_net import LaplaceDensity
 class ImplicitNetwork(nn.Module):
     def __init__(
             self,
@@ -30,7 +30,6 @@ class ImplicitNetwork(nn.Module):
         super().__init__()
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
-        
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
@@ -128,7 +127,7 @@ class ImplicitNetwork(nn.Module):
             grad_outputs=d_output,
             create_graph=True,
             retain_graph=True,
-            only_inputs=True,allow_unused=True)[0]
+            only_inputs=True)[0]
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):

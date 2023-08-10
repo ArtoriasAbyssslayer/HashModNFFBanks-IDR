@@ -45,6 +45,8 @@ class _hash_encode(Function):
         ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
         ctx.dims = [B, D, C, L, S, H]
         ctx.calc_grad_inputs = calc_grad_inputs
+        for name,parameter in named_parameters():
+            parameter.requires_grad = False
 
         return outputs
     

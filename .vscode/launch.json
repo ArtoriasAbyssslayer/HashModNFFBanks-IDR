@@ -95,7 +95,7 @@
                 "--nepoch", "1000",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
-                "--scan_id","122",
+                "--scan_id","118",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
@@ -121,7 +121,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                "--is_continue"
+                //"--is_continue"
             ]
         },
         {
@@ -135,13 +135,13 @@
             "args": [
 
                 "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
-                "--expname", "FourierFeatureEnc",
+                "--expname", "PositionalEncoding",
                 "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                "--is_continue"
+                //"--is_continue"
             ]
         },
         {
@@ -154,7 +154,6 @@
             "justMyCode": true,
             "args": [
                 "--expname", "HashGrid",
-                "--eval_cameras",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--scan_id","122",
                 "--checkpoint", "latest",

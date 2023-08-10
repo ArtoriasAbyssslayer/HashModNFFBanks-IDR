@@ -105,29 +105,31 @@ class _HashGridMLP(nn.Module):
         dims = np.arange(self.dim, dtype=np.int64).reshape((1, -1))
         bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
+        for name, param in self.named_parameters():                
+            param.requires_grad = False
 
     def forward(self, x: torch.Tensor):
-        with torch.no_grad():
-            # x: (b..., dim), torch.float32, range: [0, 1]
-            bdims = len(x.shape[:-1])
-            x = x * self.resolution
-            # detach tensors for memory handling 
-            xi = x.long().detach()
-            xf = x - xi.float().detach()
-            # to match the input batch shape unsqueeze 
-            xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
-            xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
-            # to match the input batch shape
-            bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape) # (1..., neig, dim)
-            # get neighbors' indices and weights on each dim
-            inds = torch.where(bin_mask, xi, xi+1) # (b..., neig, dim)
-            ws = torch.where(bin_mask, 1-xf, xf) # (b...., neig, dim)
-            # aggregate nehgibors' interp weights - attention mechanism 
-            w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
-            # hash neighbors' id and look up table
-            hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
-            neig_data = self.embedding(hash_ids) # (b..., neig, feat)
-            return torch.sum(neig_data * w, dim=-2) # (b..., feat)
+        
+        # x: (b..., dim), torch.float32, range: [0, 1]
+        bdims = len(x.shape[:-1])
+        x = x * self.resolution
+        # detach tensors for memory handling 
+        xi = x.long().detach()
+        xf = x - xi.float().detach()
+        # to match the input batch shape unsqueeze 
+        xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
+        xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
+        # to match the input batch shape
+        bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape) # (1..., neig, dim)
+        # get neighbors' indices and weights on each dim
+        inds = torch.where(bin_mask, xi, xi+1) # (b..., neig, dim)
+        ws = torch.where(bin_mask, 1-xf, xf) # (b...., neig, dim)
+        # aggregate nehgibors' interp weights - attention mechanism 
+        w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
+        # hash neighbors' id and look up table
+        hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
+        neig_data = self.embedding(hash_ids) # (b..., neig, feat)
+        return torch.sum(neig_data * w, dim=-2) # (b..., feat)
 
 
 class MultiResHashGridMLP(nn.Module):

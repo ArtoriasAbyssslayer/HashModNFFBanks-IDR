@@ -30,7 +30,7 @@ class PositionalEncoding(nn.Module):
 
         self.embed_fns = embed_fns
         self.out_dim = out_dim
-        self.embeddings_dim = out_dim
+        self.embeddings_dim = out_dim + d if self.include_input else out_dim
     # Custom embed function in order to use to for simple Frequency Embedding
     def embed(self,inputs):
         ff_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)

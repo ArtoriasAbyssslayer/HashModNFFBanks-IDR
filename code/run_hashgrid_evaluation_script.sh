@@ -1,3 +1,2 @@
 #!/bin/bash
-export CUDA_LAUNCH_BLOCKING=1
-python3 ./evaluation/eval.py --exps_folder exps --expname HashGrid --conf ./confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf --scan_id 122  --checkpoint latest --eval_rendering
+python3 ./evaluation/eval.py --exps_folder exps --expname HashGrid --conf ./confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf --scan_id 65 --checkpoint latest --eval_rendering

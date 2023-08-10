@@ -15,7 +15,6 @@ import utils.plots as plt
 from utils import rend_util
 
 def evaluate(**kwargs):
-    
     torch.set_default_dtype(torch.float32)
 
     conf = ConfigFactory.parse_file(kwargs['conf'])
@@ -23,13 +22,12 @@ def evaluate(**kwargs):
     evals_folder_name = kwargs['evals_folder_name']
     eval_cameras = kwargs['eval_cameras']
     eval_rendering = kwargs['eval_rendering']
-    
-    
+
     expname = conf.get_string('train.expname') + kwargs['expname']
     scan_id = kwargs['scan_id'] if kwargs['scan_id'] != -1 else conf.get_int('dataset.scan_id', default=-1)
     if scan_id != -1:
         expname = expname + '_{0}'.format(scan_id)
-    
+
     if kwargs['timestamp'] == 'latest':
         if os.path.exists(os.path.join('../', kwargs['exps_folder_name'], expname)):
             timestamps = os.listdir(os.path.join('../', kwargs['exps_folder_name'], expname))
@@ -88,12 +86,12 @@ def evaluate(**kwargs):
 
     ####################################################################################################################
     print("evaluating...")
+
     model.eval()
     if eval_cameras:
         pose_vecs.eval()
 
     with torch.no_grad():
-
         if eval_cameras:
             gt_Rs = gt_pose[:, :3, :3].double()
             gt_ts = gt_pose[:, :3, 3].double()
@@ -124,60 +122,58 @@ def evaluate(**kwargs):
         mesh_clean = components[areas.argmax()]
         mesh_clean.export('{0}/surface_world_coordinates_{1}.ply'.format(evaldir, epoch), 'ply')
 
-        if eval_rendering:
-            torch.cuda.empty_cache()
-            
-            images_dir = '{0}/rendering'.format(evaldir)
-            utils.mkdir_ifnotexists(images_dir)
+    if eval_rendering:
+        images_dir = '{0}/rendering'.format(evaldir)
+        utils.mkdir_ifnotexists(images_dir)
 
-            psnrs = []
-            for data_index, (indices, model_input, ground_truth) in enumerate(eval_dataloader):
-                model_input["intrinsics"] = model_input["intrinsics"].cuda()
-                model_input["uv"] = model_input["uv"].cuda()
-                model_input["object_mask"] = model_input["object_mask"].cuda()
+        psnrs = []
+        for data_index, (indices, model_input, ground_truth) in enumerate(eval_dataloader):
+            model_input["intrinsics"] = model_input["intrinsics"].cuda()
+            model_input["uv"] = model_input["uv"].cuda()
+            model_input["object_mask"] = model_input["object_mask"].cuda()
 
-                if eval_cameras:
-                    pose_input = pose_vecs(indices.cuda())
-                    model_input['pose'] = pose_input
-                else:
-                    model_input['pose'] = model_input['pose'].cuda()
+            if eval_cameras:
+                pose_input = pose_vecs(indices.cuda())
+                model_input['pose'] = pose_input
+            else:
+                model_input['pose'] = model_input['pose'].cuda()
 
-                split = utils.split_input(model_input, total_pixels)
-                res = []
-                for s in split:
-                    out = model(s)
-                    res.append({
-                        'rgb_values': out['rgb_values'].detach(),
-                    })
+            split = utils.split_input(model_input, total_pixels)
+            res = []
+            for s in split:
+                out = model(s)
+                res.append({
+                    'rgb_values': out['rgb_values'].detach(),
+                })
 
-                batch_size = ground_truth['rgb'].shape[0]
-                model_outputs = utils.merge_output(res, total_pixels, batch_size)
-                rgb_eval = model_outputs['rgb_values']
-                rgb_eval = rgb_eval.reshape(batch_size, total_pixels, 3)
+            batch_size = ground_truth['rgb'].shape[0]
+            model_outputs = utils.merge_output(res, total_pixels, batch_size)
+            rgb_eval = model_outputs['rgb_values']
+            rgb_eval = rgb_eval.reshape(batch_size, total_pixels, 3)
 
-                rgb_eval = (rgb_eval + 1.) / 2.
-                rgb_eval = plt.lin2img(rgb_eval, img_res).detach().cpu().numpy()[0]
-                rgb_eval = rgb_eval.transpose(1, 2, 0)
-                img = Image.fromarray((rgb_eval * 255).astype(np.uint8))
-                img.save('{0}/eval_{1}.png'.format(images_dir,'%03d' % indices[0]))
+            rgb_eval = (rgb_eval + 1.) / 2.
+            rgb_eval = plt.lin2img(rgb_eval, img_res).detach().cpu().numpy()[0]
+            rgb_eval = rgb_eval.transpose(1, 2, 0)
+            img = Image.fromarray((rgb_eval * 255).astype(np.uint8))
+            img.save('{0}/eval_{1}.png'.format(images_dir,'%03d' % indices[0]))
 
-                rgb_gt = ground_truth['rgb']
-                rgb_gt = (rgb_gt + 1.) / 2.
-                rgb_gt = plt.lin2img(rgb_gt, img_res).numpy()[0]
-                rgb_gt = rgb_gt.transpose(1, 2, 0)
+            rgb_gt = ground_truth['rgb']
+            rgb_gt = (rgb_gt + 1.) / 2.
+            rgb_gt = plt.lin2img(rgb_gt, img_res).numpy()[0]
+            rgb_gt = rgb_gt.transpose(1, 2, 0)
 
-                mask = model_input['object_mask']
-                mask = plt.lin2img(mask.unsqueeze(-1), img_res).cpu().numpy()[0]
-                mask = mask.transpose(1, 2, 0)
+            mask = model_input['object_mask']
+            mask = plt.lin2img(mask.unsqueeze(-1), img_res).cpu().numpy()[0]
+            mask = mask.transpose(1, 2, 0)
 
-                rgb_eval_masked = rgb_eval * mask
-                rgb_gt_masked = rgb_gt * mask
+            rgb_eval_masked = rgb_eval * mask
+            rgb_gt_masked = rgb_gt * mask
 
-                psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
-                psnrs.append(psnr)
+            psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
+            psnrs.append(psnr)
 
-            psnrs = np.array(psnrs).astype(np.float64)
-            print("RENDERING EVALUATION {2}: psnr mean = {0} ; psnr std = {1}".format("%.2f" % psnrs.mean(), "%.2f" % psnrs.std(), scan_id))
+        psnrs = np.array(psnrs).astype(np.float64)
+        print("RENDERING EVALUATION {2}: psnr mean = {0} ; psnr std = {1}".format("%.2f" % psnrs.mean(), "%.2f" % psnrs.std(), scan_id))
 
 
 def get_cameras_accuracy(pred_Rs, gt_Rs, pred_ts, gt_ts,):
@@ -241,6 +237,7 @@ def calculate_psnr(img1, img2, mask):
     return 20 * math.log10(1.0 / math.sqrt(mse))
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--expname', type=str, default='', help='The experiment name to be evaluated.')
@@ -255,7 +252,7 @@ if __name__ == '__main__':
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')
 
     opt = parser.parse_args()
-    print(opt)
+
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
@@ -264,15 +261,15 @@ if __name__ == '__main__':
 
     if (not gpu == 'ignore'):
         os.environ["CUDA_VISIBLE_DEVICES"] = '{0}'.format(gpu)
-    
+
     evaluate(conf=opt.conf,
-            expname=opt.expname,
-            exps_folder_name=opt.exps_folder,
-            evals_folder_name='evals',
-            timestamp=opt.timestamp,
-            checkpoint=opt.checkpoint,
-            scan_id=opt.scan_id,
-            resolution=opt.resolution,
-            eval_cameras=opt.eval_cameras,
-            eval_rendering=opt.eval_rendering
-            )
+             expname=opt.expname,
+             exps_folder_name=opt.exps_folder,
+             evals_folder_name='evals',
+             timestamp=opt.timestamp,
+             checkpoint=opt.checkpoint,
+             scan_id=opt.scan_id,
+             resolution=opt.resolution,
+             eval_cameras=opt.eval_cameras,
+             eval_rendering=opt.eval_rendering
+             )
