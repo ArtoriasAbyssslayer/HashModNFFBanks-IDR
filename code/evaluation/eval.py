@@ -88,12 +88,12 @@ def evaluate(**kwargs):
 
     ####################################################################################################################
     print("evaluating...")
-    with torch.no_grad():
-        model.eval()
-        if eval_cameras:
-            pose_vecs.eval()
+    model.eval()
+    if eval_cameras:
+        pose_vecs.eval()
 
-    
+    with torch.no_grad():
+
         if eval_cameras:
             gt_Rs = gt_pose[:, :3, :3].double()
             gt_ts = gt_pose[:, :3, 3].double()
@@ -125,6 +125,8 @@ def evaluate(**kwargs):
         mesh_clean.export('{0}/surface_world_coordinates_{1}.ply'.format(evaldir, epoch), 'ply')
 
         if eval_rendering:
+            torch.cuda.empty_cache()
+            
             images_dir = '{0}/rendering'.format(evaldir)
             utils.mkdir_ifnotexists(images_dir)
 
@@ -247,7 +249,7 @@ if __name__ == '__main__':
     parser.add_argument('--timestamp', default='latest', type=str, help='The experiemnt timestamp to test.')
     parser.add_argument('--checkpoint', default='latest',type=str,help='The trained model checkpoint to test')
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
-    parser.add_argument('--resolution', default=512, type=int, help='Grid resolution for marching cube')
+    parser.add_argument('--resolution', default=256, type=int, help='Grid resolution for marching cube')
     parser.add_argument('--is_uniform_grid', default=False, action="store_true", help='If set, evaluate marching cube with uniform grid.')
     parser.add_argument('--eval_cameras', default=False, action="store_true", help='If set, evaluate camera accuracy of trained cameras.')
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')
@@ -262,15 +264,15 @@ if __name__ == '__main__':
 
     if (not gpu == 'ignore'):
         os.environ["CUDA_VISIBLE_DEVICES"] = '{0}'.format(gpu)
-    with torch.no_grad():
-        evaluate(conf=opt.conf,
-                expname=opt.expname,
-                exps_folder_name=opt.exps_folder,
-                evals_folder_name='evals',
-                timestamp=opt.timestamp,
-                checkpoint=opt.checkpoint,
-                scan_id=opt.scan_id,
-                resolution=opt.resolution,
-                eval_cameras=opt.eval_cameras,
-                eval_rendering=opt.eval_rendering
-                )
+    
+    evaluate(conf=opt.conf,
+            expname=opt.expname,
+            exps_folder_name=opt.exps_folder,
+            evals_folder_name='evals',
+            timestamp=opt.timestamp,
+            checkpoint=opt.checkpoint,
+            scan_id=opt.scan_id,
+            resolution=opt.resolution,
+            eval_cameras=opt.eval_cameras,
+            eval_rendering=opt.eval_rendering
+            )

@@ -100,7 +100,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                "--is_continue",
+                //"--is_continue",
 
             ]
         },

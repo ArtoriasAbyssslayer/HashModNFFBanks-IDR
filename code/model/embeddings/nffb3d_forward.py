@@ -18,7 +18,7 @@ class NFFB(nn.Module):
         
         
         
-        
+    @torch.no_grad    
     def forward(self, x):
         """
             Inputs:
@@ -37,5 +37,5 @@ class NFFB(nn.Module):
         @torch.no_grad
         
         # optimizer utils
-        
-        def get_params(selg
+        def get_optimizer(self,lr,weight_decay):
+            return torch.optim.Adam(self.parameters(),lr=lr,weight_decay=weight_decay)  

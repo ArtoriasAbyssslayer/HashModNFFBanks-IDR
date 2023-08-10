@@ -114,7 +114,7 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
     points = grid['grid_points']
 
     z = []
-    for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
@@ -148,11 +148,11 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
 
 def get_surface_high_res_mesh(sdf, resolution=100):
     # get low res mesh to sample point cloud
-    grid = get_grid_uniform(100)
+    grid = get_grid_uniform(resolution)
     z = []
     points = grid['grid_points']
 
-    for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
@@ -173,7 +173,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     areas = np.array([c.area for c in components], dtype=float)
     mesh_low_res = components[areas.argmax()]
 
-    recon_pc = trimesh.sample.sample_surface(mesh_low_res, 10000)[0]
+    recon_pc = trimesh.sample.sample_surface(mesh_low_res, 9000)[0]
     recon_pc = torch.from_numpy(recon_pc).float().cuda()
 
     # Center and align the recon pc
@@ -190,41 +190,43 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     grid_aligned = get_grid(helper.cpu(), resolution)
 
     grid_points = grid_aligned['grid_points']
-    with torch.no_grad():
-        g = []
-        for i, pnts in enumerate(torch.split(grid_points, 5000, dim=0)):
-            g.append(torch.bmm(vecs.unsqueeze(0).repeat(pnts.shape[0], 1, 1).transpose(1, 2),
-                            pnts.unsqueeze(-1)).squeeze() + s_mean)
-        grid_points = torch.cat(g, dim=0)
+    
+    g = []
+    torch.cuda.empty_cache()
+    for i, pnts in enumerate(torch.split(grid_points, 9000, dim=0)):
+        g.append(torch.bmm(vecs.unsqueeze(0).repeat(pnts.shape[0], 1, 1).transpose(1, 2),
+                        pnts.unsqueeze(-1)).squeeze() + s_mean)
+    grid_points = torch.cat(g, dim=0)
 
-        # MC to new grid
-        points = grid_points
-        z = []
-        for i, pnts in enumerate(torch.split(points, 5000, dim=0)):
-            z.append(sdf(pnts).detach().cpu().numpy())
-        z = np.concatenate(z, axis=0)
+    # MC to new grid
+    points = grid_points
+    z = []
+    torch.cuda.empty_cache()
+    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
+        z.append(sdf(pnts).detach().cpu().numpy())
+    z = np.concatenate(z, axis=0)
 
-        meshexport = None
-        if (not (np.min(z) > 0 or np.max(z) < 0)):
+    meshexport = None
+    if (not (np.min(z) > 0 or np.max(z) < 0)):
 
-            z = z.astype(np.float32)
+        z = z.astype(np.float32)
 
-            verts, faces, normals, values = measure.marching_cubes_lewiner(
-                volume=z.reshape(grid_aligned['xyz'][1].shape[0], grid_aligned['xyz'][0].shape[0],
-                                grid_aligned['xyz'][2].shape[0]).transpose([1, 0, 2]),
-                level=0,
-                spacing=(grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
-                        grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
-                        grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1]))
+        verts, faces, normals, values = measure.marching_cubes(
+            volume=z.reshape(grid_aligned['xyz'][1].shape[0], grid_aligned['xyz'][0].shape[0],
+                            grid_aligned['xyz'][2].shape[0]).transpose([1, 0, 2]),
+            level=0,
+            spacing=(grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
+                    grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
+                    grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1]))
 
-            verts = torch.from_numpy(verts).cuda().float()
-            verts = torch.bmm(vecs.unsqueeze(0).repeat(verts.shape[0], 1, 1).transpose(1, 2),
-                    verts.unsqueeze(-1)).squeeze()
-            verts = (verts + grid_points[0]).cpu().numpy()
+        verts = torch.from_numpy(verts).cuda().float()
+        verts = torch.bmm(vecs.unsqueeze(0).repeat(verts.shape[0], 1, 1).transpose(1, 2),
+                verts.unsqueeze(-1)).squeeze()
+        verts = (verts + grid_points[0]).cpu().numpy()
 
-            meshexport = trimesh.Trimesh(verts, faces, normals)
+        meshexport = trimesh.Trimesh(verts, faces, normals)
 
-        return meshexport
+    return meshexport
 
 
 def get_grid_uniform(resolution):

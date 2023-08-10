@@ -13,40 +13,40 @@ class _hash_encode(Function):
     @custom_fwd(cast_inputs=torch.half)
     
     def forward(ctx, inputs, embeddings, offsets, per_level_scale, base_resolution, calc_grad_inputs=False):
-        with torch.no_grad():
-            # inputs: [B, D], float in [0, 1]
-            # embeddings: [sO, C], float
-            # offsets: [L + 1], int
-            # RETURN: [B, F], float
+        
+        # inputs: [B, D], float in [0, 1]
+        # embeddings: [sO, C], float
+        # offsets: [L + 1], int
+        # RETURN: [B, F], float
 
-            inputs = inputs.contiguous()
-            embeddings = embeddings.contiguous()
-            offsets = offsets.contiguous()
+        inputs = inputs.contiguous()
+        embeddings = embeddings.contiguous()
+        offsets = offsets.contiguous()
 
-            B, D = inputs.shape # batch size, coord dim
-            L = offsets.shape[0] - 1 # level
-            C = embeddings.shape[1] # embedding dim for each level
-            S = np.log2(per_level_scale) # resolution multiplier at each level, apply log2 for later CUDA exp2f
-            H = base_resolution # base resolution
+        B, D = inputs.shape # batch size, coord dim
+        L = offsets.shape[0] - 1 # level
+        C = embeddings.shape[1] # embedding dim for each level
+        S = np.log2(per_level_scale) # resolution multiplier at each level, apply log2 for later CUDA exp2f
+        H = base_resolution # base resolution
 
-            # L first, optimize cache for cuda kernel, but needs an extra permute later
-            outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
+        # L first, optimize cache for cuda kernel, but needs an extra permute later
+        outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
 
-            if calc_grad_inputs:
-                dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
-            else:
-                dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
+        if calc_grad_inputs:
+            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
+        else:
+            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
 
-            _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
+        _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
 
-            # permute back to [B, L * C]
-            outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
+        # permute back to [B, L * C]
+        outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
 
-            ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
-            ctx.dims = [B, D, C, L, S, H]
-            ctx.calc_grad_inputs = calc_grad_inputs
+        ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
+        ctx.dims = [B, D, C, L, S, H]
+        ctx.calc_grad_inputs = calc_grad_inputs
 
-            return outputs
+        return outputs
     
     @staticmethod
     #@once_differentiable
@@ -126,7 +126,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
     def forward(self, inputs, size=1):
         # inputs: [..., input_dim], normalized real world positions in [-size, size]
         # return: [..., num_levels * level_dim]
-        
+        torch.cuda.synchronize()
         inputs = (inputs + size) / (2 * size) # map to [0, 1]
         
         #print('inputs', inputs.shape, inputs.dtype, inputs.min().item(), inputs.max().item())

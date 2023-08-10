@@ -128,7 +128,7 @@ class ImplicitNetwork(nn.Module):
             grad_outputs=d_output,
             create_graph=True,
             retain_graph=True,
-            only_inputs=True)[0]
+            only_inputs=True,allow_unused=True)[0]
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
