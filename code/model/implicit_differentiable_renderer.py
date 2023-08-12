@@ -33,7 +33,7 @@ class ImplicitNetwork(nn.Module):
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
-        self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
+        self.dencity_net = LaplaceDensity(params_init={'beta':1.2}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -53,7 +53,7 @@ class ImplicitNetwork(nn.Module):
 
         self.num_layers = len(dims)
         self.skip_in = skip_in
-        #------custom decoder mlp-------#
+        #------custom IGR decoder mlp - Sphere Init-------#
         # for l in range(0, self.num_layers - 1):
         #     if l + 1 in self.skip_in:
         #         out_dim = dims[l + 1] - dims[0]
@@ -114,7 +114,7 @@ class ImplicitNetwork(nn.Module):
             
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = F.tanh(x[:,0]/2) 
+        x[:,0] = F.tanh(x[:,0]/self.dencity_net.density_func(x[:,0])) 
         return x
 
     def gradient(self, x):
@@ -151,10 +151,7 @@ class RenderingNetwork(nn.Module):
         self.feature_vector_size = feature_vector_size
         self.mode = mode
         dims = [d_in + feature_vector_size] + dims + [d_out]
-        # add pose
         self.multires_view = multires_view
-        self.progress = torch.nn.Parameter(torch.tensor(0.), requires_grad=False)  # use Parameter so it could be checkpointed
-        
         self.embed_type = embed_type
         self.embedview_fn = None
         if embed_type:

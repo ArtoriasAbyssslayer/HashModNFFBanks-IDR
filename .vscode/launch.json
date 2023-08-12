@@ -78,7 +78,7 @@
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                //"--is_continue"
+                "--is_continue"
                 //"--calc_image_similarity"
 
             ]
@@ -136,7 +136,7 @@
 
                 "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
                 "--expname", "PositionalEncoding",
-                "--scan_id","122",
+                "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
