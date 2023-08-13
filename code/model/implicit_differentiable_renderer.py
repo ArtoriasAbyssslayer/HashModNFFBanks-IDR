@@ -126,6 +126,8 @@ class ImplicitNetwork(nn.Module):
         x.requires_grad_(True)
         y = self.forward(x)[:,:1]
         d_output = torch.ones_like(y, requires_grad=False, device=y.device)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize(device=y.device)
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
@@ -320,16 +322,3 @@ class IDRNetwork(nn.Module):
 
         return rgb_vals
 
-# Implementation of the coarse-to-fine resolution scheme/encoding  
-def coarseToFineRes(progress_data,inputs,L):  #[B,...,N]
-    barf_c2f = [0.1, 0.5]
-    if barf_c2f is not None:
-        # set weights for differnt frequency bands
-        start,end = barf_c2f
-        alpha = (progress_data - start) / (end - start)*L
-        k = torch.arange(L, dtype=torch.float32, device=inputs.device)
-        weight = (1 - (alpha - k).clamp_(min=0, max=1).mul_(np.pi).cos_()) / 2
-        # apply weights
-        shape = inputs.shape
-        input_enc = (inputs.view(-1, L, int(shape[1]/L)) * weight.tile(int(shape[1]/L),1).T).view(*shape)
-    return input_enc, weight      
