@@ -92,6 +92,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.output_dim = num_levels * level_dim
+
         if level_dim % 2 != 0:
             print('[WARN] detected HashGrid level_dim % 2 != 0, which will cause very slow backward is also enabled fp16! (maybe fix later)')
 
@@ -112,8 +113,10 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.n_params = offsets[-1] * level_dim
 
         # parameters
-        self.embeddings = nn.Parameter(torch.empty(offset, level_dim))
+        self.embeddings = nn.Parameter(torch.empty(int(offset), level_dim))
         self.embeddings_dim = self.output_dim + self.input_dim
+        for p in self.parameters():
+            p.requires_grad_(False)
         self.reset_parameters()
     def reset_parameters(self):
         std = 1e-4
