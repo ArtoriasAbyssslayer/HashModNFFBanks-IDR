@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
-from model.embeddings.frequency_enc import FourierFeature,PositionalEncoding,SHEncoder
+from model.embeddings.frequency_enc import *
 from model.embeddings.nffb3d import FourierFilterBanks
 from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
@@ -65,6 +65,11 @@ class Custom_Embedding_Network:
                 'input_dims': input_dims,
                 'degree': 4
             },
+            'nerf_positional':{
+                'include_input': True,
+                'dim': input_dims,
+                'n_levels': multires
+            },
             'positional_encoding':{               
             'include_input': True,
             'input_dims': input_dims,
@@ -93,6 +98,7 @@ class Custom_Embedding_Network:
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
+            'NerfPos': (NerfPositionalEncoding,'nerf_positional'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
