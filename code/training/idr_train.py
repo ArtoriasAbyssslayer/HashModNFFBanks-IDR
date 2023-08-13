@@ -205,122 +205,125 @@ class IDRTrainRunner():
                 os.path.join(self.checkpoints_path, self.cam_params_subdir, "latest.pth"))
 
     def run(self):
-        
-        print("training...")
-        # Intialize PSNR buffer 
-        psnrs = []
-        # Intialize SSIM buffer
-        ssim = []
-        # Intialize LPIPS buffer
-        lpips = []
-        losses = []  
-        
-        for epoch in range(self.start_epoch, self.nepochs + 1):
-            self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
-            if epoch in self.alpha_milestones:
-                self.loss.alpha = self.loss.alpha * self.alpha_factor
+        try:
+            print("training...")
+            # Intialize PSNR buffer 
+            psnrs = []
+            # Intialize SSIM buffer
+            ssim = []
+            # Intialize LPIPS buffer
+            lpips = []
+            losses = []  
+            
+            for epoch in range(self.start_epoch, self.nepochs + 1):
+                self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
+                if epoch in self.alpha_milestones:
+                    self.loss.alpha = self.loss.alpha * self.alpha_factor
 
-            if epoch % 100 == 0:
-                self.save_checkpoints(epoch)
+                if epoch % 100 == 0:
+                    self.save_checkpoints(epoch)
 
-            if epoch % self.plot_freq == 0:
-                self.model.eval()
-                if self.train_cameras:
-                    self.pose_vecs.eval()
-                self.train_dataset.change_sampling_idx(-1)
-                indices, model_input, ground_truth = next(iter(self.plot_dataloader))
+                if epoch % self.plot_freq == 0:
+                    self.model.eval()
+                    if self.train_cameras:
+                        self.pose_vecs.eval()
+                    self.train_dataset.change_sampling_idx(-1)
+                    indices, model_input, ground_truth = next(iter(self.plot_dataloader))
 
-                model_input["intrinsics"] = model_input["intrinsics"].cuda()
-                model_input["uv"] = model_input["uv"].cuda()
-                model_input["object_mask"] = model_input["object_mask"].cuda()
+                    model_input["intrinsics"] = model_input["intrinsics"].cuda()
+                    model_input["uv"] = model_input["uv"].cuda()
+                    model_input["object_mask"] = model_input["object_mask"].cuda()
 
-                if self.train_cameras:
-                    pose_input = self.pose_vecs(indices.cuda())
-                    model_input['pose'] = pose_input
-                else:
-                    model_input['pose'] = model_input['pose'].cuda()
+                    if self.train_cameras:
+                        pose_input = self.pose_vecs(indices.cuda())
+                        model_input['pose'] = pose_input
+                    else:
+                        model_input['pose'] = model_input['pose'].cuda()
 
-                split = utils.split_input(model_input, self.total_pixels)
-                res = []
-                for s in split:
-                    out = self.model(s)
-                    res.append({
-                        'points': out['points'].detach(),
-                        'rgb_values': out['rgb_values'].detach(),
-                        'network_object_mask': out['network_object_mask'].detach(),
-                        'object_mask': out['object_mask'].detach()
-                    })
+                    split = utils.split_input(model_input, self.total_pixels)
+                    res = []
+                    for s in split:
+                        out = self.model(s)
+                        res.append({
+                            'points': out['points'].detach(),
+                            'rgb_values': out['rgb_values'].detach(),
+                            'network_object_mask': out['network_object_mask'].detach(),
+                            'object_mask': out['object_mask'].detach()
+                        })
 
-                batch_size = ground_truth['rgb'].shape[0]
-                model_outputs = utils.merge_output(res, self.total_pixels, batch_size)
+                    batch_size = ground_truth['rgb'].shape[0]
+                    model_outputs = utils.merge_output(res, self.total_pixels, batch_size)
 
-                plt.plot(self.model,
-                         indices,
-                         model_outputs,
-                         model_input['pose'],
-                         ground_truth['rgb'],
-                         self.plots_dir,
-                         epoch,
-                         self.img_res,
-                         **self.plot_conf
-                         )
+                    plt.plot(self.model,
+                            indices,
+                            model_outputs,
+                            model_input['pose'],
+                            ground_truth['rgb'],
+                            self.plots_dir,
+                            epoch,
+                            self.img_res,
+                            **self.plot_conf
+                            )
 
-                self.model.train()
-                if self.train_cameras:
-                    self.pose_vecs.train()
+                    self.model.train()
+                    if self.train_cameras:
+                        self.pose_vecs.train()
 
-            self.train_dataset.change_sampling_idx(self.num_pixels)
+                self.train_dataset.change_sampling_idx(self.num_pixels)
 
-            for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
+                for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
 
-                model_input["intrinsics"] = model_input["intrinsics"].cuda()
-                model_input["uv"] = model_input["uv"].cuda()
-                model_input["object_mask"] = model_input["object_mask"].cuda()
+                    model_input["intrinsics"] = model_input["intrinsics"].cuda()
+                    model_input["uv"] = model_input["uv"].cuda()
+                    model_input["object_mask"] = model_input["object_mask"].cuda()
 
-                if self.train_cameras:
-                    pose_input = self.pose_vecs(indices.cuda())
-                    model_input['pose'] = pose_input
-                else:
-                    model_input['pose'] = model_input['pose'].cuda()
+                    if self.train_cameras:
+                        pose_input = self.pose_vecs(indices.cuda())
+                        model_input['pose'] = pose_input
+                    else:
+                        model_input['pose'] = model_input['pose'].cuda()
 
-                model_outputs = self.model(model_input)
-                loss_output = self.loss(model_outputs, ground_truth)
+                    model_outputs = self.model(model_input)
+                    loss_output = self.loss(model_outputs, ground_truth)
 
-                loss = loss_output['loss']
+                    loss = loss_output['loss']
 
-                self.optimizer.zero_grad()
-                if self.train_cameras:
-                    self.optimizer_cam.zero_grad()
+                    self.optimizer.zero_grad()
+                    if self.train_cameras:
+                        self.optimizer_cam.zero_grad()
 
-                loss.backward()
+                    loss.backward()
 
-                self.optimizer.step()
-                if self.train_cameras:
-                    self.optimizer_cam.step()
-                
-                print(
-                    '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
-                        .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
-                                loss_output['rgb_loss'].item(),
-                                loss_output['eikonal_loss'].item(),
-                                loss_output['mask_loss'].item(),
-                                self.loss.alpha,
-                                self.scheduler.get_lr()[0]))
-            # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
-                losses.append(loss) 
-            if epoch == self.eval_epochs:
-                if self.validation_slope_print:
-                    self.validation_loss_slope(losses)
-                if self.calc_image_similarity:
-                    # Todo implement psnr,ssim,lpips calculation for given images
-                    pass
-            self.writer.add_scalar('Loss/loss',loss.item(), epoch)
-            self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
-            self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
-            self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
-            # TODO: Add PSNR,SSIM,LPIPS and add them to the tensorboard
-            # self.writer.add_scalar('Statistics/psnr', psnr,  epoch)    
-            self.scheduler.step()     
+                    self.optimizer.step()
+                    if self.train_cameras:
+                        self.optimizer_cam.step()
+                    
+                    print(
+                        '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
+                            .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
+                                    loss_output['rgb_loss'].item(),
+                                    loss_output['eikonal_loss'].item(),
+                                    loss_output['mask_loss'].item(),
+                                    self.loss.alpha,
+                                    self.scheduler.get_lr()[0]))
+                # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
+                    losses.append(loss) 
+                if epoch == self.eval_epochs:
+                    if self.validation_slope_print:
+                        self.validation_loss_slope(losses)
+                    if self.calc_image_similarity:
+                        # Todo implement psnr,ssim,lpips calculation for given images
+                        pass
+                self.writer.add_scalar('Loss/loss',loss.item(), epoch)
+                self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
+                self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
+                self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
+                # TODO: Add PSNR,SSIM,LPIPS and add them to the tensorboard
+                # self.writer.add_scalar('Statistics/psnr', psnr,  epoch)    
+                self.scheduler.step()
+        except KeyboardInterrupt:
+            self.save_checkpoints(epoch)
+             
          
     """
         During Training - Metrics Scripts

@@ -30,6 +30,8 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.per_level_scale = per_level_scale
+        for p in self.parameters():
+            p.requires_grad = False
         
         # --- Hash Primes ---
         

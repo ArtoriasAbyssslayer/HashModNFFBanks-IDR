@@ -19,9 +19,9 @@ class _hash_encode(Function):
         # offsets: [L + 1], int
         # RETURN: [B, F], float
 
-        inputs = inputs.contiguous().requires_grad_(calc_grad_inputs)
-        embeddings = embeddings.contiguous().requires_grad_(False)
-        offsets = offsets.contiguous().requires_grad_(False)
+        inputs = inputs.contiguous()
+        embeddings = embeddings.contiguous()
+        offsets = offsets.contiguous()
 
         B, D = inputs.shape # batch size, coord dim
         L = offsets.shape[0] - 1 # level
@@ -38,15 +38,14 @@ class _hash_encode(Function):
             dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype).requires_grad_(False)
 
         _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
-
+        
         # permute back to [B, L * C]
         outputs = outputs.permute(1, 0, 2).reshape(B, L * C)
 
         ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
         ctx.dims = [B, D, C, L, S, H]
         ctx.calc_grad_inputs = calc_grad_inputs
-    
-
+        
         return outputs
     
     @staticmethod
@@ -69,7 +68,7 @@ class _hash_encode(Function):
             grad_inputs = torch.zeros(1, device=inputs.device, dtype=inputs.dtype)
 
         _backend.hash_encode_backward(grad, inputs, embeddings, offsets, grad_embeddings, B, D, C, L, S, H, calc_grad_inputs, dy_dx, grad_inputs)
-
+        
         if calc_grad_inputs:
             return grad_inputs, grad_embeddings, None, None, None, None
         else:
@@ -103,7 +102,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         for i in range(num_levels):
             resolution = int(np.ceil(base_resolution * per_level_scale ** i))
             params_in_level = min(self.max_params, (resolution + 1) ** input_dim) # limit max number
-            #params_in_level = np.ceil(params_in_level / 8) * 8 # make divisible
+            params_in_level = np.ceil(params_in_level / 8) * 8 # make divisible
             offsets.append(offset)
             offset += params_in_level
         offsets.append(offset)
@@ -116,7 +115,6 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         self.embeddings = nn.Parameter(torch.empty(offset, level_dim))
         self.embeddings_dim = self.output_dim + self.input_dim
         self.reset_parameters()
-    
     def reset_parameters(self):
         std = 1e-4
         self.embeddings.data.uniform_(-std, std)
@@ -125,9 +123,10 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         return f"HashEncoder: input_dim={self.input_dim} num_levels={self.num_levels} level_dim={self.level_dim} base_resolution={self.base_resolution} per_level_scale={self.per_level_scale} params={tuple(self.embeddings.shape)}"
     
     def forward(self, inputs, size=1):
+        
+        
         # inputs: [..., input_dim], normalized real world positions in [-size, size]
         # return: [..., num_levels * level_dim]
-        torch.cuda.synchronize()
         inputs = (inputs + size) / (2 * size) # map to [0, 1]
         
         #print('inputs', inputs.shape, inputs.dtype, inputs.min().item(), inputs.max().item())

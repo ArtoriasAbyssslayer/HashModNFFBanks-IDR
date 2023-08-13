@@ -1,7 +1,42 @@
 import torch
 import torch.nn as nn
 import numpy as np
+class NerfPositionalEncoding(nn.Module):
+    def __init__(self, include_input:bool, dim: int, n_levels: int = 10):
+        """
+            Positional encoding from NeRF
+            [sin(x),cos(x), sin(4x), cos(4x), sin(8x), cos(8x)
+             .....,sin(2^n*x), cos(2^n*x)]
+
+            Args:
+                - dim(int) : input dimensions
+                - n_levels(int,optional): frequency bands number
+        """
+        super().__init__()
+        self.n_levels = n_levels
+        assert self.n_levels > 0
+        self.include_input = include_input
+        freqs = 2. ** torch.linspace(0., n_levels - 1, n_levels)
+        self.register_buffer('freqs', freqs)
+
+        # ---
+        self.input_dim = dim
+        self.output_dim = dim * n_levels * 2
+        self.embeddings_dim = self.output_dim  + self.input_dim if self.include_input else self.output_dim
+    def forward(self, x: torch.Tensor):
+        # unsqueeze in order to multiply it with freqs  space
+        input = x 
+        x = x.unsqueeze(dim=-1)  # (...,dim,1)
+        x = x * self.freqs.to(input.device)  # (..., dim,L)
+        # concatenate the sin,cos input frequencies series
+        x = torch.cat((torch.sin(x), torch.cos(x)), dim=-1)  # (..,dim,L*2)
+        if self.include_input:
+            return torch.cat((input,x.flatten(-2, -1)),dim=-1)  # (...,dim*L*2) - flatten the tensor to 1D
+        else:
+            return x.flatten(-2, -1)
+
 class PositionalEncoding(nn.Module):
+    ''' IDR classic method for positional encoding '''
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.include_input = kwargs['include_input']
@@ -30,7 +65,7 @@ class PositionalEncoding(nn.Module):
 
         self.embed_fns = embed_fns
         self.out_dim = out_dim
-        self.embeddings_dim = out_dim + d if self.include_input else out_dim
+        
     # Custom embed function in order to use to for simple Frequency Embedding
     def embed(self,inputs):
         ff_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)
@@ -43,6 +78,7 @@ class PositionalEncoding(nn.Module):
         
 #Simple Fourier Feature Encoder 
 class FourierFeature(nn.Module):
+    '''Fourrier Feature Encoder'''
     def __init__(self, channels, sigma=1.0, input_dims=3, include_input=True) -> None:
         super().__init__()
         self.register_buffer('B', torch.randn(input_dims, channels) * sigma, True)
@@ -54,8 +90,9 @@ class FourierFeature(nn.Module):
         return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
 #SHencoder 
 class SHEncoder(nn.Module):
+    '''Spherical Harmonics Encoder'''
     def __init__(self, input_dims=3, degree=4):
-    
+        
         super().__init__()
 
         self.input_dims = input_dims
@@ -139,6 +176,7 @@ class SHEncoder(nn.Module):
 
    
 def get_embedder(multires):
+    '''Default Get embedder function for the Positional Encoding -> Used original IDR configs'''
     embed_kwargs = {
         'include_input': True,
         'input_dims': 3,

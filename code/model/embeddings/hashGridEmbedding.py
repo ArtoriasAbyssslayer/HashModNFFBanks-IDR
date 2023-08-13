@@ -22,38 +22,6 @@ def _get_primes(d: torch.Tensor):
         stacked_array = repeated_hash_primes.flatten()
         return stacked_array
 
-
-class Frequency(nn.Module):
-    def __init__(self, dim: int, n_levels: int = 10):
-        """
-            Positional encoding from NeRF
-            [sin(x),cos(x), sin(4x), cos(4x), sin(8x), cos(8x)
-             .....,sin(2^n*x), cos(2^n*x)]
-
-            Args:
-                - dim(int) : input dimensions
-                - n_levels(int,optional): frequency bands number
-        """
-        super().__init__()
-        self.n_levels = n_levels
-        assert self.n_levels > 0
-
-        freqs = 2. ** torch.linspace(0., n_levels - 1, n_levels).to(DEVICE)
-        self.register_buffer('freqs', freqs)
-
-        # ---
-        self.input_dim = dim
-        self.output_dim = dim * n_levels * 2
-
-    def forward(self, x: torch.Tensor):
-        # unsqueeze in order to multiply it with freqs  space
-        x = x.unsqueeze(dim=-1)  # (...,dim,1)
-        x = x * self.freqs  # (..., dim,L)
-        # concatenate the sin,cos input frequencies series
-        x = torch.cat((torch.sin(x), torch.cos(x)), dim=-1)  # (..,dim,L*2)
-        return x.flatten(-2, -1)  # (...,dim*L*2) - flatten the tensor to 1D
-
-
 # ---Multi Resolution HashGrid - Spatial Encoding ---
 
 
@@ -95,8 +63,9 @@ class _HashGridMLP(nn.Module):
 
         # create look-up table
         embedding = nn.Embedding(hashmap_size, n_features)
-        nn.init.uniform_(embedding.weight, a=-0.0001, b=0.0001)
-        self.embedding = embedding
+        std = 1e-4
+        nn.init.uniform_(embedding.weight, a=-std, b=std)
+        self.embedding = embedding.to(DEVICE)
         self.primes = primes
 
         # create interpolation binary mask
@@ -106,10 +75,9 @@ class _HashGridMLP(nn.Module):
         bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
         for name, param in self.named_parameters():                
-            param.requires_grad = False
-        self.embedding.requires_grad(True)
+            param.requires_grad_(False)
+        self.embedding.requires_grad_(True)
     def forward(self, x: torch.Tensor):
-        
         # x: (b..., dim), torch.float32, range: [0, 1]
         bdims = len(x.shape[:-1])
         x = x * self.resolution
@@ -129,6 +97,7 @@ class _HashGridMLP(nn.Module):
         # hash neighbors' id and look up table
         hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
         neig_data = self.embedding(hash_ids) # (b..., neig, feat)
+        # interpolate neighbors' data
         return torch.sum(neig_data * w, dim=-2) # (b..., feat)
 
 
@@ -147,9 +116,7 @@ class MultiResHashGridMLP(nn.Module):
             https://nvlabs.github.io/instant-ngp/
 
             The output of this Multi-Resolution Hash Embedding is obviously the n_levels * max_points_per_level
-            which is the voxel size
-
-            model.
+            which is the voxel size of the hash grid encoding
         """
         super(MultiResHashGridMLP,self).__init__()
         self.include_input = include_input
@@ -186,20 +153,15 @@ class MultiResHashGridMLP(nn.Module):
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
                 self.embeddings_dim = self.output_dim   
-            
-        # In forard return concatenated emmbedding grids in each level
-        # resolution.
+    # In forard return concatenated emmbedding grids in each level
+    # resolution.
     def forward(self, x: torch.Tensor):
               
         if self.include_input == True:
             # print (" Hash Encoding Input")
-            
-            self.embeddings_dim = self.input_dim + self.output_dim
-            torch.cuda.empty_cache()
             return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
         
         else:
-            torch.cuda.empty_cache()
             return torch.cat([level(x) for level in self.levels], dim=-1)
            
         
