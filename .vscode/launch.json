@@ -58,7 +58,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                //"--is_continue"
+                "--is_continue"
 
             ]
         },
@@ -136,12 +136,31 @@
 
                 "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
                 "--expname", "PositionalEncoding",
-                "--scan_id","65",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                //"--calc_image_similarity"
-                //"--is_continue"
+                
+            ]
+        },
+        {
+            "name": "IDR training Mixed Encoding",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MixedEnc/dtu_fixed_cameras.conf",
+                "--expname", "PositionalGeometryEncodingHashGridAppearenceEnc",
+                "--scan_id","122",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                "--is_continue"
+                
             ]
         },
         {

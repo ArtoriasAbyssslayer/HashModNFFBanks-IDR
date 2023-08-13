@@ -107,7 +107,7 @@ class _HashGridMLP(nn.Module):
         self.register_buffer('bin_mask', bin_mask, persistent=False)
         for name, param in self.named_parameters():                
             param.requires_grad = False
-
+        self.embedding.requires_grad(True)
     def forward(self, x: torch.Tensor):
         
         # x: (b..., dim), torch.float32, range: [0, 1]

@@ -31,9 +31,14 @@ class ImplicitNetwork(nn.Module):
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
         self.embed_fn = None
-        self.embed_type = embed_type
+        
+        if embed_type == 'MixedEncoding':
+            # In mixed encoding Use frequency encoder for the Geometry Network and HashGrid for the appearance network
+            self.embed_type = 'PositionalEncoding'
+        else:
+            self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':1.2}).requires_grad_(False)
+        #self.dencity_net = LaplaceDensity(params_init={'beta':1.2}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -114,7 +119,7 @@ class ImplicitNetwork(nn.Module):
             
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = F.tanh(x[:,0]/self.dencity_net.density_func(x[:,0])) 
+        x[:,0] = F.tanh(x[:,0] /2)
         return x
 
     def gradient(self, x):
@@ -152,7 +157,10 @@ class RenderingNetwork(nn.Module):
         self.mode = mode
         dims = [d_in + feature_vector_size] + dims + [d_out]
         self.multires_view = multires_view
-        self.embed_type = embed_type
+        if embed_type == 'MixedEncoding':
+            self.embed_type = 'HashGrid'
+        else:
+            self.embed_type = embed_type
         self.embedview_fn = None
         if embed_type:
             if multires_view > 0:

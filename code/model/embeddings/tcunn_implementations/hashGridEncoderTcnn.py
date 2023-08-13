@@ -92,9 +92,10 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         else:
             self.output_dim = self.n_levels * self.max_points_per_level
             self.embeddings_dim = self.output_dim    
+        for p in self.grid_encoder.parameters():
+            p.requires_grad = False
     def forward(self,x):
         torch.cuda.empty_cache()
-        torch.cuda.synchronize()
         if self.include_input == True:
             return torch.cat([x,self.grid_encoder(x)],dim=-1)
         else:

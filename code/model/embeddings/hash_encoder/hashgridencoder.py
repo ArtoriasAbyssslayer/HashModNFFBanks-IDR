@@ -19,9 +19,9 @@ class _hash_encode(Function):
         # offsets: [L + 1], int
         # RETURN: [B, F], float
 
-        inputs = inputs.contiguous()
-        embeddings = embeddings.contiguous()
-        offsets = offsets.contiguous()
+        inputs = inputs.contiguous().requires_grad_(calc_grad_inputs)
+        embeddings = embeddings.contiguous().requires_grad_(False)
+        offsets = offsets.contiguous().requires_grad_(False)
 
         B, D = inputs.shape # batch size, coord dim
         L = offsets.shape[0] - 1 # level
@@ -33,9 +33,9 @@ class _hash_encode(Function):
         outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
 
         if calc_grad_inputs:
-            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
+            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype).requires_grad_(False)
         else:
-            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
+            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype).requires_grad_(False)
 
         _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
 
@@ -45,8 +45,7 @@ class _hash_encode(Function):
         ctx.save_for_backward(inputs, embeddings, offsets, dy_dx)
         ctx.dims = [B, D, C, L, S, H]
         ctx.calc_grad_inputs = calc_grad_inputs
-        for name,parameter in named_parameters():
-            parameter.requires_grad = False
+    
 
         return outputs
     
