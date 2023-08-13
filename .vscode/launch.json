@@ -74,11 +74,11 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
-                "--scan_id","65",
+                "--scan_id","118",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]
@@ -135,11 +135,12 @@
             "args": [
 
                 "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
-                "--expname", "PositionalEncoding",
+                "--expname", "NerfPositionalEncoding",
                 "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
+                //"--is_continue"
                 
             ]
         },
