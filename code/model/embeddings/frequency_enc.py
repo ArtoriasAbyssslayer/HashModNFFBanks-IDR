@@ -100,7 +100,7 @@ class SHEncoder(nn.Module):
 
         assert self.input_dims == 3
         assert self.degree >= 1 and self.degree <= 5
-
+        # embeddings_Dim == calculated dim of the output
         self.embeddings_dim  = degree ** 2
 
         self.C0 = 0.28209479177387814
@@ -135,7 +135,7 @@ class SHEncoder(nn.Module):
 
     def forward(self, input, **kwargs):
 
-        result = torch.empty((*input.shape[:-1], self.out_dim), dtype=input.dtype, device=input.device)
+        result = torch.empty((*input.shape[:-1], self.embeddings_dim), dtype=input.dtype, device=input.device)
         x, y, z = input.unbind(-1)
 
         result[..., 0] = self.C0

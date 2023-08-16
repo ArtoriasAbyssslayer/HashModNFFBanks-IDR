@@ -35,7 +35,12 @@ def hash_func(idx: torch.Tensor, primes: torch.Tensor, hashmap_size: int):
     # apply hash based on grid size
     return idx[..., 0] % hashmap_size
 
-
+def custom_kaiming_uniform_(tensor, std, a=0):
+    fan = nn.init._calculate_correct_fan(tensor, "fan_in")
+    gain = std * ((fan + a)**0.5)
+    bound = 1 / gain
+    with torch.no_grad():
+        return tensor.uniform_(-bound, bound)
 class _HashGridMLP(nn.Module):
     """
         Single Resolution Grid HashEmbedding Net
@@ -64,7 +69,7 @@ class _HashGridMLP(nn.Module):
         # create look-up table
         embedding = nn.Embedding(hashmap_size, n_features)
         std = 1e-4
-        nn.init.uniform_(embedding.weight, a=-std, b=std)
+        custom_kaiming_uniform_(embedding.weight, std = std, a=0)
         self.embedding = embedding.to(DEVICE)
         self.primes = primes
 
@@ -76,7 +81,7 @@ class _HashGridMLP(nn.Module):
         self.register_buffer('bin_mask', bin_mask, persistent=False)
         for name, param in self.named_parameters():                
             param.requires_grad_(False)
-        self.embedding.requires_grad_(True)
+        #self.embedding.requires_grad_(True)
     def forward(self, x: torch.Tensor):
         # x: (b..., dim), torch.float32, range: [0, 1]
         bdims = len(x.shape[:-1])
@@ -153,6 +158,8 @@ class MultiResHashGridMLP(nn.Module):
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
                 self.embeddings_dim = self.output_dim   
+        for name, param in self.named_parameters():                
+            param.requires_grad_(False)     
     # In forard return concatenated emmbedding grids in each level
     # resolution.
     def forward(self, x: torch.Tensor):

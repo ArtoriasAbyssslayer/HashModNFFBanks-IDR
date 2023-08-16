@@ -68,7 +68,7 @@ class FFB_encoder(nn.Module):
         self.sin_activation_high = Sine(w0=self.sin_w0_high)
         self.init_ffenc_high()
         if include_input:
-            self.embeddings_dim = ffenc_dims[-1] + self.in_dim
+            self.embeddings_dim = 2*ffenc_dims[-1] + self.in_dim
         else:
             self.embeddings_dim = ffenc_dims[-1]
         ### Some SIREN initialization stuff 
@@ -114,7 +114,7 @@ class FFB_encoder(nn.Module):
         grid_x = torch.bmm(grid_x, 2 * math.pi * ffn_A)
         grid_x = torch.sin(grid_x)
 
-        x_out = torch.zeros(x.shape[0], self.embeddings_dim-self.in_dim, device=in_pos.device)
+        embed_buff = torch.zeros(x.shape[0], (int)((self.embeddings_dim - self.in_dim)/2), device=in_pos.device)
 
         ### Grid encoding
         # x = self.ff_enc.embed(x)
@@ -123,8 +123,8 @@ class FFB_encoder(nn.Module):
                 ff_lin = getattr(self, "ff_lin" + str(layer))
                 x = ff_lin(x)
                 x = self.sin_activation(x)
-                x_low = torch.zeros_like(x_out)
-                x_high = torch.zeros_like(x_out)
+                x_low = torch.zeros_like(embed_buff)
+                x_high = torch.zeros_like(embed_buff)
                 if layer > 0:
                     x = grid_x[layer-1] + x
 
@@ -134,10 +134,10 @@ class FFB_encoder(nn.Module):
                     x_high = torch.split(x_high, self.ffenc_dims[layer+1], dim=-1)
                     x_low = x_high[0] 
                     x_high = x_high[1] 
-                    x_out = x_out + x_low + x_high
+                    embed_buff = embed_buff+  x_low + x_high
                 
-                
+        x_out = torch.cat([x,embed_buff],dim=1)        
         if self.include_input:
             x_out = torch.cat([in_pos,x_out], dim=-1)
-        
+        torch.cuda.empty_cache()
         return x_out

@@ -83,7 +83,11 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 'base_resolution': self.base_resolution,
                 'per_level_scale': self.per_level_scale,
                 'exp_sigma': exp_sigma,
+                'base_sigma':base_sigma,
                 'hidden_dims': network_dims,
+                'grid_embedding_std': grid_embedding_std,
+                "interpolation": "Linear"
+                
             }
         )
         self.grid_levels = self.n_levels

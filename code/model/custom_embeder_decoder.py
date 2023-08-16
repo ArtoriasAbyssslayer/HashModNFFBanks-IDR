@@ -50,7 +50,7 @@ class Custom_Embedding_Network:
                     'desired_resolution': desired_resolution,
                     "base_sigma": 8.0,
                     "exp_sigma": 1.26,
-                    "grid_embedding_std": 0.001,
+                    "grid_embedding_std": 0.0001,
                     'per_level_scale': 2.0,
                 },
                 'bound': bound
@@ -90,7 +90,7 @@ class Custom_Embedding_Network:
                 'desired_resolution': desired_resolution,
                 "base_sigma": 8.0,
                 "exp_sigma": 1.26,
-                "grid_embedding_std": 0.001,
+                "grid_embedding_std": 0.0001,
                 'per_level_scale': 2.0,
             },
         }

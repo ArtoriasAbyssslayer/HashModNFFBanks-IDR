@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from utils import rend_util
-from model.embeddings.frequency_enc import get_embedder
+from model.embeddings.frequency_enc import get_embedder,SHEncoder
 from model.custom_embeder_decoder import Custom_Embedding_Network,Decoder
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
@@ -119,7 +119,7 @@ class ImplicitNetwork(nn.Module):
             
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = F.tanh(x[:,0] /2)
+        x[:,0] = F.tanh(x[:,0])
         return x
 
     def gradient(self, x):
@@ -147,36 +147,28 @@ class RenderingNetwork(nn.Module):
             dims,
             weight_norm=True,
             multires_view=0,
-            embed_type=None,
-            log2_max_hash_size=10,
-            max_points_per_entry=2,
-            base_resolution=64,
-            desired_resolution=1024,
-            bound:float=0.5
+            rgb_embed_type='NerfPos',
     ):
         super().__init__()
         self.feature_vector_size = feature_vector_size
         self.mode = mode
         dims = [d_in + feature_vector_size] + dims + [d_out]
         self.multires_view = multires_view
-        if embed_type == 'MixedEncoding':
-            self.embed_type = 'HashGrid'
-        else:
-            self.embed_type = embed_type
+        self.d_in = d_in
         self.embedview_fn = None
-        if embed_type:
+        if rgb_embed_type:
             if multires_view > 0:
                 if self.mode == 'idr':
-                    d_in = 3
-                    embed_model = Custom_Embedding_Network(input_dims=d_in,network_dims=dims, embed_type=embed_type, multires=multires_view,log2_max_hash_size=log2_max_hash_size,
-                                                            max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
-                                                            desired_resolution=desired_resolution,bound=0.5)
-                    self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
-                    dims[0] += (input_ch - d_in)
-        else:
+                    shen_d_in = 3
+                    embed_model = SHEncoder(shen_d_in,degree=multires_view)
+                    self.embedview_fn, input_ch = embed_model.forward, embed_model.embeddings_dim
+                    dims[0] += (input_ch - shen_d_in)
+        elif rgb_embed_type == 'NerfPos':
             if multires_view > 0:
                 self.embedview_fn, input_ch = get_embedder(multires_view)
                 dims[0] += (input_ch - d_in)
+        else:
+            raise ValueError('No Embedding Network config provided')
 
         self.num_layers = len(dims)
 
@@ -221,10 +213,8 @@ class IDRNetwork(nn.Module):
             implicit_network_kwargs = conf.get_config('implicit_network')
             embedding_network_kwargs = conf.get_config('embedding_network')
             IDRNetInputEmbed_conf = {**implicit_network_kwargs, **embedding_network_kwargs}
-            rendering_network_kwargs = conf.get_config('rendering_network')
-            RenderNetInputEmbed_conf = {**rendering_network_kwargs, **embedding_network_kwargs}
             self.implicit_network = ImplicitNetwork(self.feature_vector_size,**IDRNetInputEmbed_conf)
-            self.rendering_network = RenderingNetwork(self.feature_vector_size, **RenderNetInputEmbed_conf)
+            self.rendering_network = RenderingNetwork(self.feature_vector_size, **conf.get_config('rendering_network'))
         else:
             self.implicit_network = ImplicitNetwork(self.feature_vector_size, **conf.get_config('implicit_network'))
             self.rendering_network = RenderingNetwork(self.feature_vector_size, **conf.get_config('rendering_network'))
