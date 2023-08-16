@@ -114,7 +114,7 @@ class FFB_encoder(nn.Module):
         grid_x = torch.bmm(grid_x, 2 * math.pi * ffn_A)
         grid_x = torch.sin(grid_x)
 
-        embed_buff = torch.zeros(x.shape[0], (int)((self.embeddings_dim - self.in_dim)/2), device=in_pos.device)
+        embed_buff = torch.zeros(x.shape[0], self.embeddings_dim - self.in_dim, device=in_pos.device)
 
         ### Grid encoding
         # x = self.ff_enc.embed(x)
@@ -132,12 +132,13 @@ class FFB_encoder(nn.Module):
                     x_high = sin_lin_high(x)
                     x_high = self.sin_activation_high(x_high)
                     x_high = torch.split(x_high, self.ffenc_dims[layer+1], dim=-1)
-                    x_low = x_high[0] 
-                    x_high = x_high[1] 
-                    embed_buff = embed_buff+  x_low + x_high
-                
-        x_out = torch.cat([x,embed_buff],dim=1)        
+                    x_low = torch.cat([x,x_high[0]],dim=1)  
+                    x_high = torch.cat([x,x_high[1]],dim=1) 
+                    embed_buff = embed_buff +  x_low + x_high
+                   
         if self.include_input:
-            x_out = torch.cat([in_pos,x_out], dim=-1)
+            x_out = torch.cat([in_pos,embed_buff], dim=-1)
+        else:
+            x_out = embed_buff
         torch.cuda.empty_cache()
         return x_out
