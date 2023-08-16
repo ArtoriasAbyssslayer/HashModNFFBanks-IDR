@@ -132,9 +132,10 @@ class FFB_encoder(nn.Module):
                     x_high = sin_lin_high(x)
                     x_high = self.sin_activation_high(x_high)
                     x_high = torch.split(x_high, self.ffenc_dims[layer+1], dim=-1)
-                    x_low = torch.cat([x,x_high[0]],dim=1)  
-                    x_high = torch.cat([x,x_high[1]],dim=1) 
-                    embed_buff = embed_buff +  x_low + x_high
+                    x_low = x_high[0]
+                    x_high = x_high[1]
+                    x_embed = torch.cat([x_low, x_high], dim=-1)
+                    embed_buff = embed_buff +  x_embed
                    
         if self.include_input:
             x_out = torch.cat([in_pos,embed_buff], dim=-1)
