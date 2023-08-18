@@ -69,7 +69,8 @@ class _HashGridMLP(nn.Module):
         # create look-up table
         embedding = nn.Embedding(hashmap_size, n_features)
         std = 1e-4
-        custom_kaiming_uniform_(embedding.weight, std = std, a=0)
+        # custom_kaiming_uniform_(embedding.weight, std = std, a=0)
+        nn.init.uniform_(embedding.weight, -std, std) 
         self.embedding = embedding.to(DEVICE)
         self.primes = primes
 

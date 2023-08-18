@@ -58,7 +58,7 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--calc_image_similarity"
-                "--is_continue"
+                
 
             ]
         },
@@ -74,11 +74,11 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
-                "--scan_id","118",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                //"--is_continue"
+                "--is_continue"
                 //"--calc_image_similarity"
 
             ]
@@ -95,7 +95,7 @@
                 "--nepoch", "1000",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
-                "--scan_id","118",
+                "--scan_id","122",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
@@ -141,26 +141,6 @@
                 //"--train_cameras",
                 "--validation_slope_print",
                 //"--is_continue"
-                
-            ]
-        },
-        {
-            "name": "IDR training Mixed Encoding",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/code/training/exp_runner.py",
-            "cwd": "${workspaceFolder}/code",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MixedEnc/dtu_fixed_cameras.conf",
-                "--expname", "PositionalGeometryEncodingHashGridAppearenceEnc",
-                "--scan_id","122",
-                "--checkpoint", "latest",
-                //"--train_cameras",
-                "--validation_slope_print",
-                "--is_continue"
                 
             ]
         },

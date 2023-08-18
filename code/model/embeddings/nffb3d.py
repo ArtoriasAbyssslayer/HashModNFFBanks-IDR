@@ -9,10 +9,10 @@
 import torch
 import torch.nn as nn
 
-from model.embeddings.frequency_enc import FourierFeature as FFenc
+from model.embeddings.frequency_enc import PositionalEncoding as FFenc
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridCUDA
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
-from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MultiResHashGridTCNN
+#from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MultiResHashGridTCNN
 class FourierFilterBanks(nn.Module):
 
     def __init__(self, GridEncoderNetConfig, bound):
@@ -25,35 +25,57 @@ class FourierFilterBanks(nn.Module):
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
 
         # Compute Fourier features
-        self.mlp_layers = nn.ModuleList()
+        self.mlp_layers = []
         for i in range(self.n_levels):
             self.mlp_layers.append(nn.Linear(self.num_inputs, self.num_outputs))
-
-        Fourier_Grid_features = []
-        for i in range(self.n_levels):
-            grid_features = MultiResHashGridMLP(self.include_input, self.num_inputs,
+        self.mlp_layers = nn.Sequential(*self.mlp_layers)
+        self.grid_levels = int(self.n_levels - 1)
+        print(f"Grid encoder levels: {self.grid_levels}")
+        
+        
+        self.grid_enc =  MultiResHashGridMLP(self.include_input, self.num_inputs,
                                                 self.n_levels, self.max_points_per_level,
                                                 GridEncoderNetConfig['log2_hashmap_size'],
                                                 GridEncoderNetConfig['base_resolution'],
                                                 GridEncoderNetConfig['desired_resolution'])
-            grid_ff = FFenc(grid_features.shape[-1], self.mlp_layers[i].shape[-1])
-            Fourier_Grid_features.append(grid_ff)
-        self.Fourier_Grid_features = Fourier_Grid_features
-
-        self.out_layer = nn.Linear(self.num_outputs, self.num_outputs)
+        ffn_layers = []
+        for i in range(self.grid_levels):
+            ffn_layer = FFenc(include_input=False,input_dims=self.num_inputs,
+                            max_Freq_log2=GridEncoderNetConfig['log2_hashmap_size'],log_sampling=True,
+                            periodic_fns=[torch.sin, torch.cos])
+            
+            ffn_layers.append(ffn_layer)
+        self.ffn = nn.Sequential(*ffn_layers)
+        ffenc_dims = [self.num_inputs]+[128]*self.grid_levels
+        self.ffenc_dims = ffenc_dims
+        self.out_layer = nn.Linear(self.ffenc_dims[-1],self.num_outputs)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         IndermediateOutputs = []
         x = input / self.bound  # Bound the input between [-1,1]
-
+        input = (input + self.bound) / (2 * self.bound)
+        
+        # Compute HashGrid and split it to it's multiresolution levels
+        augmented_grid_x = self.grid_enc(input)
+        grid_x = augmented_grid_x[..., x.shape[-1]:]
+        grid_x = grid_x.view(-1, self.grid_level, self.feature_dims)
+        grid_x = grid_x.permute(1, 0, 2)
+        
+        for layer in range(self.grid_level):
+            x = self.mlp_layers[layer](grid_x[layer])
+            x = self.Fo
+            if layer > 0:
+                x = grid_x[i] + x
+                
+                
         # Sum Fourier features with L_i MLP outputs
         for i in range(self.n_levels):
             x = self.mlp_layers[i](x)
             if i == 0:
                 IndermediateOutputs.append(self.Fourier_Grid_features[i].embed(x))
             else:
-                x_high = self.Fourier_Grid_features[i].embed(x)
-                IndermediateOutputs.append(self.Fourier_Grid_features[i].embed(x_high))
+                x_high = self.Fourier_Grid_features[i-1](self.Fourier_Grid_features[i=1].embed(x))
+                IndermediateOutputs.append(x_high)
 
         x = torch.sum(torch.stack(IndermediateOutputs), dim=0)
         output = self.out_layer(x)
@@ -66,61 +88,61 @@ class FourierFilterBanks(nn.Module):
 
 
 
-class FourierFilterBanks(nn.Module):
-    def __init__(self, GridEncoderConfig,HashEncoderType, d_in, bound = 1.0, has_out = True):
-        super().__init__()
+# class FourierFilterBanks(nn.Module):
+#     def __init__(self, GridEncoderConfig,HashEncoderType, d_in, bound = 1.0, has_out = True):
+#         super().__init__()
         
-        self.bound = bound
+#         self.bound = bound
         
-        ### Encoder Part
-        ffenc_dims = GridEncoderConfig['n_levels'] 
-        ffenc_dims = [d_in] + ffenc_dims
-        self.n_ffenc_layers  = len(ffenc_dims) 
+#         ### Encoder Part
+#         ffenc_dims = GridEncoderConfig['n_levels'] 
+#         ffenc_dims = [d_in] + ffenc_dims
+#         self.n_ffenc_layers  = len(ffenc_dims) 
 
-        features_per_level = GridEncoderConfig['max_points_per_level']
-        base_resolution = GridEncoderConfig['base_resolution']
-        per_level_scale = GridEncoderConfig['per_level_scale']
+#         features_per_level = GridEncoderConfig['max_points_per_level']
+#         base_resolution = GridEncoderConfig['base_resolution']
+#         per_level_scale = GridEncoderConfig['per_level_scale']
         
         
-        assert self.n_ffenc_layers > 3, "The multiresolution Fourier Feature Encoding (Branch) should be greater than 3"
-        grid_levels = int(self.n_ffenc_layers - 2)
-        if HashEncoderType == 'HashGridCUDA':
-            self.hashgrid_encoder = MultiResHashGridEncoderCUDA(input_dim=d_in, 
-                                                            num_levels=grid_levels, 
-                                                            level_dim=features_per_level, 
-                                                            per_level_scale=per_level_scale, 
-                                                            base_resolution=base_resolution, 
-                                                            log2_hashmap_size=GridEncoderConfig['log2_hashmap_size'], 
-                                                            desired_resolution=GridEncoderConfig['desired_resolution'])
-        elif HashEncoderType == 'HashGrid':
-            self.hashgrid_encoder = MultiResHashGridMLP(include_input=GridEncoderConfig['include_input'],
-                                                        in_dim=d_in
-                                                        )
-        elif HashEncoderType == 'HashGridTCNN':
-            self.hashgrid_encoder = MultiResHashGridTCNN(include_input=GridEncoderConfig['include_input'],
-                                                        in_dim=d_in
-                                                        )
-        else:
-            raise NotImplementedError(f"HashEncoderType {HashEncoderType} is not implemented")
+#         assert self.n_ffenc_layers > 3, "The multiresolution Fourier Feature Encoding (Branch) should be greater than 3"
+#         grid_levels = int(self.n_ffenc_layers - 2)
+#         if HashEncoderType == 'HashGridCUDA':
+#             self.hashgrid_encoder = MultiResHashGridEncoderCUDA(input_dim=d_in, 
+#                                                             num_levels=grid_levels, 
+#                                                             level_dim=features_per_level, 
+#                                                             per_level_scale=per_level_scale, 
+#                                                             base_resolution=base_resolution, 
+#                                                             log2_hashmap_size=GridEncoderConfig['log2_hashmap_size'], 
+#                                                             desired_resolution=GridEncoderConfig['desired_resolution'])
+#         elif HashEncoderType == 'HashGrid':
+#             self.hashgrid_encoder = MultiResHashGridMLP(include_input=GridEncoderConfig['include_input'],
+#                                                         in_dim=d_in
+#                                                         )
+#         elif HashEncoderType == 'HashGridTCNN':
+#             self.hashgrid_encoder = MultiResHashGridTCNN(include_input=GridEncoderConfig['include_input'],
+#                                                         in_dim=d_in
+#                                                         )
+#         else:
+#             raise NotImplementedError(f"HashEncoderType {HashEncoderType} is not implemented")
         
-        self.n_grid_levels = grid_levels
-        print(f"Grid encoder levels: {grid_levels}")
-        self.feat_dim = features_per_level
+#         self.n_grid_levels = grid_levels
+#         print(f"Grid encoder levels: {grid_levels}")
+#         self.feat_dim = features_per_level
         
         
-        # Create the FourierFeatureNetworks to map low-dim grid features to high-dim FourierGridFeatures
-        ffn_list = []
-        ffenc_kwargs = {
-            'include_input': False,
-            'input_dims': GridEncoderConfig['in_dim'],
-            'max_freq_log2': GridEncoderConfig['log2_hashmap_size'],
-            'num_freqs': GridEncoderConfig['n_levels'],
-            'log_sampling': True,
-            'periodic_fns': [torch.sin, torch.cos]
-        }
-        for i in range(grid_levels):
-            ffn_list.append = FFenc(**ffenc_kwargs)
-            # this should apply to every hashgrid resolution level the fourier feature encoding 
-            # and then we can sum them up
-            grid_features = self.hashgrid_encoder.grid_features
-            fourier_grid_features[i] = ffn_list[i].embed(grid_features[i])
+#         # Create the FourierFeatureNetworks to map low-dim grid features to high-dim FourierGridFeatures
+#         ffn_list = []
+#         ffenc_kwargs = {
+#             'include_input': False,
+#             'input_dims': GridEncoderConfig['in_dim'],
+#             'max_freq_log2': GridEncoderConfig['log2_hashmap_size'],
+#             'num_freqs': GridEncoderConfig['n_levels'],
+#             'log_sampling': True,
+#             'periodic_fns': [torch.sin, torch.cos]
+#         }
+#         for i in range(grid_levels):
+#             ffn_list.append = FFenc(**ffenc_kwargs)
+#             # this should apply to every hashgrid resolution level the fourier feature encoding 
+#             # and then we can sum them up
+#             grid_features = self.hashgrid_encoder.grid_features
+#             fourier_grid_features[i] = ffn_list[i].embed(grid_features[i])

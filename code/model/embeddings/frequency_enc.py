@@ -148,8 +148,8 @@ class SHEncoder(nn.Module):
                 xy, yz, xz = x * y, y * z, x * z
                 result[..., 4] = self.C2[0] * xy
                 result[..., 5] = self.C2[1] * yz
-                result[..., 6] = self.C2[2] * (2.0 * zz - xx - yy)
-                #result[..., 6] = self.C2[2] * (3.0 * zz - 1) # xx + yy + zz == 1, but this will lead to different backward gradients, interesting...
+                #result[..., 6] = self.C2[2] * (2.0 * zz - xx - yy)
+                result[..., 6] = self.C2[2] * (3.0 * zz - 1) # xx + yy + zz == 1, but this will lead to different backward gradients, interesting...
                 result[..., 7] = self.C2[3] * xz
                 result[..., 8] = self.C2[4] * (xx - yy)
                 if self.degree > 3:

@@ -114,6 +114,7 @@ class GridEncoder(nn.Module):
         self.log2_hashmap_size = log2_hashmap_size
         self.base_resolution = base_resolution
         self.output_dim = num_levels * level_dim
+        self.embeddings_dim = self.output_dim
         self.gridtype = gridtype
         self.gridtype_id = _gridtype_to_id[gridtype]  # "tiled" or "hash"
         self.interpolation = interpolation
@@ -138,8 +139,9 @@ class GridEncoder(nn.Module):
         self.n_params = offsets[-1] * level_dim
 
         # parameters
-        self.embeddings = nn.Parameter(torch.empty(offset, level_dim))
-
+        if(torch.cuda.is_available()):
+            self.embeddings = nn.Parameter(torch.empty(offset, level_dim)).to(device='cuda')
+            self.offsets = self.offsets.to(device='cuda')
         self.reset_parameters()
 
     def reset_parameters(self):

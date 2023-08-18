@@ -25,26 +25,23 @@ class ImplicitNetwork(nn.Module):
             max_points_per_entry=2,
             base_resolution=64,
             desired_resolution=None,
-            bound:float=0.5
+            bound:float=1.0
     ):
         super().__init__()
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
         self.embed_fn = None
         
-        if embed_type == 'MixedEncoding':
-            # In mixed encoding Use frequency encoder for the Geometry Network and HashGrid for the appearance network
-            self.embed_type = 'PositionalEncoding'
-        else:
-            self.embed_type = embed_type
+       
+        self.embed_type = embed_type
         self.multires = multires
-        #self.dencity_net = LaplaceDensity(params_init={'beta':1.2}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':0.3}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
                 embed_model = Custom_Embedding_Network(input_dims=d_in,network_dims=dims,embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
                                                         max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
-                                                        desired_resolution=desired_resolution,bound=0.5)
+                                                        desired_resolution=desired_resolution,bound=bound)
                 embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                 self.embed_model = embed_model
                 self.embed_fn = embed_fn
@@ -119,15 +116,19 @@ class ImplicitNetwork(nn.Module):
             
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        x[:,0] = F.tanh(x[:,0])
+        # Truncate SDF values with Laplace Density Distribution 
+        # to avoid exploding gradients <=> exploding SDF values  
+        # + avoid loosing yield ray points of the surface
+        with torch.no_grad():   
+            sdf_laplace_density = self.dencity_net.density_func(x[:,0],beta=1.0)
+        
+        x[:,0] = F.tanh(x[:,0]/(2+sdf_laplace_density))
         return x
 
     def gradient(self, x):
         x.requires_grad_(True)
         y = self.forward(x)[:,:1]
         d_output = torch.ones_like(y, requires_grad=False, device=y.device)
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize(device=y.device)
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
@@ -135,6 +136,8 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
+        torch.cuda.synchronize(device=gradients.device)
+        torch.cuda.empty_cache()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):

@@ -3,10 +3,11 @@ import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
-from model.embeddings.nffb3d import FourierFilterBanks
-from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
+#from model.embeddings.nffb3d import FourierFilterBanks
+#from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+#from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
+from model.embeddings.gridencoder_torchngp import GridEncoder as GridEncoderCUDA
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network:
@@ -18,6 +19,18 @@ class Custom_Embedding_Network:
     """
     def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         embed_kwargs = {
+            'GridEncoderCUDA':{
+                'input_dim': input_dims,
+                'num_levels': multires,
+                'level_dim': max_points_per_entry,
+                'per_level_scale': 2.0,
+                'base_resolution': base_resolution,
+                'log2_hashmap_size': log2_max_hash_size,
+                'desired_resolution': desired_resolution,
+                'gridtype': 'hash',
+                'align_corners': False,
+                'interpolation': 'linear'
+            },
             'MultiResHashEncoderCUDA':{
                 'input_dim': input_dims,
                 'num_levels': multires,
@@ -93,16 +106,35 @@ class Custom_Embedding_Network:
                 "grid_embedding_std": 0.0001,
                 'per_level_scale': 2.0,
             },
+            'fourier_filter_banks':{
+                'GridEncoderNetConfig,':{
+                    'include_input': True,
+                    'in_dim': input_dims,
+                    'embed_type': 'HashGridTcnn',
+                    'network_dims': network_dims,
+                    'n_levels': multires,
+                    'max_points_per_level': max_points_per_entry,
+                    'log2_hashmap_size': log2_max_hash_size,
+                    'base_resolution': base_resolution,
+                    'desired_resolution': desired_resolution,
+                    "base_sigma": 8.0,
+                    "exp_sigma": 1.26,
+                    "grid_embedding_std": 0.0001,
+                    'per_level_scale': 2.0,
+                },
+                'bound': bound
+            }
         }
         embed_models = {
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
-            'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
+            #'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
             'NerfPos': (NerfPositionalEncoding,'nerf_positional'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
-            'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
-            'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
+            #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+            #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
+            'GridEncoderCUDA': (GridEncoderCUDA, 'GridEncoderCUDA'),
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")
