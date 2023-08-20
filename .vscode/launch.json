@@ -74,11 +74,11 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
                 "--expname", "HashGrid",
-                "--scan_id","122",
+                "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]

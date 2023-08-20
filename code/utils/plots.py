@@ -140,7 +140,7 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
                             i=I, j=J, k=K, name='implicit_surface',
                             opacity=1.0)]
 
-        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=normals)
         meshexport.export('{0}/surface_{1}.ply'.format(path, epoch), 'ply')
 
         if return_mesh:
@@ -170,7 +170,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
     verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
 
-    mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+    mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=normals)
     components = mesh_low_res.split(only_watertight=False)
     areas = np.array([c.area for c in components], dtype=float)
     mesh_low_res = components[areas.argmax()]
@@ -227,7 +227,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
                 verts.unsqueeze(-1)).squeeze()
         verts = (verts + grid_points[0]).cpu().numpy()
 
-        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=normals)
 
     return meshexport
 
