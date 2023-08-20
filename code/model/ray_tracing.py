@@ -29,7 +29,8 @@ class RayTracing(nn.Module):
                 object_mask,
                 ray_directions
                 ):
-
+        # Free up cached cuda tensors to avoid OOM
+        torch.cuda.empty_cache()
         batch_size, num_pixels, _ = ray_directions.shape
 
         sphere_intersections, mask_intersect = rend_util.get_sphere_intersection(cam_loc, ray_directions, r=self.object_bounding_sphere)
@@ -91,8 +92,7 @@ class RayTracing(nn.Module):
 
             curr_start_points[mask] = min_mask_points
             acc_start_dis[mask] = min_mask_dist
-        # Free up cached cuda tensors to avoid OOM
-        torch.cuda.empty_cache()
+        
         return curr_start_points, \
                network_object_mask, \
                acc_start_dis
@@ -253,7 +253,6 @@ class RayTracing(nn.Module):
 
     def secant(self, sdf_low, sdf_high, z_low, z_high, cam_loc, ray_directions, sdf):
         ''' Runs the secant method for interval [z_low, z_high] for n_secant_steps '''
-
         z_pred = - sdf_low * (z_high - z_low) / (sdf_high - sdf_low) + z_low
         for i in range(self.n_secant_steps):
             p_mid = cam_loc + z_pred.unsqueeze(-1) * ray_directions
@@ -291,7 +290,7 @@ class RayTracing(nn.Module):
         points = mask_points_all.reshape(-1, 3)
 
         mask_sdf_all = []
-        for pnts in torch.split(points, 100000, dim=0):
+        for pnts in torch.split(points, 10000, dim=0):
             mask_sdf_all.append(sdf(pnts))
 
         mask_sdf_all = torch.cat(mask_sdf_all).reshape(-1, n)

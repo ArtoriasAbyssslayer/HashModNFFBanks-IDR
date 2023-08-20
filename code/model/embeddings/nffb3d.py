@@ -9,13 +9,13 @@
 import torch
 import torch.nn as nn
 
-from model.embeddings.frequency_enc import PositionalEncoding as FFenc
+from model.embeddings.frequency_enc import FourierFeature as FFenc
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridCUDA
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 #from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MultiResHashGridTCNN
 class FourierFilterBanks(nn.Module):
 
-    def __init__(self, GridEncoderNetConfig, bound):
+    def __init__(self, GridEncoderNetConfig,has_out,bound):
         super(FourierFilterBanks, self).__init__()
         self.bound = bound
         self.include_input = GridEncoderNetConfig['include_input']
@@ -32,23 +32,33 @@ class FourierFilterBanks(nn.Module):
         self.grid_levels = int(self.n_levels - 1)
         print(f"Grid encoder levels: {self.grid_levels}")
         
-        
         self.grid_enc =  MultiResHashGridMLP(self.include_input, self.num_inputs,
                                                 self.n_levels, self.max_points_per_level,
                                                 GridEncoderNetConfig['log2_hashmap_size'],
                                                 GridEncoderNetConfig['base_resolution'],
                                                 GridEncoderNetConfig['desired_resolution'])
-        ffn_layers = []
-        for i in range(self.grid_levels):
-            ffn_layer = FFenc(include_input=False,input_dims=self.num_inputs,
-                            max_Freq_log2=GridEncoderNetConfig['log2_hashmap_size'],log_sampling=True,
-                            periodic_fns=[torch.sin, torch.cos])
-            
-            ffn_layers.append(ffn_layer)
-        self.ffn = nn.Sequential(*ffn_layers)
+        
+        # 128 neurons are used to speed up the process of encoding
         ffenc_dims = [self.num_inputs]+[128]*self.grid_levels
         self.ffenc_dims = ffenc_dims
-        self.out_layer = nn.Linear(self.ffenc_dims[-1],self.num_outputs)
+        ff_enc_list = []
+        for i in range(self.grid_levels):
+            ffenc_layer = FFenc(channels=self.max_points_per_level*ffenc_dims[2+i], sigma = GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,input_dims=ffenc_dims[i+1],include_input=True)
+            ff_enc_list.append(ffenc_layer)
+        self.ff_enc = nn.Sequential(*ff_enc_list)
+
+        
+        """ The Low - Frequency MLP part """
+        idr_dims = GridEncoderNetConfig['network_dims']
+        self.n_ffenc_layers = len(idr_dims)
+        assert self.n_ffenc_layers > 6, "The Implicit Network Branch should have more than 6 layers"
+        for layer in range(0, self.n_ffenc_layers - 1):
+            setattr(self, "ff_lin" + str(layer), nn.Linear(ffenc_dims[layer], ffenc_dims[layer + 1]))
+        
+        """ The ouput layers """
+        if has_out:
+            self.out_layer = nn.Linear(self.ffenc_dims[-1],self.num_outputs)
+
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         IndermediateOutputs = []

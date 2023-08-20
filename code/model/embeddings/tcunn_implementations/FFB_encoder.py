@@ -141,5 +141,5 @@ class FFB_encoder(nn.Module):
             x_out = torch.cat([in_pos,embed_buff], dim=-1)
         else:
             x_out = embed_buff
-        torch.cuda.empty_cache()
+
         return x_out

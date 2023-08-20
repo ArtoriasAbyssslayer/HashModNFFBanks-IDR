@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':0.3}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -119,8 +119,8 @@ class ImplicitNetwork(nn.Module):
         # Truncate SDF values with Laplace Density Distribution 
         # to avoid exploding gradients <=> exploding SDF values  
         # + avoid loosing yield ray points of the surface
-        with torch.no_grad():   
-            sdf_laplace_density = self.dencity_net.density_func(x[:,0],beta=1.0)
+         
+        sdf_laplace_density = self.dencity_net(x[:,0])
         
         x[:,0] = F.tanh(x[:,0]/(2+sdf_laplace_density))
         return x
@@ -129,6 +129,9 @@ class ImplicitNetwork(nn.Module):
         x.requires_grad_(True)
         y = self.forward(x)[:,:1]
         d_output = torch.ones_like(y, requires_grad=False, device=y.device)
+        with torch.cuda.device('cuda'):
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize(device = x.device)
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
@@ -136,8 +139,6 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
-        torch.cuda.synchronize(device=gradients.device)
-        torch.cuda.empty_cache()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):

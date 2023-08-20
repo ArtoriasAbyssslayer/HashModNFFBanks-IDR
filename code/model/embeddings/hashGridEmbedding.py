@@ -81,7 +81,7 @@ class _HashGridMLP(nn.Module):
         bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
         for name, param in self.named_parameters():                
-            param.requires_grad_(False)
+            param.requires_grad = False
         #self.embedding.requires_grad_(True)
     def forward(self, x: torch.Tensor):
         # x: (b..., dim), torch.float32, range: [0, 1]
@@ -164,12 +164,15 @@ class MultiResHashGridMLP(nn.Module):
     # In forard return concatenated emmbedding grids in each level
     # resolution.
     def forward(self, x: torch.Tensor):
-              
+        with torch.cuda.device('cuda'):
+                torch.cuda.empty_cache()
         if self.include_input == True:
+            
             # print (" Hash Encoding Input")
             return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
         
         else:
+            
             return torch.cat([level(x) for level in self.levels], dim=-1)
            
         

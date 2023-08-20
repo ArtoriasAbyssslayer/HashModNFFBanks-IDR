@@ -96,7 +96,8 @@ def evaluate(**kwargs):
     indices, model_input, ground_truth = next(iter(eval_dataloader))
 
     for i, (new_q, scale) in enumerate(zip(q_new, s_new)):
-        torch.cuda.empty_cache()
+        with torch.cuda.device('cuda'):
+            torch.cuda.empty_cache()
 
         new_q = new_q.unsqueeze(0)
         new_t = -rend_util.quat_to_rot(new_q)[:, :, 2] * scale

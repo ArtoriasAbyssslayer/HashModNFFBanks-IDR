@@ -101,7 +101,8 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         for p in self.grid_encoder.parameters():
             p.requires_grad = False
     def forward(self,x):
-        torch.cuda.empty_cache()
+        with torch.cuda.device('cuda'):
+                torch.cuda.empty_cache()
         if self.include_input == True:
             return torch.cat([x,self.grid_encoder(x)],dim=-1)
         else:
