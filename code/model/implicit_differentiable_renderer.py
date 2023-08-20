@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':0.55}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
