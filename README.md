@@ -107,6 +107,11 @@ Or, for trained cameras:
 python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_conf_var/{Embedding_Model}/dtu_trained_cameras.conf --scan_id SCAN_ID --checkpoint 2000 --eval_cameras [--eval_rendering]
 ```
 
+### Spatial Coordinate Hash Grid Encoding
+
+<p align="center">
+  <img width="100%" src="media/owl.gif"/>
+</p>
 
 
 ### Disentanglement of geometry and appearance

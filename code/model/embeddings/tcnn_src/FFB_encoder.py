@@ -23,6 +23,7 @@ class FFB_encoder(nn.Module):
         self.n_levels = HashGridEncoderConfig['n_levels']
         multires = self.n_levels
         self.feature_dims = HashGridEncoderConfig['max_points_per_level']
+        
         # FourierFeatureEncoding init
         n_frequencies = self.n_levels
         include_input = HashGridEncoderConfig['include_input']

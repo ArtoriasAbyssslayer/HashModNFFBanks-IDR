@@ -4,8 +4,8 @@ import numpy as np
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
 #from model.embeddings.nffb3d import FourierFilterBanks
-#from model.embeddings.tcunn_implementations.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-#from model.embeddings.tcunn_implementations.FFB_encoder import FFB_encoder
+#from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+#from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 from model.embeddings.gridencoder_torchngp import GridEncoder as GridEncoderCUDA
 "Define Embedding model selection function and Network Object Initialization"
@@ -72,7 +72,8 @@ class Custom_Embedding_Network:
                 'channels': network_dims[0],
                 'sigma': 1.0,
                 'input_dims': input_dims,
-                'include_input': True
+                'include_input': True,
+                'has_out':True
             },
             'spherical_harmonics':{
                 'input_dims': input_dims,

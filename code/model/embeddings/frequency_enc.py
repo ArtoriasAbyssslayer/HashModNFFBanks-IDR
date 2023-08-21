@@ -180,7 +180,7 @@ def get_embedder(multires):
     embed_kwargs = {
         'include_input': True,
         'input_dims': 3,
-        'max_freq_log2': multires+3,
+        'max_freq_log2': multires-1,
         'num_freqs': multires,
         'log_sampling': True,
         'periodic_fns': [torch.sin, torch.cos],
