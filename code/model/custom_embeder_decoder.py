@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np 
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
-#from model.embeddings.nffb3d import FourierFilterBanks
+from model.embeddings.nffb3d import FourierFilterBanks
 #from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 #from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
@@ -73,16 +73,11 @@ class Custom_Embedding_Network:
                 'sigma': 1.0,
                 'input_dims': input_dims,
                 'include_input': True,
-                'has_out':True
+                
             },
             'spherical_harmonics':{
                 'input_dims': input_dims,
                 'degree': 4
-            },
-            'nerf_positional':{
-                'include_input': True,
-                'dim': input_dims,
-                'n_levels': multires
             },
             'positional_encoding':{               
             'include_input': True,
@@ -108,7 +103,7 @@ class Custom_Embedding_Network:
                 'per_level_scale': 2.0,
             },
             'fourier_filter_banks':{
-                'GridEncoderNetConfig,':{
+                'GridEncoderNetConfig':{
                     'include_input': True,
                     'in_dim': input_dims,
                     'embed_type': 'HashGridTcnn',
@@ -123,14 +118,14 @@ class Custom_Embedding_Network:
                     "grid_embedding_std": 0.0001,
                     'per_level_scale': 2.0,
                 },
+                'has_out':True,
                 'bound': bound
             }
         }
         embed_models = {
             'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
-            #'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
+            'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
-            'NerfPos': (NerfPositionalEncoding,'nerf_positional'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
             #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),

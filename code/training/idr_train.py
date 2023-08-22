@@ -208,11 +208,11 @@ class IDRTrainRunner():
         try:
             print("training...")
             # Intialize PSNR buffer 
-            psnrs = []
+            # psnrs = []
             # Intialize SSIM buffer
-            ssim = []
+            # ssim = []
             # Intialize LPIPS buffer
-            lpips = []
+            # lpips = []
             losses = []  
             
             for epoch in range(self.start_epoch, self.nepochs + 1):

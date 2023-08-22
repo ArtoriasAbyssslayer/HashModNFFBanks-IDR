@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':0.55}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -160,7 +160,7 @@ class RenderingNetwork(nn.Module):
         self.multires_view = multires_view
         self.d_in = d_in
         self.embedview_fn = None
-        if rgb_embed_type:
+        if rgb_embed_type=='SHEncoder':
             if multires_view > 0:
                 if self.mode == 'idr':
                     shen_d_in = 3
@@ -169,8 +169,10 @@ class RenderingNetwork(nn.Module):
                     dims[0] += (input_ch - shen_d_in)
         elif rgb_embed_type == 'NerfPos':
             if multires_view > 0:
-                self.embedview_fn, input_ch = get_embedder(multires_view)
-                dims[0] += (input_ch - d_in)
+                embedview_fn, input_ch = get_embedder(multires_view)
+                self.embedview_fn = embedview_fn
+                dims[0] += input_ch 
+
         else:
             raise ValueError('No Embedding Network config provided')
 

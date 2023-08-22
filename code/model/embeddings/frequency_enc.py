@@ -1,40 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
-class NerfPositionalEncoding(nn.Module):
-    def __init__(self, include_input:bool, dim: int, n_levels: int = 10):
-        """
-            Positional encoding from NeRF
-            [sin(x),cos(x), sin(4x), cos(4x), sin(8x), cos(8x)
-             .....,sin(2^n*x), cos(2^n*x)]
 
-            Args:
-                - dim(int) : input dimensions
-                - n_levels(int,optional): frequency bands number
-        """
-        super().__init__()
-        self.n_levels = n_levels
-        assert self.n_levels > 0
-        self.include_input = include_input
-        freqs = 2. ** torch.linspace(0., n_levels - 1, n_levels)
-        self.register_buffer('freqs', freqs)
-
-        # ---
-        self.input_dim = dim
-        self.output_dim = dim * n_levels * 2
-        self.embeddings_dim = self.output_dim  + self.input_dim if self.include_input else self.output_dim
-    def forward(self, x: torch.Tensor):
-        # unsqueeze in order to multiply it with freqs  space
-        input = x 
-        x = x.unsqueeze(dim=-1)  # (...,dim,1)
-        x = x * self.freqs.to(input.device)  # (..., dim,L)
-        # concatenate the sin,cos input frequencies series
-        x = torch.cat((torch.sin(x), torch.cos(x)), dim=-1)  # (..,dim,L*2)
-        if self.include_input:
-            return torch.cat((input,x.flatten(-2, -1)),dim=-1)  # (...,dim*L*2) - flatten the tensor to 1D
-        else:
-            return x.flatten(-2, -1)
-
+# Nerf Like Positional Encoding 
 class PositionalEncoding(nn.Module):
     ''' IDR classic method for positional encoding '''
     def __init__(self, **kwargs):
@@ -78,16 +46,34 @@ class PositionalEncoding(nn.Module):
         
 #Simple Fourier Feature Encoder 
 class FourierFeature(nn.Module):
-    '''Fourrier Feature Encoder'''
+    '''Fourrier Feature Encoder'''        
     def __init__(self, channels, sigma=1.0, input_dims=3, include_input=True) -> None:
         super().__init__()
-        self.register_buffer('B', torch.randn(input_dims, channels) * sigma, True)
-        self.channels = channels
-        self.embeddings_dim  = 2 * self.channels + 3 if include_input else 2 * self.channels
+        self.input_dims = input_dims
+        self.register_buffer('B', torch.randn(channels,input_dims ) * sigma,persistent=True)
+        self.embeddings_dim  = 2 * channels + 3 if include_input else 2 * channels
         self.include_input = include_input
+        self.create_embedding_fn()
+    def create_embedding_fn(self):
+        embed_fns = []
+        d = self.input_dims
+        out_dim = 0
+        if self.include_input:
+            embed_fns.append(lambda x: x)
+        out_dim += d
+        for p_fn in [torch.sin, torch.cos]:
+            embed_fns.append(lambda x, p_fn=p_fn, freq=self.B: p_fn(torch.matmul(2*np.pi*x,self.B.to(x.device))))
+            out_dim += d
+        self.embed_fns = embed_fns
+        self.out_dim = out_dim        
     def forward(self, x):
-        xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
-        return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        # xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
+        # return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        x_ffenc= torch.cat([fn(x) for fn in self.embed_fns], -1)
+        if self.include_input:
+            return torch.cat([x, x_ffenc], -1)
+        else:
+            return x_ffenc
 #SHencoder 
 class SHEncoder(nn.Module):
     '''Spherical Harmonics Encoder'''
@@ -174,7 +160,7 @@ class SHEncoder(nn.Module):
         return result
     
 
-   
+"""Function for Positional Encoder Creation"""
 def get_embedder(multires):
     '''Default Get embedder function for the Positional Encoding -> Used original IDR configs'''
     embed_kwargs = {
@@ -185,7 +171,6 @@ def get_embedder(multires):
         'log_sampling': True,
         'periodic_fns': [torch.sin, torch.cos],
     }
-
     embedder_obj = PositionalEncoding(**embed_kwargs)
     def embed(x, eo=embedder_obj): return eo.embed(x)
     return embed, embedder_obj.out_dim

@@ -1,32 +1,27 @@
 import torch
 import torch.nn as nn
 
-from model.embeddings.stylemod.utils_function import *
+from model.embeddings.style_tranfer.utils_function import *
 
 class StyleMod(nn.Module):
     def __init__(self, feature_vector_size):
         super(StyleMod, self).__init__()
-        self.style_fc = nn.Linear(feature_vector_size, 2)
+        # substruct input dims from feature_vector_size
+        self.style_fc = nn.Linear(feature_vector_size-3, 2).to(device='cuda')
 
     def forward(self, content_feat, style_feat):
-        batch_size, num_channels, height, width = content_feat.size()
+        batch_size, num_channels= content_feat.size()
         
         style_params = self.style_fc(style_feat)
-        style_scale = style_params[:, 0].view(batch_size, num_channels, 1, 1)
-        style_shift = style_params[:, 1].view(batch_size, num_channels, 1, 1)
+        style_scale = style_params[:, 0]
+        style_shift = style_params[:, 1]
 
         normalized_feat = adaptive_instance_normalization(content_feat, style_feat)
         styled_feat = normalized_feat * style_scale + style_shift
 
         return styled_feat
 
-# Example usage
-feature_vector_size = 256
-style_mod = StyleMod(feature_vector_size)
-
-# Assuming you have content_feat and style_feat as your input features
-modified_feat = style_mod(content_feat, style_feat_selected)
-
+""" Alternative StyleBlock Implementation """ 
 #class StyleMod(torch.nn.Module):
     # def __init__(self, in_channels, style_dim):
     #     super(StyleMod, self).__init__()
