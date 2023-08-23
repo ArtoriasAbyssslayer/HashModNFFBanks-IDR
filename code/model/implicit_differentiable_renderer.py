@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':100.0}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -122,7 +122,7 @@ class ImplicitNetwork(nn.Module):
          
         sdf_laplace_density = self.dencity_net(x[:,0])
         
-        x[:,0] = F.tanh(x[:,0]/(2+sdf_laplace_density))
+        x[:,0] = F.tanh(x[:,0]/(sdf_laplace_density+2))
         return x
 
     def gradient(self, x):

@@ -50,7 +50,7 @@ class FourierFeature(nn.Module):
     def __init__(self, channels, sigma=1.0, input_dims=3, include_input=True) -> None:
         super().__init__()
         self.input_dims = input_dims
-        self.register_buffer('B', torch.randn(channels,input_dims ) * sigma,persistent=True)
+        self.register_buffer('B', torch.randn(channels,int(input_dims/2)) * sigma,persistent=True)
         self.embeddings_dim  = 2 * channels + 3 if include_input else 2 * channels
         self.include_input = include_input
         self.create_embedding_fn()
@@ -70,10 +70,7 @@ class FourierFeature(nn.Module):
         # xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
         # return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
         x_ffenc= torch.cat([fn(x) for fn in self.embed_fns], -1)
-        if self.include_input:
-            return torch.cat([x, x_ffenc], -1)
-        else:
-            return x_ffenc
+        return x_ffenc
 #SHencoder 
 class SHEncoder(nn.Module):
     '''Spherical Harmonics Encoder'''

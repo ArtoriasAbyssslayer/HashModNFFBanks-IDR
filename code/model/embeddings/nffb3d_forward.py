@@ -34,8 +34,4 @@ class NFFB(nn.Module):
         return out
     
     
-        @torch.no_grad
         
-        # optimizer utils
-        def get_optimizer(self,lr,weight_decay):
-            return torch.optim.Adam(self.parameters(),lr=lr,weight_decay=weight_decay)  
