@@ -13,7 +13,7 @@ import math
 import utils.general as utils
 import utils.plots as plt
 from utils import rend_util
-
+from model.metrics import *
 def evaluate(**kwargs):
     torch.set_default_dtype(torch.float32)
 
@@ -127,6 +127,8 @@ def evaluate(**kwargs):
         utils.mkdir_ifnotexists(images_dir)
 
         psnrs = []
+        ssims = []
+        lpips = []
         for data_index, (indices, model_input, ground_truth) in enumerate(eval_dataloader):
             model_input["intrinsics"] = model_input["intrinsics"].cuda()
             model_input["uv"] = model_input["uv"].cuda()
@@ -169,11 +171,29 @@ def evaluate(**kwargs):
             rgb_eval_masked = rgb_eval * mask
             rgb_gt_masked = rgb_gt * mask
 
+            # Calculate Metrics Per View
             psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
+            lpip = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
+            ssim = ssim(rgb_eval_masked,rgb_gt_masked,mask)
+            
             psnrs.append(psnr)
+            ssims.append(ssim)
+            lpips.append(lpip)
 
+        # Store Metrics 
         psnrs = np.array(psnrs).astype(np.float64)
+        ssims = np.array(ssims).astype(np.float64)
+        lpips = np.array(lpips).astype(np.float64)
+        metrics_dir = '{0}/metrics'.format(evaldir)
+        utils.mkdir_ifnotexists(metrics_dir)
+        np.savetxt('../evals/metrics/psnrs.csv',psnrs,delimiter=',')
+        np.savetxt('../evals/metrics/ssims.csv',ssims,delimiter=',')
+        np.savetxt('../evals/metrics/lpips.csv',lpips,delimiter=',')
+        # Print Metrics Stats
         print("RENDERING EVALUATION {2}: psnr mean = {0} ; psnr std = {1}".format("%.2f" % psnrs.mean(), "%.2f" % psnrs.std(), scan_id))
+        print("RENDERING EVALUATION {2}: ssim mean = {0} ; ssim std = {1}".format("%.2f" % ssims.mean(), "%.2f" % ssims.std(), scan_id))
+        print("RENDERING EVALUATION {2}: lpips mean = {0} ; lpips std = {1}".format("%.2f" % lpips.mean(), "%.2f" % lpips.std(), scan_id))
+        
 
 
 def get_cameras_accuracy(pred_Rs, gt_Rs, pred_ts, gt_ts,):

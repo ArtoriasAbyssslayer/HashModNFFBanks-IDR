@@ -150,7 +150,7 @@ class RenderingNetwork(nn.Module):
             dims,
             weight_norm=True,
             multires_view=0,
-            rgb_embed_type='NerfPos',
+            viewdirs_embed_type='NerfPos',
     ):
         super().__init__()
         self.feature_vector_size = feature_vector_size
@@ -159,21 +159,31 @@ class RenderingNetwork(nn.Module):
         self.multires_view = multires_view
         self.d_in = d_in
         self.embedview_fn = None
-        if rgb_embed_type=='SHEncoder':
+        if viewdirs_embed_type=='SHEncoder':
             if multires_view > 0:
                 if self.mode == 'idr':
                     shen_d_in = 3
                     embed_model = SHEncoder(shen_d_in,degree=multires_view)
                     self.embedview_fn, input_ch = embed_model.forward, embed_model.embeddings_dim
                     dims[0] += (input_ch - shen_d_in)
-        elif rgb_embed_type == 'NerfPos':
+        elif viewdirs_embed_type == 'NerfPos':
             if multires_view > 0:
-                embedview_fn, input_ch = get_embedder(multires_view)
-                self.embedview_fn = embedview_fn
-                dims[0] += input_ch 
-
+                if self.mode == 'idr':
+                    embedview_fn, input_ch = get_embedder(multires_view)
+                    self.embedview_fn = embedview_fn
+                    dims[0] += input_ch 
+        elif viewdirs_embed_type=='embedding_network':
+            if multires_view > 0:
+                if self.mode == 'idr':
+                    d_in = 3
+                    # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) but should mutch ImplicitNetwork's embedding net #
+                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=15,base_resolution=16,desired_resolution=512)
+                    embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
+                    self.embed_model = embed_model
+                    self.embed_fn = embed_fn
+                    dims[0] += input_ch 
         else:
-            raise ValueError('No Embedding Network config provided')
+            raise ValueError('No Embedding Network config provided for VIEWDIRS')
 
         self.num_layers = len(dims)
 

@@ -22,7 +22,7 @@ imageio==2.5.0
 scipy
 matplotlib
 tensorboard
-
-
+torchmetrics
+lpips
 
 

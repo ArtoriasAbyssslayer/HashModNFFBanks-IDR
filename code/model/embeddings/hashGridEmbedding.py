@@ -67,7 +67,7 @@ class _HashGridMLP(nn.Module):
         f"HashGrid only supports < {len(HASH_PRIMES)}-D inputs"
 
         # create look-up table
-        embedding = nn.Embedding(hashmap_size, n_features)
+        embedding = nn.Embedding(hashmap_size, n_features).requires_grad_(False)
         std = 1e-4
         # custom_kaiming_uniform_(embedding.weight, std = std, a=0)
         nn.init.uniform_(embedding.weight, -std, std) 
@@ -164,8 +164,8 @@ class MultiResHashGridMLP(nn.Module):
     # In forard return concatenated emmbedding grids in each level
     # resolution.
     def forward(self, x: torch.Tensor):
-        with torch.cuda.device('cuda'):
-                torch.cuda.empty_cache()
+        #with torch.cuda.device('cuda'):
+        torch.cuda.empty_cache()
         if self.include_input == True:
             
             # print (" Hash Encoding Input")

@@ -5,7 +5,6 @@ import cv2
 import argparse
 from glob import glob
 import os
-
 import utils.general as utils
 
 def get_Ps(cameras,number_of_cameras):
