@@ -56,8 +56,10 @@ class FourierFilterBanks(nn.Module):
         
         self.n_ffenc_layers = self.grid_levels
         assert self.n_ffenc_layers >= 6, "The Implicit Network Branch should have more than 5 layers"
-        for layer in range(0, self.n_ffenc_layers - 1):
-            setattr(self, "ff_lin" + str(layer), nn.Linear(ffenc_dims[layer], ffenc_dims[layer + 1]))
+        # Input layer 
+        setattr(self, "ff_lin" + str(0), nn.Linear(ffenc_dims[0], 2*ffenc_dims[1]))
+        for layer in range(1, self.n_ffenc_layers - 1):
+            setattr(self, "ff_lin" + str(layer), nn.Linear(2*ffenc_dims[layer], 2*ffenc_dims[layer + 1]))
         
         """ Initialize parameter if  SIREN Branch is used <-> has_out(bool)"""
         self.sin_w0_high = 2*self.sin_w0
@@ -65,29 +67,29 @@ class FourierFilterBanks(nn.Module):
         self.sin_activation_high = Sine(w0=self.sin_w0_high)
         self.init_SIREN()
 
-
+        out_layer_width = 2*self.ffenc_dims[-1]
         """ The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features """
         self.has_out = has_out
         if has_out:
             if self.include_input:
 
-                self.embeddings_dim = self.ffenc_dims[-1] + self.num_inputs
+                self.embeddings_dim = out_layer_width  + self.num_inputs
                 
                 ### SIREN BRANCH ### 
                 for layer in range(0, self.grid_levels):
-                    setattr(self, "out_lin" + str(layer), nn.Linear(ffenc_dims[layer + 1], self.embeddings_dim))
+                    setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, out_layer_width))
 
                 
                 self.init_SIREN_out()
                 self.out_activation = Sine(w0=self.sin_w0_high)
-                self.out_layer = nn.Linear(self.ffenc_dims[-1],self.embeddings_dim).to(device)
+                self.out_layer = nn.Linear(out_layer_width,out_layer_width).to(device)
             else:
-                self.out_layer = nn.Linear(self.ffenc_dims[-2],self.ffenc_dims[-1]).to(device)
+                self.out_layer = nn.Linear(out_layer_width,out_layer_width).to(device)
         else:
             if self.include_input:
-                self.embeddings_dim = self.ffenc_dims[-1] + self.num_inputs
+                self.embeddings_dim = out_layer_width  + self.num_inputss
             else:
-                self.embeddings_dim = self.ffenc_dims[-1] 
+                self.embeddings_dim = out_layer_width  
         """ Feature Modulation Network Filter Banks Style Transfer """
         self.styleTransferBlock = StyleMod(feature_vector_size =self.embeddings_dim )
     
@@ -114,7 +116,7 @@ class FourierFilterBanks(nn.Module):
         embeddings_list = torch.stack(embeddings_list,dim=0).to(device=input.device)
         if self.has_out:
             if self.include_input:
-                x_out = torch.zeros(x.shape[0], self.embeddings_dim,device=input.device)
+                x_out = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
             else:
                 x_out = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
         else:
@@ -127,13 +129,15 @@ class FourierFilterBanks(nn.Module):
             x = self.sin_activation(x)
             
             if layer > 0:
-
-                embed_Feat = embeddings_list[layer-1][:,:-self.max_points_per_level] + x
+                k = int(self.ffenc_dims[-1])
+                embed_Feat = torch.cat([embeddings_list[layer-1][:,0:k], embeddings_list[layer-1][:,k:2*k] ],dim=-1)
+                embed_Feat = embed_Feat + x
                 # Style Modulation #
                 #self.styleTransferBlock(x,embed_Feat)
                 if self.has_out:
                     # for SIREN BRANCH
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(input.device)
+                    
                     x_high = out_layer(embed_Feat)
                     x_high = self.out_activation(x_high)
 
@@ -143,7 +147,8 @@ class FourierFilterBanks(nn.Module):
        
 
         if self.has_out:
-            x = x_out
+            x_out = x_out/self.grid_levels
+            x = torch.cat([input,x_out],dim=-1)
         else:
             features_list = torch.stack(features_list,dim=0).to(device=input.device)
             k = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
@@ -152,8 +157,7 @@ class FourierFilterBanks(nn.Module):
             if self.include_input:
                 x = torch.cat([input,k],dim=-1)
         out_feat = x
-        out = out_feat/self.grid_levels
-        return out
+        return out_feat
 
     """Functions Used for SIREN Layers"""
     def init_SIREN(self):

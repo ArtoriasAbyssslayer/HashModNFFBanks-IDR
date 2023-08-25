@@ -50,27 +50,27 @@ class FourierFeature(nn.Module):
     def __init__(self, channels, sigma=1.0, input_dims=3, include_input=True) -> None:
         super().__init__()
         self.input_dims = input_dims
-        self.register_buffer('B', torch.randn(channels,int(input_dims/2)) * sigma,persistent=True)
+        self.register_buffer('B', torch.randn(channels,int(input_dims)) * sigma,persistent=True)
         self.embeddings_dim  = 2 * channels + 3 if include_input else 2 * channels
         self.include_input = include_input
-        self.create_embedding_fn()
-    def create_embedding_fn(self):
-        embed_fns = []
-        d = self.input_dims
-        out_dim = 0
-        if self.include_input:
-            embed_fns.append(lambda x: x)
-        out_dim += d
-        for p_fn in [torch.sin, torch.cos]:
-            embed_fns.append(lambda x, p_fn=p_fn, freq=self.B: p_fn(torch.matmul(2*np.pi*x,self.B.to(x.device))))
-            out_dim += d
-        self.embed_fns = embed_fns
-        self.out_dim = out_dim        
+        #self.create_embedding_fn()
+    # def create_embedding_fn(self):
+    #     embed_fns = []
+    #     d = self.input_dims
+    #     out_dim = 0
+    #     if self.include_input:
+    #         embed_fns.append(lambda x: x)
+    #     out_dim += d
+    #     for p_fn in [torch.sin, torch.cos]:
+    #         embed_fns.append(lambda x, p_fn=p_fn, freq=self.B: p_fn(torch.matmul(2*np.pi*x,self.B.to(x.device))))
+    #         out_dim += d
+    #     self.embed_fns = embed_fns
+    #     self.out_dim = out_dim        
     def forward(self, x):
-        # xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
-        # return torch.cat([x, torch.sin(xp), torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
-        x_ffenc= torch.cat([fn(x) for fn in self.embed_fns], -1)
-        return x_ffenc
+        xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
+        return torch.cat([torch.sin(xp),x, torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        #x_ffenc= torch.cat([fn(x) for fn in self.embed_fns], -1)
+        #return x_ffenc
 #SHencoder 
 class SHEncoder(nn.Module):
     '''Spherical Harmonics Encoder'''
