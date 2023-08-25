@@ -77,7 +77,7 @@
                 "--expname", "HashGrid",
                 "--scan_id","0",
                 "--checkpoint", "latest",
-                "--train_cameras",
+                //"--train_cameras",
                 "--validation_slope_print",
                 //"--is_continue"
                 //"--calc_image_similarity"

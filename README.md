@@ -110,7 +110,8 @@ python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_c
 ### Spatial Coordinate Hash Grid Encoding
 
 <p align="center">
-  <img width="100%" src="media/owl.gif"/>
+  <img width="30%" src="media/owl.gif"/>  <img width="30%" src="media/skull.gif"/>
+ 
 </p>
 
 
