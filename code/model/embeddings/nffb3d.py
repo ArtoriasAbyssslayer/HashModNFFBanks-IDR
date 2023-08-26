@@ -25,7 +25,7 @@ class FourierFilterBanks(nn.Module):
         self.num_inputs = GridEncoderNetConfig['in_dim']
         self.n_levels = GridEncoderNetConfig['n_levels']
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
-        self.sin_w0 = self.n_levels**self.max_points_per_level + self.num_inputs
+        self.sin_w0 = self.n_levels*self.max_points_per_level
         idr_dims = GridEncoderNetConfig['network_dims']
         self.idr_dims = idr_dims
         """ Initialize Encoders """ 
@@ -62,6 +62,7 @@ class FourierFilterBanks(nn.Module):
             setattr(self, "ff_lin" + str(layer), nn.Linear(2*ffenc_dims[layer], 2*ffenc_dims[layer + 1]))
         
         """ Initialize parameter if  SIREN Branch is used <-> has_out(bool)"""
+        # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         self.sin_w0_high = 2*self.sin_w0
         self.sin_activation = Sine(w0=self.sin_w0)
         self.sin_activation_high = Sine(w0=self.sin_w0_high)
@@ -74,12 +75,9 @@ class FourierFilterBanks(nn.Module):
             if self.include_input:
 
                 self.embeddings_dim = self.ffenc_dims[-1]  + self.num_inputs
-                
-                ### SIREN BRANCH ### 
+                """ The HIGH - Frequency MLP part """
                 for layer in range(0, self.grid_levels):
                     setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.ffenc_dims[-1]))
-
-                
                 self.init_SIREN_out()
                 self.out_activation = Sine(w0=self.sin_w0_high)
                 self.out_layer = nn.Linear(out_layer_width,self.ffenc_dims[-1]).to(device)
@@ -125,12 +123,11 @@ class FourierFilterBanks(nn.Module):
         for layer in range(0,self.n_ffenc_layers-1):
             ff_lin = getattr(self,'ff_lin' + str(layer)).to(input.device)
             x = ff_lin(x)
-            #x = torch.nn.functional.relu(x)
+        
             x = self.sin_activation(x)
             
             if layer > 0:
                 k = int(self.ffenc_dims[-1])
-                #embed_Feat = torch.cat([embeddings_list[layer-1][:,0:k], embeddings_list[layer-1][:,k:2*k] ],dim=-1)
                 embed_Feat = embeddings_list[layer-1][:,:-self.max_points_per_level] + x
                 # Style Modulation #
                 #self.styleTransferBlock(x,embed_Feat)
@@ -167,19 +164,13 @@ class FourierFilterBanks(nn.Module):
                 first_layer_sine_init(lin)
             else:
                 sine_init(lin,self.sin_w0)
-    def init_SIREN_high(self):
+    def init_SIREN_out(self):
         for layer in range(0, self.n_ffenc_layers-1):
-            lin = getattr(self, "ff_lin" + str(layer)) 
+            lin = getattr(self, "out_lin" + str(layer)) 
             if layer == 0:
                 first_layer_sine_init(lin)
             else:
                 sine_init(lin,self.sin_w0_high)
-
-    def init_SIREN_out(self):
-        for layer in range(0, self.grid_levels):
-            lin = getattr(self, "out_lin" + str(layer))
-
-            sine_init(lin, w0=self.sin_w0_high)
 
     
         

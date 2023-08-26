@@ -71,7 +71,7 @@ class _HashGridMLP(nn.Module):
         std = 1e-4
         # custom_kaiming_uniform_(embedding.weight, std = std, a=0)
         nn.init.uniform_(embedding.weight, -std, std) 
-        self.embedding = embedding.to(DEVICE)
+        self.embedding = embedding.to(DEVICE).requires_grad_(False)
         self.primes = primes
 
         # create interpolation binary mask

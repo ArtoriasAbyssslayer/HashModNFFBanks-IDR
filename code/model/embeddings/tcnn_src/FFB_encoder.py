@@ -117,9 +117,7 @@ class FFB_encoder(nn.Module):
 
         embed_buff = torch.zeros(x.shape[0], self.embeddings_dim - self.in_dim, device=in_pos.device)
 
-        ### Grid encoding
-        # x = self.ff_enc.embed(x)
-        # x = x[..., x.shape[-1]-3:x.shape[-1]]
+        ### Wavelet-Like Encoding
         for layer in range(0, self.num_sin_layers - 1):
                 ff_lin = getattr(self, "ff_lin" + str(layer))
                 x = ff_lin(x)
