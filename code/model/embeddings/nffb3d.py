@@ -66,7 +66,7 @@ class FourierFilterBanks(nn.Module):
         """ The Low - Frequency MLP part """
         
         self.n_nffb_layers = len(nffb_lin_dims)
-        assert self.n_nffb_layers >= 6, "The NFFB  should have more than 5 layers"
+        assert self.n_nffb_layers >= 5, "The NFFB  should have more than 5 layers"
         # Input layer 
         setattr(self, "ff_lin" + str(0), nn.Linear(nffb_lin_dims[0], nffb_lin_dims[1]))
         for layer in range(1, self.n_nffb_layers - 1):
@@ -74,10 +74,10 @@ class FourierFilterBanks(nn.Module):
         
         """ Initialize parameter if  SIREN Branch is used <-> has_out(bool)"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
-        self.sin_w0_high = self.sin_w0
-        self.sin_activation = Sine(w0=self.sin_w0)
-        self.sin_activation_high = Sine(w0=self.sin_w0_high)
-        self.init_SIREN()
+        #self.sin_w0_high = self.sin_w0
+        #self.sin_activation = Sine(w0=self.sin_w0)
+        #self.sin_activation_high = Sine(w0=self.sin_w0_high)
+        #self.init_SIREN()
 
         out_layer_width = self.nffb_lin_dims[-1]
         """ The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features """
@@ -89,8 +89,8 @@ class FourierFilterBanks(nn.Module):
                 """ The HIGH - Frequency MLP part """
                 for layer in range(0, self.grid_levels):
                     setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
-                self.init_SIREN_out()
-                self.out_activation = Sine(w0=self.sin_w0_high)
+                #self.init_SIREN_out()
+                #self.out_activation = Sine(w0=self.sin_w0_high)
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
             else:
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
@@ -135,7 +135,8 @@ class FourierFilterBanks(nn.Module):
             ff_lin = getattr(self,'ff_lin' + str(layer)).to(input.device)
             x = ff_lin(x)
         
-            x = self.sin_activation(x)
+            #x = self.sin_activation(x)
+            x = torch.nn.functional.relu(x)
             
             if layer > 0:
                 k = int(self.nffb_lin_dims[-1])
@@ -147,7 +148,8 @@ class FourierFilterBanks(nn.Module):
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(input.device)
                     
                     x_high = out_layer(embed_Feat)
-                    x_high = self.out_activation(x_high)
+                    #x_high = self.out_activation(x_high)
+                    x_high = torch.nn.functional.relu(x_high)
 
                     x_out = x_out + x_high
                 else:
