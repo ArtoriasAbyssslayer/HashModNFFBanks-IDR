@@ -4,8 +4,8 @@ import numpy as np
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
 from model.embeddings.nffb3d import FourierFilterBanks
-#from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-#from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
+from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 from model.embeddings.gridencoder_torchngp import GridEncoder as GridEncoderCUDA
 "Define Embedding model selection function and Network Object Initialization"
@@ -127,8 +127,8 @@ class Custom_Embedding_Network:
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
-            #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
-            #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
+            'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+            'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
             'GridEncoderCUDA': (GridEncoderCUDA, 'GridEncoderCUDA'),
         }   

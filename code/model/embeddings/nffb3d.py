@@ -41,7 +41,7 @@ class FourierFilterBanks(nn.Module):
 
         # Fourier Features NTK Stationary - Frequency Coord Encoding 
         # (Select Half the neurons of the feature vector size -> 1/2 neurons of IDR network for each layer for faster training)
-        ffenc_dims = [self.num_inputs]+ [int((idr_dims[-1]-1)/2)]*self.grid_levels
+        ffenc_dims = [self.num_inputs]+ [int((idr_dims[-1]-1))]*self.grid_levels
         self.ffenc_dims = ffenc_dims
         ff_enc_list = []
         for i in range(0,self.grid_levels):
@@ -73,23 +73,23 @@ class FourierFilterBanks(nn.Module):
         if has_out:
             if self.include_input:
 
-                self.embeddings_dim = out_layer_width  + self.num_inputs
+                self.embeddings_dim = self.ffenc_dims[-1]  + self.num_inputs
                 
                 ### SIREN BRANCH ### 
                 for layer in range(0, self.grid_levels):
-                    setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, out_layer_width))
+                    setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.ffenc_dims[-1]))
 
                 
                 self.init_SIREN_out()
                 self.out_activation = Sine(w0=self.sin_w0_high)
-                self.out_layer = nn.Linear(out_layer_width,out_layer_width).to(device)
+                self.out_layer = nn.Linear(out_layer_width,self.ffenc_dims[-1]).to(device)
             else:
-                self.out_layer = nn.Linear(out_layer_width,out_layer_width).to(device)
+                self.out_layer = nn.Linear(out_layer_width,self.ffenc_dims[-1]).to(device)
         else:
             if self.include_input:
-                self.embeddings_dim = out_layer_width  + self.num_inputss
+                self.embeddings_dim = self.ffenc_dims[-1] + self.num_inputss
             else:
-                self.embeddings_dim = out_layer_width  
+                self.embeddings_dim = self.ffenc_dims[-1] 
         """ Feature Modulation Network Filter Banks Style Transfer """
         self.styleTransferBlock = StyleMod(feature_vector_size =self.embeddings_dim )
     
@@ -130,8 +130,8 @@ class FourierFilterBanks(nn.Module):
             
             if layer > 0:
                 k = int(self.ffenc_dims[-1])
-                embed_Feat = torch.cat([embeddings_list[layer-1][:,0:k], embeddings_list[layer-1][:,k:2*k] ],dim=-1)
-                embed_Feat = embed_Feat + x
+                #embed_Feat = torch.cat([embeddings_list[layer-1][:,0:k], embeddings_list[layer-1][:,k:2*k] ],dim=-1)
+                embed_Feat = embeddings_list[layer-1][:,:-self.max_points_per_level] + x
                 # Style Modulation #
                 #self.styleTransferBlock(x,embed_Feat)
                 if self.has_out:
