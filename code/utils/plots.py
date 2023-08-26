@@ -41,7 +41,7 @@ def plot(model, indices, model_outputs ,pose, rgb_gt, path, epoch, img_res, plot
     data.append(surface_traces[0])
     # issue with gpu ram usage
     with torch.cuda.device('cuda'):
-                torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
     # plot cameras locations
     for i, loc, dir in zip(indices, cam_loc, cam_dir):
         data.append(get_3D_quiver_trace(loc.unsqueeze(0), dir.unsqueeze(0), name='camera_{0}'.format(i)))
@@ -200,7 +200,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     grid_points = torch.cat(g, dim=0)
 
     with torch.cuda.device('cuda'):
-                torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
     # MC to new grid
     points = grid_points
     z = []

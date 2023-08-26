@@ -30,7 +30,8 @@ class RayTracing(nn.Module):
                 ray_directions
                 ):
         # Free up cached cuda tensors to avoid OOM
-        torch.cuda.empty_cache()
+        with torch.device('cuda'):
+            torch.cuda.empty_cache()
         batch_size, num_pixels, _ = ray_directions.shape
 
         sphere_intersections, mask_intersect = rend_util.get_sphere_intersection(cam_loc, ray_directions, r=self.object_bounding_sphere)
