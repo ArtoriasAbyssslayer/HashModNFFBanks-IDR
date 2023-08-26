@@ -6,10 +6,14 @@ import numpy as np
 class PositionalEncoding(nn.Module):
     ''' IDR classic method for positional encoding '''
     def __init__(self, **kwargs):
+        super().__init__()
         self.kwargs = kwargs
         self.include_input = kwargs['include_input']
         self.create_embedding_fn()
-        
+        if self.include_input:
+            self.embeddings_dim = self.out_dim + kwargs['input_dims']
+        else:
+            self.embeddings_dim = self.out_dim
     def create_embedding_fn(self):
         embed_fns = []
         d = self.kwargs['input_dims']
@@ -34,14 +38,15 @@ class PositionalEncoding(nn.Module):
         self.embed_fns = embed_fns
         self.out_dim = out_dim
         
+        
     # Custom embed function in order to use to for simple Frequency Embedding
     def embed(self,inputs):
-        ff_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)
+        posenc_embeds= torch.cat([fn(inputs) for fn in self.embed_fns], -1)
         if self.include_input:
-            return torch.cat([inputs, ff_embeds], -1)
+            return torch.cat([inputs, posenc_embeds], -1)
         else:
-            return ff_embeds
-    def __call__(self,inputs):
+            return posenc_embeds
+    def forward(self,inputs):
         return self.embed(inputs=inputs)
         
 #Simple Fourier Feature Encoder 
@@ -55,7 +60,8 @@ class FourierFeature(nn.Module):
         self.include_input = include_input     
     def forward(self, x):
         xp = torch.matmul(2 * np.pi * x, self.B.to(x.device))
-        return torch.cat([x,torch.sin(xp),torch.cos(xp)], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        ff_embeds = torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        return torch.cat([x,ff_embeds], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
 
 #SHencoder 
 class SHEncoder(nn.Module):

@@ -177,7 +177,7 @@ class RenderingNetwork(nn.Module):
                 if self.mode == 'idr':
                     d_in = 3
                     # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) but should mutch ImplicitNetwork's embedding net #
-                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=15,base_resolution=16,desired_resolution=512)
+                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=15,base_resolution=16,desired_resolution=512,bound=0.4)
                     embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     self.embed_model = embed_model
                     self.embed_fn = embed_fn
