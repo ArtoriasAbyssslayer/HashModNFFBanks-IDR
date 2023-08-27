@@ -80,14 +80,16 @@ class _HashGridMLP(nn.Module):
         dims = np.arange(self.dim, dtype=np.int64).reshape((1, -1))
         bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
-        self.embedding.requires_grad_(True)
+        for p in self.parameters():
+            p.requires_grad = False
     def forward(self, x: torch.Tensor):
         # x: (b..., dim), torch.float32, range: [0, 1]
         bdims = len(x.shape[:-1])
         x = x * self.resolution
-        # detach tensors for memory handling 
-        xi = x.long().detach()
-        xf = x - xi.float().detach()
+        # Instead of detaching tensor from the graph, we use no_grad() to save memory
+        with torch.no_grad():
+            xi = x.long()
+            xf = x - xi.float()
         # to match the input batch shape unsqueeze 
         xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
         xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
@@ -160,6 +162,7 @@ class MultiResHashGridMLP(nn.Module):
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
                 self.embeddings_dim = self.output_dim        
+                
     # In forard return concatenated emmbedding grids in each level
     # resolution.
     def forward(self, x: torch.Tensor):

@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':1.0})
+        self.dencity_net = LaplaceDensity(params_init={'beta':0.9}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -116,7 +116,7 @@ class ImplicitNetwork(nn.Module):
             
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        # Truncate SDF values with Laplace Density Distribution 
+        # Truncate/Clamp SDF values with Laplace Density Distribution and Tanh
         # to avoid exploding gradients <=> exploding SDF values  
         # + avoid loosing yield ray points of the surface
          
@@ -126,16 +126,25 @@ class ImplicitNetwork(nn.Module):
         return x
 
     def gradient(self, x):
-        x.requires_grad_(True)
-        y = self.forward(x)[:,:1]
-        d_output = torch.ones_like(y, requires_grad=False, device=y.device)
-        gradients = torch.autograd.grad(
-            outputs=y,
-            inputs=x,
-            grad_outputs=d_output,
-            create_graph=True,
-            retain_graph=True,
-            only_inputs=True)[0]
+        with torch.enable_grad():  # Enable gradient calculation
+            x = x.detach().clone().requires_grad_(True)  # Detach and clone input
+
+            # Forward pass
+            y = self.forward(x)[:, :1]
+
+            # Create a tensor for gradients of the output
+            d_output = torch.ones_like(y, device=y.device)
+
+            # Compute gradients using autograd
+            gradients = torch.autograd.grad(
+                outputs=y,
+                inputs=x,
+                grad_outputs=d_output,
+                create_graph=True,
+                retain_graph=True,
+                only_inputs=True
+            )[0]
+
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -175,7 +184,7 @@ class RenderingNetwork(nn.Module):
                 if self.mode == 'idr':
                     d_in = 3
                     # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) but should mutch ImplicitNetwork's embedding net #
-                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=multires_view-1,base_resolution=16,desired_resolution=512,bound=0.4)
+                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=multires_view-1,base_resolution=16,desired_resolution=512,bound=1.0)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:
