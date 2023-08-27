@@ -6,6 +6,7 @@ import torch
 from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
+import gc
 from torch.utils.tensorboard import SummaryWriter
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 class IDRTrainRunner():
@@ -24,9 +25,9 @@ class IDRTrainRunner():
         scan_id = kwargs['scan_id'] if kwargs['scan_id'] != -1 else self.conf.get_int('dataset.scan_id', default=-1)
         
         
-        # Evaluate while training Parameters 
+        # Evaluate while training Parameters - Validation Slope
         self.validation_slope_print = kwargs['validation_slope_print']
-        self.calc_image_similarity = kwargs['calc_image_similarity']  
+        
         if self.validation_slope_print:
             eval_epochs = 25
             self.eval_epochs = eval_epochs
@@ -291,10 +292,13 @@ class IDRTrainRunner():
                     self.optimizer.zero_grad()
                     if self.train_cameras:
                         self.optimizer_cam.zero_grad()
-
+                    
                     loss.backward()
-
+                    torch.cuda.synchronize()
                     self.optimizer.step()
+                    torch.cuda.empty_cache()
+                    
+                    gc.collect()
                     if self.train_cameras:
                         self.optimizer_cam.step()
                     
@@ -311,17 +315,19 @@ class IDRTrainRunner():
                 if epoch == self.eval_epochs:
                     if self.validation_slope_print:
                         self.validation_loss_slope(losses)
-                    if self.calc_image_similarity:
-                        # Todo implement psnr,ssim,lpips calculation for given images
-                        pass
                 self.writer.add_scalar('Loss/loss',loss.item(), epoch)
                 self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
                 self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
                 self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
                 # TODO: Add PSNR,SSIM,LPIPS and add them to the tensorboard
-                # self.writer.add_scalar('Statistics/psnr', psnr,  epoch)    
+                # self.writer.add_scalar('Statistics/psnr', psnr,  epoch)   
+                
                 self.scheduler.step()
-        except KeyboardInterrupt:
+        except RuntimeError as e:
+            if "CUDA out of memory" in str(e):
+                print("CUDA out of memory error: Try reducing batch size or optimizing memory usage.")
+            else:
+                print("RuntimeError:", e)
             self.save_checkpoints(epoch)
              
          

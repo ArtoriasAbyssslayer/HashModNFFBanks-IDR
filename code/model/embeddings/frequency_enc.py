@@ -14,6 +14,8 @@ class PositionalEncoding(nn.Module):
             self.embeddings_dim = self.out_dim + kwargs['input_dims']
         else:
             self.embeddings_dim = self.out_dim
+        for param in self.parameters():
+            param.requires_grad_(False)
     def create_embedding_fn(self):
         embed_fns = []
         d = self.kwargs['input_dims']

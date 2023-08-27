@@ -9,6 +9,7 @@
 """
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 # Models Import
 from model.embeddings.frequency_enc import FourierFeature as FFenc
@@ -53,7 +54,7 @@ class FourierFilterBanks(nn.Module):
         for i in range(0,self.grid_levels):
             posenc_layer = PositionalEncoding(include_input=self.include_input,
                                               input_dims=self.max_points_per_level,
-                                              max_freq_log2=self.n_levels-1,
+                                              max_freq_log2=GridEncoderNetConfig['log2_hashmap_size'],
                                               num_freqs=self.n_levels,
                                               log_sampling=True,
                                               periodic_fns=[torch.sin, torch.cos])
@@ -78,7 +79,7 @@ class FourierFilterBanks(nn.Module):
         #self.sin_activation = Sine(w0=self.sin_w0)
         #self.sin_activation_high = Sine(w0=self.sin_w0_high)
         #self.init_SIREN()
-
+        self.init_ReLU()
         out_layer_width = self.nffb_lin_dims[-1]
         """ The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features """
         self.has_out = has_out
@@ -91,7 +92,9 @@ class FourierFilterBanks(nn.Module):
                     setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
                 #self.init_SIREN_out()
                 #self.out_activation = Sine(w0=self.sin_w0_high)
+                self.leaky_relu = nn.LeakyReLU(negative_slope=0.01)
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
+                self.init_ReLU_out()
             else:
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
         else:
@@ -136,7 +139,7 @@ class FourierFilterBanks(nn.Module):
             x = ff_lin(x)
         
             #x = self.sin_activation(x)
-            x = torch.nn.functional.relu(x)
+            x = F.leaky_relu(x,negative_slope=0.01, inplace=False)
             
             if layer > 0:
                 k = int(self.nffb_lin_dims[-1])
@@ -149,7 +152,7 @@ class FourierFilterBanks(nn.Module):
                     
                     x_high = out_layer(embed_Feat)
                     #x_high = self.out_activation(x_high)
-                    x_high = torch.nn.functional.relu(x_high)
+                    x_high = self.leaky_relu(x_high)
 
                     x_out = x_out + x_high
                 else:
@@ -166,6 +169,23 @@ class FourierFilterBanks(nn.Module):
             x = torch.cat([input,feats/self.grid_levels],dim=-1)
         out_feat = x
         return out_feat
+    
+    """Functions Used for RELU layers"""
+    def init_ReLU(self):
+        for layer in range(0, self.n_nffb_layers - 1):
+            lin = getattr(self, "ff_lin" + str(layer))
+            if hasattr(lin, "weight"):
+                torch.nn.init.kaiming_normal_(lin.weight, mode='fan_in', nonlinearity='leaky_relu')
+            if hasattr(lin, "bias"):
+                torch.nn.init.zeros_(lin.bias)
+
+    def init_ReLU_out(self):
+        for layer in range(0, self.n_nffb_layers - 1):
+            lin = getattr(self, "out_lin" + str(layer))
+            if hasattr(lin, "weight"):
+                torch.nn.init.kaiming_normal_(lin.weight, mode='fan_in', nonlinearity='leaky_relu')
+            if hasattr(lin, "bias"):
+                torch.nn.init.zeros_(lin.bias)
 
     """Functions Used for SIREN Layers"""
     def init_SIREN(self):

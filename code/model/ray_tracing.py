@@ -29,9 +29,6 @@ class RayTracing(nn.Module):
                 object_mask,
                 ray_directions
                 ):
-        # Free up cached cuda tensors to avoid OOM
-        with torch.device('cuda'):
-            torch.cuda.empty_cache()
         batch_size, num_pixels, _ = ray_directions.shape
 
         sphere_intersections, mask_intersect = rend_util.get_sphere_intersection(cam_loc, ray_directions, r=self.object_bounding_sphere)
@@ -254,9 +251,6 @@ class RayTracing(nn.Module):
 
     def secant(self, sdf_low, sdf_high, z_low, z_high, cam_loc, ray_directions, sdf):
         ''' Runs the secant method for interval [z_low, z_high] for n_secant_steps '''
-        with torch.cuda.device('cuda'):
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize(device = sdf_low.device)
         z_pred = - sdf_low * (z_high - z_low) / (sdf_high - sdf_low) + z_low
         for i in range(self.n_secant_steps):
             p_mid = cam_loc + z_pred.unsqueeze(-1) * ray_directions

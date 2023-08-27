@@ -35,7 +35,7 @@ class ImplicitNetwork(nn.Module):
        
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':0.9})
+        self.dencity_net = LaplaceDensity(params_init={'beta':1.0})
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -129,8 +129,6 @@ class ImplicitNetwork(nn.Module):
         x.requires_grad_(True)
         y = self.forward(x)[:,:1]
         d_output = torch.ones_like(y, requires_grad=False, device=y.device)
-        with torch.cuda.device('cuda'):
-            torch.cuda.empty_cache()
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
@@ -177,7 +175,7 @@ class RenderingNetwork(nn.Module):
                 if self.mode == 'idr':
                     d_in = 3
                     # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) but should mutch ImplicitNetwork's embedding net #
-                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=19,base_resolution=16,desired_resolution=512,bound=0.4)
+                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=multires_view-1,base_resolution=16,desired_resolution=512,bound=0.4)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:

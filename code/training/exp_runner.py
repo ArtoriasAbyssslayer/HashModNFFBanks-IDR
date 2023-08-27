@@ -19,12 +19,11 @@ if __name__ == '__main__':
     parser.add_argument('--train_cameras', default=False, action="store_true", help='If set, optimizing also camera location.')
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
-    parser.add_argument('--calc_image_similarity', default=False, action='store_true',help='If set, calculates the image similarity metrics [PSND, SSIM, LPIPS]')
     opt = parser.parse_args()
 
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
-        gpu = 0
+        gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
 
@@ -39,8 +38,6 @@ if __name__ == '__main__':
                                  checkpoint=opt.checkpoint,
                                  scan_id=opt.scan_id,
                                  train_cameras=opt.train_cameras,
-                                 validation_slope_print=opt.validation_slope_print,
-                                 calc_image_similarity=opt.calc_image_similarity
-                                 )
+                                 validation_slope_print=opt.validation_slope_print)
 
     trainrunner.run()
