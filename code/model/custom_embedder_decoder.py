@@ -118,8 +118,10 @@ class Custom_Embedding_Network:
                     "grid_embedding_std": 0.0001,
                     'per_level_scale': 2.0,
                 },
-                'has_out':True,
-                'bound': bound
+                'freq_enc_type': 'PositionalEncodingNet',
+                'has_out':False,
+                'bound': bound,
+                'layers_type': 'SIREN'
             }
         }
         embed_models = {

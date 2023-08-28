@@ -20,7 +20,7 @@ from model.embeddings.style_tranfer.styleMod import StyleMod
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class FourierFilterBanks(nn.Module):
 
-    def __init__(self, GridEncoderNetConfig,has_out,bound):
+    def __init__(self, GridEncoderNetConfig,freq_enc_type,has_out,bound,layers_type):
         super(FourierFilterBanks, self).__init__()
         
         self.bound = bound
@@ -28,9 +28,12 @@ class FourierFilterBanks(nn.Module):
         self.num_inputs = GridEncoderNetConfig['in_dim']
         self.n_levels = GridEncoderNetConfig['n_levels']
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
-        self.sin_w0 = np.pi * (self.n_levels*self.max_points_per_level*GridEncoderNetConfig['log2_hashmap_size'])
-        """ Initialize Encoders """ 
-        # Multi-Res HashGrid -> Spatial Coord Encoding
+        
+        
+        
+        # Initi Encoders #
+        
+        "Multi-Res HashGrid -> Spatial Coord Encoding"
         self.grid_levels = int(self.n_levels)
         print(f"Grid encoder levels: {self.grid_levels}")
         
@@ -39,28 +42,30 @@ class FourierFilterBanks(nn.Module):
                                                 GridEncoderNetConfig['log2_hashmap_size'],
                                                 GridEncoderNetConfig['base_resolution'],
                                                 GridEncoderNetConfig['desired_resolution'])
-
-        # Fourier Features NTK Stationary - Frequency Coord Encoding 
-        # (Select Half the neurons of the feature vector size -> 1/2 neurons of IDR network for each layer for faster training)
         
         
-        #for i in range(0,self.grid_levels):
-        #    ffenc_layer = FFenc(channels=self.max_points_per_level, 
-        #                        sigma = GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,
-        #                        input_dims=nffb_lin_dims[i+1],include_input=True)
-        #    ff_enc_list.append(ffenc_layer)
-        """ Use Positional Encoding for Frequency Encoding ffenc"""
+        "Fourier Features Network -> Frequency Encoding"
         ff_enc_list = []
-        for i in range(0,self.grid_levels):
-            posenc_layer = PositionalEncoding(include_input=self.include_input,
-                                              input_dims=self.max_points_per_level,
-                                              max_freq_log2=GridEncoderNetConfig['log2_hashmap_size'],
-                                              num_freqs=self.n_levels,
-                                              log_sampling=True,
-                                              periodic_fns=[torch.sin, torch.cos])
-            ff_enc_list.append(posenc_layer)
+        if freq_enc_type == 'FourierFeatureNET':
+            for i in range(0,self.grid_levels):
+                ffenc_layer = FFenc(channels=self.max_points_per_level, 
+                                    sigma = GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,
+                                    input_dims=nffb_lin_dims[i+1],include_input=True)
+                ff_enc_list.append(ffenc_layer)
+        elif freq_enc_type == 'PositionalEncodingNet':
+            for i in range(0,self.grid_levels):
+                posenc_layer = PositionalEncoding(include_input=self.include_input,
+                                                input_dims=self.max_points_per_level,
+                                                max_freq_log2=GridEncoderNetConfig['log2_hashmap_size'],
+                                                num_freqs=self.n_levels,
+                                                log_sampling=True,
+                                                periodic_fns=[torch.sin, torch.cos])
+                ff_enc_list.append(posenc_layer)
+
+        
+        
         print(f"FFB Encoder Fourier Feature Filters: {self.grid_levels}")
-        nffb_lin_dims = [self.num_inputs] + [posenc_layer.embeddings_dim]*self.grid_levels
+        nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*self.grid_levels
         self.nffb_lin_dims = nffb_lin_dims
         self.ff_enc = nn.ModuleList(ff_enc_list)
 
@@ -73,13 +78,19 @@ class FourierFilterBanks(nn.Module):
         for layer in range(1, self.n_nffb_layers - 1):
             setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]))
         
-        """ Initialize parameter if  SIREN Branch is used <-> has_out(bool)"""
+        """ Initialize parameters for Output Linear Layers - SIREN or ReLU (if has_out)"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
-        self.sin_w0_high = 2*self.sin_w0
-        self.sin_activation = Sine(w0=self.sin_w0)
-        self.sin_activation_high = Sine(w0=self.sin_w0_high)
-        self.init_SIREN()
-        #self.init_ReLU()
+        if layers_type == 'SIREN':
+            self.sin_w0 = np.pi * (self.n_levels*self.max_points_per_level)
+            self.sin_w0_high = 2*self.sin_w0
+            self.sin_activation = Sine(w0=self.sin_w0)
+            self.sin_activation_high = Sine(w0=self.sin_w0_high)
+            self.lin_activation = self.sin_activation
+            self.init_SIREN()
+        elif layers_type  == 'ReLU':    
+            self.init_ReLU()
+            self.relu = nn.LeakyReLU(negative_slope=0.01,inplace=False)
+            self.lin_activation = self.relu
         out_layer_width = self.nffb_lin_dims[-1]
         """ The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features """
         self.has_out = has_out
@@ -91,11 +102,15 @@ class FourierFilterBanks(nn.Module):
                 for layer in range(0, self.grid_levels):
                     setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
                 
-                self.out_activation = Sine(w0=self.sin_w0_high)
-                #self.relu = nn.ReLU()
-                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
-                self.init_SIREN_out()
-                #self.init_ReLU_out()
+                if layers_type  == 'SIREN':  
+               
+                    self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
+                    self.out_activation = Sine(w0=self.sin_w0_high)
+                    self.init_SIREN_out()
+                elif layers_type  == 'ReLU':
+                    self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
+                    self.out_activation = nn.LeakyReLU(negative_slope=0.01,inplace=False)
+                    self.init_ReLU_out()
             else:
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).to(device)
         else:
@@ -103,9 +118,9 @@ class FourierFilterBanks(nn.Module):
                 self.embeddings_dim = self.nffb_lin_dims[-1] + self.num_inputs
             else:
                 self.embeddings_dim = self.nffb_lin_dims[-1] 
-        """ Feature Modulation Network Filter Banks Style Transfer """
-        self.styleTransferBlock = StyleMod(feature_vector_size =self.embeddings_dim)
-    
+        
+        for p in self.parameters():
+            p.requires_grad = False
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
             Inputs:
@@ -115,7 +130,8 @@ class FourierFilterBanks(nn.Module):
         """
         x = input / self.bound  # Bound the input between [-1,1]
         input = (input + self.bound) / (2 * self.bound)
-        
+        """ Feature Modulation Network Filter Banks Style Transfer """
+        self.styleTransferBlock = StyleMod(x.shape[0],self.embeddings_dim-self.num_inputs)
         # Compute HashGrid and split it to it's multiresolution levels
         augmented_grid_x = self.grid_enc(input)
         grid_x = augmented_grid_x[..., x.shape[-1]:]
@@ -138,22 +154,20 @@ class FourierFilterBanks(nn.Module):
         for layer in range(0,self.n_nffb_layers-1):
             ff_lin = getattr(self,'ff_lin' + str(layer)).to(input.device)
             x = ff_lin(x)
-        
-            x = self.sin_activation(x)
-            #x = self.relu(x)
+            x = self.lin_activation(x)
             
             if layer > 0:
                 k = int(self.nffb_lin_dims[-1])
                 embed_Feat = embeddings_list[layer-1] + x
                 # Style Modulation #
-                #self.styleTransferBlock(x,embed_Feat)
+                #embed_Feat = self.styleTransferBlock(x,embed_Feat)
                 if self.has_out:
-                    # for SIREN BRANCH
+                    # For Extended High Frequency MLP Layers # 
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(input.device)
                     
                     x_high = out_layer(embed_Feat)
                     x_high = self.out_activation(x_high)
-                    #x_high = self.relu(x_high)
+                    
 
                     x_out = x_out + x_high
                 else:
@@ -175,18 +189,16 @@ class FourierFilterBanks(nn.Module):
     def init_ReLU(self):
         for layer in range(0, self.n_nffb_layers - 1):
             lin = getattr(self, "ff_lin" + str(layer))
-            if hasattr(lin, "weight"):
-                torch.nn.init.kaiming_uniform_(lin.weight, mode='fan_in', nonlinearity='relu')
-            if hasattr(lin, "bias"):
-                torch.nn.init.zeros_(lin.bias)
+            nn.init.kaiming_normal_(lin.weight, nonlinearity='leaky_relu')
+            nn.init.constant_(lin.bias, 0)
+            
 
     def init_ReLU_out(self):
         for layer in range(0, self.n_nffb_layers - 1):
             lin = getattr(self, "out_lin" + str(layer))
-            if hasattr(lin, "weight"):
-                torch.nn.init.kaiming_uniform_(lin.weight, mode='fan_in', nonlinearity='relu')
-            if hasattr(lin, "bias"):
-                torch.nn.init.zeros_(lin.bias)
+            nn.init.kaiming_normal_(lin.weight, nonlinearity='leaky_relu')
+            nn.init.constant_(lin.bias, 0)
+            
 
     """Functions Used for SIREN Layers"""
     def init_SIREN(self):
