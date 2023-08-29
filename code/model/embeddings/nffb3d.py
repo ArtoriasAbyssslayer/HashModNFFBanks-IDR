@@ -50,13 +50,13 @@ class FourierFilterBanks(nn.Module):
             for i in range(0,self.grid_levels):
                 ffenc_layer = FFenc(channels=self.max_points_per_level, 
                                     sigma = GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,
-                                    input_dims=nffb_lin_dims[i+1],include_input=True)
+                                    input_dims=GridEncoderNetConfig['in_dim'],include_input=self.include_input)
                 ff_enc_list.append(ffenc_layer)
-        elif freq_enc_type == 'PositionalEncodingNet':
+        elif freq_enc_type == 'PositionalEncodingNET':
             for i in range(0,self.grid_levels):
                 posenc_layer = PositionalEncoding(include_input=self.include_input,
                                                 input_dims=self.max_points_per_level,
-                                                max_freq_log2=GridEncoderNetConfig['log2_hashmap_size'],
+                                                max_freq_log2=GridEncoderNetConfig['log2_hashmap_size']*GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,
                                                 num_freqs=self.n_levels,
                                                 log_sampling=True,
                                                 periodic_fns=[torch.sin, torch.cos])
@@ -65,7 +65,7 @@ class FourierFilterBanks(nn.Module):
         
         
         print(f"FFB Encoder Fourier Feature Filters: {self.grid_levels}")
-        nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*self.grid_levels
+        nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim+1]*self.grid_levels
         self.nffb_lin_dims = nffb_lin_dims
         self.ff_enc = nn.ModuleList(ff_enc_list)
 
@@ -81,7 +81,7 @@ class FourierFilterBanks(nn.Module):
         """ Initialize parameters for Output Linear Layers - SIREN or ReLU (if has_out)"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         if layers_type == 'SIREN':
-            self.sin_w0 = np.pi * (self.n_levels*self.max_points_per_level)
+            self.sin_w0 = self.n_levels**self.max_points_per_level
             self.sin_w0_high = 2*self.sin_w0
             self.sin_activation = Sine(w0=self.sin_w0)
             self.sin_activation_high = Sine(w0=self.sin_w0_high)
@@ -89,8 +89,7 @@ class FourierFilterBanks(nn.Module):
             self.init_SIREN()
         elif layers_type  == 'ReLU':    
             self.init_ReLU()
-            self.relu = nn.LeakyReLU(negative_slope=0.01,inplace=False)
-            self.lin_activation = self.relu
+            self.lin_activation = nn.LeakyReLU(negative_slope=0.01,inplace=False)
         out_layer_width = self.nffb_lin_dims[-1]
         """ The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features """
         self.has_out = has_out
