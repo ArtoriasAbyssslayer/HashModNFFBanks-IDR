@@ -4,20 +4,22 @@ import torch
 import torch.nn as nn
 
 from model.embeddings.nffb3d import FourierFilterBanks as FFB_encoder
-from model.embeddings.tcnn_src.Sine import sine_init
-from model.embeddings.stylemod import styleMod
-        
-        
+from model.embeddings.Sine import sine_init
+from model.embeddings.style_tranfer.styleMod import StyleMod
+
+# Import itertools to slice the Config dictionary easily        
+import itertools        
 
 class NFFB(nn.Module):
     def __init__(self,config):
-        self.xyz_encoder = FFB_encoder(GridEncoderConfig,HashEncoderType,d_in, boudn, has_out)
-        self.feature_vector_size = self.xyz_encoder.embedding_dim
-        self.out_lin = nn.Linear(enc_out_dim, 1)
-        styleTransferBlock = styleMod(feature_vector_size)
-        self.init_ouput([feature_vector_size]*config['n_levels'])
+        super().__init__()
+        GridEncoderConfig = dict(itertools.islice(config.items(), 13))
+        self.xyz_encoder = FFB_encoder(GridEncoderConfig,config['freq_enc_type'],config['has_out'],config['bound'],config['layers_type'])
+        self.feature_vector_size = self.xyz_encoder.embeddings_dim
+        self.out_lin = nn.Linear(self.feature_vector_size,GridEncoderConfig['network_dims'][-1])
+        self.styleTransferBlock = StyleMod(GridEncoderConfig['network_dims'][-1],self.feature_vector_size)
+        #self.init_ouput([feature_vector_size]*config['n_levels'])
         
-    @torch.no_grad    
     def forward(self, x):
         """
             Inputs:
@@ -25,12 +27,11 @@ class NFFB(nn.Module):
             Ouputs:
                 out: (N), the final SDF estimation 
         """
-        out  = self.xyz_encoder(x)
-        out_feat = torch.cat(out,dim=-1)
+        out_feat  = self.xyz_encoder(x)
         # Possible Modulation on last layer
-        out_feat_mod = self.styleTransferBlock(x,out_feat)
-        out_feat = self.out_lin(out_feat_mod)  
-        out = out_feat / self.xyz_encoder.grid_level
+        # out_feat_mod = self.styleTransferBlock(x,out_feat)
+        out = self.out_lin(out_feat)  
+        out = out_feat / (self.xyz_encoder.grid_levels+2)
         return out
     
     

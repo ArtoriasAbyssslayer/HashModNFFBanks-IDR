@@ -2,15 +2,14 @@ import torch
 import torch.nn as nn
 import tinycudann as tcnn 
 import math 
-from .Sine import *
+from model.embeddings.Sine import *
 from model.embeddings.frequency_enc import FourierFeature as FFenc
 from .hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as HashEncoderTcnn
 
 
 """
     FourierFilterBanks is based on the paper Fourier Filter Banks
-    Essentially manage the gridEncoding as a low frequency encoding (LPF) and the FourierFeaturesMLP as a high frequency encoding (HPF)
-    Then we make multiple level of encodings and get a multi-resolution embeddings and sum them up to
+    Based on UBC-Vision NFFB https://arxiv.org/abs/2212.01735
 
 """
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

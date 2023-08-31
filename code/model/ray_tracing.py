@@ -90,7 +90,8 @@ class RayTracing(nn.Module):
 
             curr_start_points[mask] = min_mask_points
             acc_start_dis[mask] = min_mask_dist
-        
+        with torch.cuda.device('cuda'):
+            torch.cuda.empty_cache()
         return curr_start_points, \
                network_object_mask, \
                acc_start_dis
@@ -184,7 +185,8 @@ class RayTracing(nn.Module):
 
             unfinished_mask_start = unfinished_mask_start & (acc_start_dis < acc_end_dis)
             unfinished_mask_end = unfinished_mask_end & (acc_start_dis < acc_end_dis)
-
+        with torch.cuda.device('cuda'):
+            torch.cuda.empty_cache()
         return curr_start_points, unfinished_mask_start, acc_start_dis, acc_end_dis, min_dis, max_dis
 
     def ray_sampler(self, sdf, cam_loc, object_mask, ray_directions, sampler_min_max, sampler_mask):

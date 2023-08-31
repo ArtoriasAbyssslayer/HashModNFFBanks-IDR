@@ -16,7 +16,7 @@ def load_rgb(path):
     return img
 
 def load_mask(path):
-    alpha = imageio.imread(path, as_gray=True)
+    alpha = imageio.imread(path, mode='F')
     alpha = skimage.img_as_float32(alpha)
     object_mask = alpha > 127.5
 

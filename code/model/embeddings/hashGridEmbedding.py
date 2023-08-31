@@ -86,13 +86,12 @@ class _HashGridMLP(nn.Module):
         # x: (b..., dim), torch.float32, range: [0, 1]
         bdims = len(x.shape[:-1])
         x = x * self.resolution
-        # Instead of detaching tensor from the graph, we use no_grad() to save memory
         with torch.no_grad():
             xi = x.long()
             xf = x - xi.float()
-        # to match the input batch shape unsqueeze 
-        xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
-        xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
+            # to match the input batch shape unsqueeze 
+            xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
+            xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
         # to match the input batch shape
         bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape)# (1..., neig, dim)
         # get neighbors' indices and weights on each dim
@@ -103,7 +102,6 @@ class _HashGridMLP(nn.Module):
         # hash neighbors' id and look up table
         hash_ids = hash_func(inds, self.primes, self.hashmap_size) # (b..., neig)
         neig_data = self.embedding(hash_ids) # (b..., neig, feat)
-        
         # OOM problem 
         del xi,xf,bin_mask,inds,ws,hash_ids
         # interpolate neighbors' data

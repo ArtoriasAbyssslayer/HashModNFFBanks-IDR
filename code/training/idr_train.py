@@ -214,7 +214,7 @@ class IDRTrainRunner():
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
 
-            if epoch % 100 == 0:
+            if epoch % 50 == 0:
                 self.save_checkpoints(epoch)
 
             if epoch % self.plot_freq == 0:

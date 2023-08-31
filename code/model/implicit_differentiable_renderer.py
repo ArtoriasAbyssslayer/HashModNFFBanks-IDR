@@ -5,6 +5,7 @@ import numpy as np
 from utils import rend_util
 from model.embeddings.frequency_enc import get_embedder,SHEncoder
 from model.custom_embedder_decoder import Custom_Embedding_Network,Decoder
+from model.embeddings.nffb3d_forward import NFFB
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
 from model.density_net import LaplaceDensity
@@ -31,46 +32,55 @@ class ImplicitNetwork(nn.Module):
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
         self.embed_fn = None
-        
-       
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':0.9}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
-                embed_model = Custom_Embedding_Network(input_dims=d_in,network_dims=dims,embed_type=embed_type, multires=multires,log2_max_hash_size=log2_max_hash_size,
-                                                        max_points_per_entry=max_points_per_entry,base_resolution=base_resolution,
-                                                        desired_resolution=desired_resolution,bound=bound)
+                embed_model = Custom_Embedding_Network(input_dims=d_in,
+                                                    network_dims=dims,embed_type=embed_type, 
+                                                    multires=multires,log2_max_hash_size=log2_max_hash_size,
+                                                    max_points_per_entry=max_points_per_entry,
+                                                    base_resolution=base_resolution,
+                                                    desired_resolution=desired_resolution,
+                                                    bound=bound)
                 embed_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
-                self.embed_model = embed_model
                 self.embed_fn = embed_fn
-                dims[0] = input_ch 
-                
-        else:
+                dims[0] = input_ch    
+        elif embed_type == 'NerfPos':
             if multires > 0:
                 embed_fn, input_ch = get_embedder(multires)
                 self.embed_fn = embed_fn
                 dims[0] = input_ch
-
+                
+        # if embed_type == 'FFB':
+        #     FFB_Net_Config={
+        #             'include_input': True,
+        #             'in_dim': d_in,
+        #             'embed_type': 'HashGridTcnn',
+        #             'network_dims': dims,
+        #             'n_levels': multires,
+        #             'max_points_per_level': max_points_per_entry,
+        #             'log2_hashmap_size': log2_max_hash_size,
+        #             'base_resolution': base_resolution,
+        #             'desired_resolution': desired_resolution,
+        #             "base_sigma": 8.0,
+        #             "exp_sigma": 1.26,
+        #             "grid_embedding_std": 0.0001,
+        #             'per_level_scale': 2.0,
+        #             'freq_enc_type':'PositionalEncodingNET',
+        #             'has_out':True,
+        #             'bound': bound,
+        #             'layers_type':'ReLU'
+        #         }
+        #     self.NFFB_SDF = NFFB(FFB_Net_Config)
+        #     self.softplus = nn.Softplus(beta=100)
+        # else:
+        #---- Classic IDR Implicit Geometric Reguralization Network ----#
         self.num_layers = len(dims)
         self.skip_in = skip_in
-        #------custom IGR decoder mlp - Sphere Init-------#
-        # for l in range(0, self.num_layers - 1):
-        #     if l + 1 in self.skip_in:
-        #         out_dim = dims[l + 1] - dims[0]
-        #     else:
-        #         out_dim = dims[l + 1]
-        # lin = Decoder(dims[0],dims,out_dim,self.num_layers,embed_fn=self.embed_fn,skip_in=self.skip_in)
-        # if geometric_init:
-        #     lin.pre_train_sphere(self.num_layers)
-        # net = lin.net
-        # for l in range(0,self.num_layers-1):
-        #     setattr(self, "lin" + str(l), net[l])
-        
-        #------custom decoder mlp-------#
-        
-        #---- Classic IDR Implicit Geometric Reguralization Network ----#
+
         for l in range(0, self.num_layers - 1):
             if l + 1 in self.skip_in:
                 out_dim = dims[l + 1] - dims[0]
@@ -101,9 +111,18 @@ class ImplicitNetwork(nn.Module):
             setattr(self, "lin" + str(l), lin)
 
         self.softplus = nn.Softplus(beta=100)
+
     def forward(self, input, compute_grad=False):
+        # "NFFB network Forward Call"
+        # if self.embed_type == 'FFB':
+        #     x = self.NFFB_SDF(input)
+        #     x = self.softplus(x)
+        #     x[...,0] = F.tanh(x[...,0]/2)
+        #     return x 
+        " IDR Resnet - With Clamped Output"
         if self.embed_fn is not None:
             input = self.embed_fn(input)
+
         x = input
 
         for l in range(0, self.num_layers - 1):
@@ -113,38 +132,30 @@ class ImplicitNetwork(nn.Module):
                 x = torch.cat([x, input], 1) / np.sqrt(2)
 
             x = lin(x)
-            
+
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-        # Truncate/Clamp SDF values with Laplace Density Distribution and Tanh
-        # to avoid exploding gradients <=> exploding SDF values  
-        # + avoid loosing yield ray points of the surface
-         
-        sdf_laplace_density = self.dencity_net(x[:,0])
-        
-        x[:,0] = F.tanh(x[:,0]/(sdf_laplace_density+2))
+
+    
+        """
+            Truncate/Clamp SDF values with Laplace Density Distribution and Tanh
+            to avoid exploding gradients <=> exploding SDF values  
+            + avoid loosing yield ray points of the surface
+        """
+        x[...,0] = F.tanh(x[...,0]/(self.dencity_net(x[...,0])+2))
         return x
 
     def gradient(self, x):
-        with torch.enable_grad():  # Enable gradient calculation
-            x = x.detach().clone().requires_grad_(True)  # Detach and clone input
-
-            # Forward pass
-            y = self.forward(x)[:, :1]
-
-            # Create a tensor for gradients of the output
-            d_output = torch.ones_like(y, device=y.device)
-
-            # Compute gradients using autograd
-            gradients = torch.autograd.grad(
-                outputs=y,
-                inputs=x,
-                grad_outputs=d_output,
-                create_graph=True,
-                retain_graph=True,
-                only_inputs=True
-            )[0]
-
+        x.requires_grad_(True)
+        y = self.forward(x)[:,:1]
+        d_output = torch.ones_like(y, requires_grad=False, device=y.device)
+        gradients = torch.autograd.grad(
+            outputs=y,
+            inputs=x,
+            grad_outputs=d_output,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True)[0]
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -183,8 +194,17 @@ class RenderingNetwork(nn.Module):
             if multires_view > 0:
                 if self.mode == 'idr':
                     d_in = 3
-                    # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) but should mutch ImplicitNetwork's embedding net #
-                    embed_model = Custom_Embedding_Network(d_in,dims,embed_type='FFB',multires=multires_view,max_points_per_entry=2,log2_max_hash_size=multires_view-1,base_resolution=16,desired_resolution=512,bound=1.0)
+                    # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) 
+                    # but should mutch ImplicitNetwork's embedding net 
+                    embed_model = Custom_Embedding_Network(input_dims=d_in,
+                                                           network_dims=dims,
+                                                           embed_type='FFB',
+                                                           multires=multires_view,
+                                                           max_points_per_entry=2,
+                                                           log2_max_hash_size=multires_view-1,
+                                                           base_resolution=16,
+                                                           desired_resolution=512,
+                                                           bound=1.0)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:
