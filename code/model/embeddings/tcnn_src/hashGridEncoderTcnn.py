@@ -24,18 +24,6 @@ class MultiResHashGridEncoderTcnn(nn.Module):
         super().__init__()
         self.in_dim = in_dim
         self.include_input = include_input
-        self.embed_type = embed_type
-        self.n_levels = n_levels
-        self.max_points_per_level = max_points_per_level
-        self.log2_hashmap_size = log2_hashmap_size
-        self.base_resolution = base_resolution
-        self.per_level_scale = per_level_scale
-        for p in self.parameters():
-            p.requires_grad = False
-        
-        # --- Hash Primes ---
-        
-        
         # --- Initialize Grid Encoder ---
         
         """
@@ -77,11 +65,11 @@ class MultiResHashGridEncoderTcnn(nn.Module):
             encoding_config={
                 "otype": otype,
                 "type": type,
-                "n_levels": int(self.n_levels),
-                "n_features_per_level": self.max_points_per_level,
-                'log2_hashmap_size': self.log2_hashmap_size,
-                'base_resolution': self.base_resolution,
-                'per_level_scale': self.per_level_scale,
+                "n_levels": int(n_levels),
+                "n_features_per_level":max_points_per_level,
+                'log2_hashmap_size': log2_hashmap_size,
+                'base_resolution': base_resolution,
+                'per_level_scale': per_level_scale,
                 'exp_sigma': exp_sigma,
                 'base_sigma':base_sigma,
                 'hidden_dims': network_dims,
@@ -97,9 +85,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 self.embeddings_dim = self.in_dim + self.output_dim
         else:
             self.output_dim = self.n_levels * self.max_points_per_level
-            self.embeddings_dim = self.output_dim    
-        for p in self.grid_encoder.parameters():
-            p.requires_grad = False
+            self.embeddings_dim = self.output_dim
     def forward(self,x):
         if self.include_input == True:
             return torch.cat([x,self.grid_encoder(x)],dim=-1)

@@ -11,6 +11,10 @@ data/DTU.zip
 exps/
 # Distribution / packaging
 .Python
+
+# TODO remove the ommited gui IDR if code completed
+code/model/dearImGUI_idr.py
+
 build/
 develop-eggs/
 dist/

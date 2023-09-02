@@ -115,8 +115,6 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
         # parameters
         self.embeddings = nn.Parameter(torch.empty(int(offset), level_dim))
         self.embeddings_dim = self.output_dim + self.input_dim
-        for p in self.parameters():
-            p.requires_grad_(False)
         self.reset_parameters()
     def reset_parameters(self):
         std = 1e-4

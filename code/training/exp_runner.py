@@ -3,10 +3,10 @@ sys.path.append('../code')
 import argparse
 import GPUtil
 
-from training.idr_train import IDRTrainRunner
+
 
 if __name__ == '__main__':
-
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--nepoch', type=int, default=2000, help='number of epochs to train for')
@@ -26,7 +26,10 @@ if __name__ == '__main__':
         gpu = 0
     else:
         gpu = opt.gpu
-
+    import os 
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["TORCH_USE_DSA"] = "1"
+    from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
                                  nepochs=opt.nepoch,

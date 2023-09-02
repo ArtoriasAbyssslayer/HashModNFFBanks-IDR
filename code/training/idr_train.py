@@ -8,7 +8,9 @@ import utils.general as utils
 import utils.plots as plt
 import gc
 from torch.utils.tensorboard import SummaryWriter
-os.environ["TORCH_USE_CUDA_DSA"] = "1"
+from torch.cuda.amp import  GradScaler
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class IDRTrainRunner():
     def __init__(self,**kwargs):
         torch.set_default_dtype(torch.float32)
@@ -167,7 +169,7 @@ class IDRTrainRunner():
         for acc in self.alpha_milestones:
             if self.start_epoch > acc:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-
+        self.scaler = GradScaler()
     def save_checkpoints(self, epoch):
         torch.save(
             {"epoch": epoch, "model_state_dict": self.model.state_dict()},
@@ -208,13 +210,14 @@ class IDRTrainRunner():
     def run(self):
         print("training...")
         losses = []  
-        
+       
+        scaler = self.scaler
         for epoch in range(self.start_epoch, self.nepochs + 1):
             self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
 
-            if epoch % 50 == 0:
+            if epoch % 25 == 0:
                 self.save_checkpoints(epoch)
 
             if epoch % self.plot_freq == 0:
@@ -277,6 +280,7 @@ class IDRTrainRunner():
                 else:
                     model_input['pose'] = model_input['pose'].cuda()
 
+                
                 model_outputs = self.model(model_input)
                 loss_output = self.loss(model_outputs, ground_truth)
 
@@ -286,12 +290,14 @@ class IDRTrainRunner():
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
                 
-                loss.backward()
-                torch.cuda.synchronize()
-                self.optimizer.step()
-                torch.cuda.empty_cache()
+                scaler.scale(loss).backward()
                 
-                gc.collect()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
+                self.clear_gpu_memory()
+                scaler.unscale_(self.optimizer)
+                scaler.step(self.optimizer)
+                
+                scaler.update()
                 if self.train_cameras:
                     self.optimizer_cam.step()
                 
@@ -313,13 +319,17 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
             
+            
             self.scheduler.step()
              
          
+
+    def clear_gpu_memory(self):
+        torch.cuda.empty_cache()
+        gc.collect()
     """
-        During Training - Metrics Scripts
+        During Training - Compute the validation slope
     """
-    
     # Make the validation slope as the training is finished        
     def validation_loss_slope(self,loss_list):
             import matplotlib.pyplot as plt

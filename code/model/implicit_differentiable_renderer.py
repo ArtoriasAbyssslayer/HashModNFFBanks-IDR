@@ -5,10 +5,10 @@ import numpy as np
 from utils import rend_util
 from model.embeddings.frequency_enc import get_embedder,SHEncoder
 from model.custom_embedder_decoder import Custom_Embedding_Network,Decoder
-from model.embeddings.nffb3d_forward import NFFB
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
 from model.density_net import LaplaceDensity
+import gc 
 class ImplicitNetwork(nn.Module):
     def __init__(
             self,
@@ -34,7 +34,7 @@ class ImplicitNetwork(nn.Module):
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':1.0}).requires_grad_(False)
+        self.dencity_net = LaplaceDensity(params_init={'beta':0.8}).requires_grad_(False)
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -52,8 +52,7 @@ class ImplicitNetwork(nn.Module):
             if multires > 0:
                 embed_fn, input_ch = get_embedder(multires)
                 self.embed_fn = embed_fn
-                dims[0] = input_ch
-                
+                dims[0] = input_ch     
         # if embed_type == 'FFB':
         #     FFB_Net_Config={
         #             'include_input': True,
@@ -142,7 +141,7 @@ class ImplicitNetwork(nn.Module):
             to avoid exploding gradients <=> exploding SDF values  
             + avoid loosing yield ray points of the surface
         """
-        x[...,0] = F.tanh(x[...,0]/(self.dencity_net(x[...,0])+2))
+        x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
         return x
 
     def gradient(self, x):
@@ -263,7 +262,7 @@ class IDRNetwork(nn.Module):
         self.object_bounding_sphere = conf.get_float('ray_tracer.object_bounding_sphere')
 
     def forward(self, input):
-
+        
         # Parse model input
         intrinsics = input["intrinsics"]
         uv = input["uv"]
@@ -339,7 +338,9 @@ class IDRNetwork(nn.Module):
             'object_mask': object_mask,
             'grad_theta': grad_theta
         }
-
+        # Avoid OOM issue 
+        torch.cuda.empty_cache()
+        gc.collect()
         return output
 
     def get_rbg_value(self, points, view_dirs):

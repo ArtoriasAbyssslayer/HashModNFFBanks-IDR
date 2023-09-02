@@ -122,7 +122,7 @@ class Custom_Embedding_Network:
                 'has_out':False,
                 'bound': bound,
                 #layer_type = [SIREN,ReLU]
-                'layers_type': 'ReLU'
+                'layers_type': 'SIREN'
             }
         }
         embed_models = {

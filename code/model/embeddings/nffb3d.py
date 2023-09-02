@@ -16,7 +16,8 @@ from model.embeddings.frequency_enc import FourierFeature as FFenc
 from model.embeddings.frequency_enc import PositionalEncoding
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.Sine import *
-from model.embeddings.style_tranfer.styleMod import StyleMod
+from model.embeddings.style_Attention.styleMod import MultiResStyleModulation as StyleModulation
+# from model.embeddings.style_Attention.multihead_attention import MultiHeadAttentionModule
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class FourierFilterBanks(nn.Module):
@@ -74,8 +75,8 @@ class FourierFilterBanks(nn.Module):
         """ Initialize parameters for Linear Layers"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         if layers_type == 'SIREN':
-            self.sin_w0 = self.n_levels**self.max_points_per_level
-            self.sin_w0_high = 2*self.sin_w0
+            self.sin_w0 = self.n_levels**self.max_points_per_level - self.n_levels # 36-6 = 30 SIREN frequency as described in the paper
+            self.sin_w0_high = self.max_points_per_level*self.sin_w0 # Double the frequency (max_points_per_level = 2) -> 60
             self.sin_activation = Sine(w0=self.sin_w0)
             self.sin_activation_high = Sine(w0=self.sin_w0_high)
             self.lin_activation = self.sin_activation
@@ -84,7 +85,7 @@ class FourierFilterBanks(nn.Module):
             self.init_ReLU()
             self.lin_activation = nn.LeakyReLU(negative_slope=1e-2,inplace=False)
         out_layer_width = self.nffb_lin_dims[-1]
-
+        self.feature_Vector_size  = out_layer_width
         # The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features 
         self.has_out = has_out
         if has_out:
@@ -110,9 +111,9 @@ class FourierFilterBanks(nn.Module):
                 self.embeddings_dim = self.nffb_lin_dims[-1] + self.num_inputs
             else:
                 self.embeddings_dim = self.nffb_lin_dims[-1] 
-                
-        for param in self.parameters():
-            param.requires_grad_(False)
+        # Attention Module
+        # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)
+        # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
             Inputs:
@@ -144,18 +145,23 @@ class FourierFilterBanks(nn.Module):
         else:
             features_list = []
 
-
+        
         """ Grid Fourier Encoding """
         
         for layer in range(0,self.n_nffb_layers-1):
             ff_lin = getattr(self,'ff_lin' + str(layer)).to(x.device)
             x = ff_lin(x)
             x = self.lin_activation(x)
+            
             if layer > 0:
-
+                
                 embed_Feat = embeddings_list[layer-1] + x
-                # Style Modulation #
-                # embed_Feat = self.styleTransferBlock(x,embed_Feat)
+                # Apply Style Modulation
+                # embed_Feat= self.StyleModulationBlock(x,embed_Feat[layer-1])
+                
+                # Apply Multi-Head Self-Attention using the custom module
+                # attn_output = self.multi_head_attention(embed_Feat)
+                # embed_Feat = embed_Feat + attn_output
                 if self.has_out:
                     # For Extended High Frequency MLP Layers # 
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(embed_Feat.device)
@@ -166,13 +172,15 @@ class FourierFilterBanks(nn.Module):
                     features_list.append(embed_Feat)
 
         if self.has_out:
-            x_out = x_out/(self.grid_levels+2)
+            torch.cuda.empty_cache()
+            x_out = x_out/(self.grid_levels)
             x = torch.cat([input,x_out],dim=-1)
         else:
+            torch.cuda.empty_cache()
             feats = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
             for i in range(len(features_list)):
                 feats += features_list[i]
-            x = torch.cat([input,feats/(self.grid_levels+2)],dim=-1)
+            x = torch.cat([input,feats/(self.grid_levels)],dim=-1)
         return x
     " Functions Used for RELU layers "
     def init_ReLU(self):
@@ -210,7 +218,7 @@ class FourierFilterBanks(nn.Module):
             else:
                 torch.nn.init.constant_(lin.bias, 0.0)
                 torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(self.nffb_lin_dims[-1]))
-    print("IGR completed")
+    print("IGR Out Head completed")
     " Functions Used for SIREN Layers "
     def init_SIREN(self):
         for layer in range(0, self.n_nffb_layers-1):

@@ -2,8 +2,8 @@ import torch
 
 def calc_mean_std(feat, eps=0.1):
     size = feat.size()
-    assert (len(size) == 2)
-    N, C = size[:2]
+    assert (len(size) == 3)
+    N, C = size[1:3]
     
     feat_mean = feat.view(N, C, -1).mean(dim=2).view(N, C)
     feat_centered = feat - feat_mean
@@ -15,13 +15,12 @@ def calc_mean_std(feat, eps=0.1):
 
 
 def adaptive_instance_normalization(content_feat, style_feat):
-    assert (content_feat.size()[:2] == style_feat.size()[:2])
-    size = content_feat.size()
+    assert (content_feat.size()[2] == style_feat.size()[2])
+    size = content_feat.size()[1:3]
     style_mean, style_std = calc_mean_std(style_feat)
     content_mean, content_std = calc_mean_std(content_feat)
 
-    normalized_feat = (content_feat - content_mean.expand(
-        size)) / content_std.expand(size)
+    normalized_feat = (content_feat - content_mean.expand(size)) / content_std.expand(size)
     return normalized_feat * style_std.expand(size) + style_mean.expand(size)
 
 
