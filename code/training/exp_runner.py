@@ -28,7 +28,7 @@ if __name__ == '__main__':
     import os
     # Set CUDA_LAUNCH_BLOCKING to 1 to allocate full GPU memory
     os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
+    os.environ["TORCH_USE_DSA"] = "1"
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
