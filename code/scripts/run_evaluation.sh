@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd ..
 # Default values for arguments
 exps_folder="exps"
 expname=""

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd ..
 # Default values for arguments
 expname=""
 scan_id=""
