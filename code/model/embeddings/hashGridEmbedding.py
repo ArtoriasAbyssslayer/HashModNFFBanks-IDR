@@ -91,7 +91,7 @@ class _HashGridMLP(nn.Module):
         xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
         xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
         # to match the input batch shape use bin_mask 
-        bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape).detach()# (1..., neig, dim)
+        bin_mask = self.bin_mask.reshape((1,)*bdims + self.bin_mask.shape)# (1..., neig, dim)
         # get neighbors' indices and weights on each dim
         inds = torch.where(bin_mask, xi, xi+1)# (b..., neig, dim)
         ws = torch.where(bin_mask, 1-xf, xf)# (b...., neig, dim)

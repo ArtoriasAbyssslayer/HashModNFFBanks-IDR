@@ -101,12 +101,14 @@ class IDRTrainRunner():
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset,
                                                             batch_size=self.batch_size,
                                                             shuffle=True,
-                                                            collate_fn=self.train_dataset.collate_fn
+                                                            collate_fn=self.train_dataset.collate_fn,
+                                                            pin_memory=True
                                                             )
         self.plot_dataloader = torch.utils.data.DataLoader(self.train_dataset,
                                                            batch_size=self.conf.get_int('plot.plot_nimgs'),
                                                            shuffle=True,
-                                                           collate_fn=self.train_dataset.collate_fn
+                                                           collate_fn=self.train_dataset.collate_fn,
+                                                           pin_memory=True
                                                            )
 
         

@@ -53,33 +53,9 @@ class ImplicitNetwork(nn.Module):
                 embed_fn, input_ch = get_embedder(multires)
                 self.embed_fn = embed_fn
                 dims[0] = input_ch     
-        # if embed_type == 'FFB':
-        #     FFB_Net_Config={
-        #             'include_input': True,
-        #             'in_dim': d_in,
-        #             'embed_type': 'HashGridTcnn',
-        #             'network_dims': dims,
-        #             'n_levels': multires,
-        #             'max_points_per_level': max_points_per_entry,
-        #             'log2_hashmap_size': log2_max_hash_size,
-        #             'base_resolution': base_resolution,
-        #             'desired_resolution': desired_resolution,
-        #             "base_sigma": 8.0,
-        #             "exp_sigma": 1.26,
-        #             "grid_embedding_std": 0.0001,
-        #             'per_level_scale': 2.0,
-        #             'freq_enc_type':'PositionalEncodingNET',
-        #             'has_out':True,
-        #             'bound': bound,
-        #             'layers_type':'ReLU'
-        #         }
-        #     self.NFFB_SDF = NFFB(FFB_Net_Config)
-        #     self.softplus = nn.Softplus(beta=100)
-        # else:
         #---- Classic IDR Implicit Geometric Reguralization Network ----#
         self.num_layers = len(dims)
         self.skip_in = skip_in
-
         for l in range(0, self.num_layers - 1):
             if l + 1 in self.skip_in:
                 out_dim = dims[l + 1] - dims[0]
@@ -87,7 +63,6 @@ class ImplicitNetwork(nn.Module):
                 out_dim = dims[l + 1]
 
             lin = nn.Linear(dims[l], out_dim)
-
             if geometric_init:
                 if l == self.num_layers - 2:
                     torch.nn.init.normal_(lin.weight, mean=np.sqrt(np.pi) / np.sqrt(dims[l]), std=0.0001)
@@ -112,12 +87,6 @@ class ImplicitNetwork(nn.Module):
         self.softplus = nn.Softplus(beta=100)
 
     def forward(self, input, compute_grad=False):
-        # "NFFB network Forward Call"
-        # if self.embed_type == 'FFB':
-        #     x = self.NFFB_SDF(input)
-        #     x = self.softplus(x)
-        #     x[...,0] = F.tanh(x[...,0]/2)
-        #     return x 
         " IDR Resnet - With Clamped Output"
         if self.embed_fn is not None:
             input = self.embed_fn(input)
@@ -280,7 +249,6 @@ class IDRNetwork(nn.Module):
                                                                  object_mask=object_mask,
                                                                  ray_directions=ray_dirs)
         self.implicit_network.train()
-
         points = (cam_loc.unsqueeze(1) + dists.reshape(batch_size, num_pixels, 1) * ray_dirs).reshape(-1, 3)
 
         sdf_output = self.implicit_network(points)[:, 0:1]
@@ -309,6 +277,9 @@ class IDRNetwork(nn.Module):
             surface_sdf_values = output[:N, 0:1].detach()
 
             g = self.implicit_network.gradient(points_all)
+            torch.cuda.empty_cache()
+            # Avoid OOM issue 
+            gc.collect()
             surface_points_grad = g[:N, 0, :].clone().detach()
             grad_theta = g[N:, 0, :]
 
@@ -338,14 +309,13 @@ class IDRNetwork(nn.Module):
             'object_mask': object_mask,
             'grad_theta': grad_theta
         }
-        # Avoid OOM issue 
-        torch.cuda.empty_cache()
-        gc.collect()
+        
         return output
 
     def get_rbg_value(self, points, view_dirs):
         output = self.implicit_network(points)
         g = self.implicit_network.gradient(points)
+        torch.cuda.empty_cache()
         normals = g[:, 0, :]
 
         feature_vectors = output[:, 1:]

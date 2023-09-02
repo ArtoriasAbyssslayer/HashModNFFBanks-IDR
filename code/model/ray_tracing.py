@@ -204,7 +204,7 @@ class RayTracing(nn.Module):
         pts_intervals = pts_intervals.reshape((-1, self.n_steps))[sampler_mask]
 
         sdf_val_all = []
-        for pnts in torch.split(points.reshape(-1, 3), 100000, dim=0):
+        for pnts in torch.split(points.reshape(-1, 3), 10000, dim=0):
             sdf_val_all.append(sdf(pnts))
         sdf_val = torch.cat(sdf_val_all).reshape(-1, self.n_steps)
 

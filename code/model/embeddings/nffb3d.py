@@ -58,20 +58,19 @@ class FourierFilterBanks(nn.Module):
                                                 periodic_fns=[torch.sin, torch.cos])
                 ff_enc_list.append(posenc_layer)
         if freq_enc_type == 'FourierFeatureNET':
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim+1]*(self.grid_levels+1)
+            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim+1]*(self.grid_levels)
         else:
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels+1)
+            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels)
         self.nffb_lin_dims = nffb_lin_dims
         self.ff_enc = nn.Sequential(*ff_enc_list)
         """ The Low - Frequency MLP part """
         self.n_nffb_layers = len(nffb_lin_dims)
         print(f"FFB Encoder Fourier Grid Filters: {self.n_nffb_layers}")
-        assert self.n_nffb_layers >= 5, "The NFFB  should have more than 5 layers"
+        assert self.n_nffb_layers >= 6, "The NFFB  should have more than 5 layers"
         # Input layer 
         setattr(self, "ff_lin" + str(0), nn.Linear(nffb_lin_dims[0], nffb_lin_dims[1]))
         for layer in range(1, self.n_nffb_layers - 1):
-            setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]))
-        
+            setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]).requires_grad_(True))
         """ Initialize parameters for Linear Layers"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         if layers_type == 'SIREN':
@@ -88,29 +87,31 @@ class FourierFilterBanks(nn.Module):
         self.feature_Vector_size  = out_layer_width
         # The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features 
         self.has_out = has_out
-        if has_out:
-            if self.include_input:
-                self.embeddings_dim = self.nffb_lin_dims[-1]  + self.num_inputs
-                """ The HIGH - Frequency MLP part """
-                for layer in range(0, self.grid_levels):
-                    setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
-                
-                if layers_type  == 'SIREN':  
-               
-                    self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
-                    self.out_activation = Sine(w0=self.sin_w0_high)
-                    self.init_SIREN_out()
-                elif layers_type  == 'ReLU':
-                    self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
-                    self.out_activation = nn.LeakyReLU(negative_slope=1e-2,inplace=False)
-                    self.init_ReLU_out()
-            else:
-                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
+        
+        if self.include_input:
+            self.embeddings_dim = self.nffb_lin_dims[-1] + self.num_inputs
         else:
-            if self.include_input:
-                self.embeddings_dim = self.nffb_lin_dims[-1] + self.num_inputs
-            else:
-                self.embeddings_dim = self.nffb_lin_dims[-1] 
+            self.embeddings_dim = self.nffb_lin_dims[-1] 
+        if has_out:
+        
+        
+            """ The HIGH - Frequency MLP part """
+            for layer in range(0, self.grid_levels):
+                setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]).requires_grad_(True))
+            
+            if layers_type  == 'SIREN':  
+            
+                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).requires_grad_(True)
+                self.out_activation = Sine(w0=self.sin_w0_high)
+                self.init_SIREN_out()
+            elif layers_type  == 'ReLU':
+                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
+                self.out_activation = nn.LeakyReLU(negative_slope=1e-2,inplace=False)
+                self.init_ReLU_out()
+        else:
+            self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).requires_grad_(True)
+
+            
         # Attention Module
         # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)
         # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
@@ -151,10 +152,8 @@ class FourierFilterBanks(nn.Module):
         for layer in range(0,self.n_nffb_layers-1):
             ff_lin = getattr(self,'ff_lin' + str(layer)).to(x.device)
             x = ff_lin(x)
-            x = self.lin_activation(x)
-            
+            x = self.lin_activation(x)     
             if layer > 0:
-                
                 embed_Feat = embeddings_list[layer-1] + x
                 # Apply Style Modulation
                 # embed_Feat= self.StyleModulationBlock(x,embed_Feat[layer-1])
@@ -169,6 +168,8 @@ class FourierFilterBanks(nn.Module):
                     x_high = self.out_activation(x_high)
                     x_out = x_out + x_high
                 else:
+                    lin_out = self.out_layer.to(x.device)
+                    embed_Feat = lin_out(embed_Feat)
                     features_list.append(embed_Feat)
 
         if self.has_out:
@@ -231,7 +232,3 @@ class FourierFilterBanks(nn.Module):
         for layer in range(self.grid_levels):
             lin = getattr(self, "out_lin" + str(layer)) 
             sine_init(lin,self.sin_w0_high)
-    
-    " optimizer utils "
-    def get_optimizer(self,lr,weight_decay):
-        return torch.optim.Adam(self.parameters(),lr=lr,weight_decay=weight_decay)  
