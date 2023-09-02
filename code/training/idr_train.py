@@ -8,7 +8,7 @@ import utils.general as utils
 import utils.plots as plt
 import gc
 from torch.utils.tensorboard import SummaryWriter
-from torch.cuda.amp import  GradScaler
+# from torch.cuda.amp import  GradScaler
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class IDRTrainRunner():
@@ -171,7 +171,7 @@ class IDRTrainRunner():
         for acc in self.alpha_milestones:
             if self.start_epoch > acc:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-        self.scaler = GradScaler()
+        # self.scaler = GradScaler()
     def save_checkpoints(self, epoch):
         torch.save(
             {"epoch": epoch, "model_state_dict": self.model.state_dict()},
@@ -213,7 +213,7 @@ class IDRTrainRunner():
         print("training...")
         losses = []  
        
-        scaler = self.scaler
+        #scaler = self.scaler
         for epoch in range(self.start_epoch, self.nepochs + 1):
             self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
             if epoch in self.alpha_milestones:
@@ -291,15 +291,15 @@ class IDRTrainRunner():
                 self.optimizer.zero_grad()
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
-                
-                scaler.scale(loss).backward()
+                loss.backward()
+                #scaler.scale(loss).backward()
                 
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
                 self.clear_gpu_memory()
-                scaler.unscale_(self.optimizer)
+                #scaler.unscale_(self.optimizer)
                 scaler.step(self.optimizer)
                 
-                scaler.update()
+                #scaler.update()
                 if self.train_cameras:
                     self.optimizer_cam.step()
                 
