@@ -101,14 +101,12 @@ class IDRTrainRunner():
         self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset,
                                                             batch_size=self.batch_size,
                                                             shuffle=True,
-                                                            collate_fn=self.train_dataset.collate_fn,
-                                                            pin_memory=True
+                                                            collate_fn=self.train_dataset.collate_fn
                                                             )
         self.plot_dataloader = torch.utils.data.DataLoader(self.train_dataset,
                                                            batch_size=self.conf.get_int('plot.plot_nimgs'),
                                                            shuffle=True,
-                                                           collate_fn=self.train_dataset.collate_fn,
-                                                           pin_memory=True
+                                                           collate_fn=self.train_dataset.collate_fn
                                                            )
 
         
@@ -292,14 +290,9 @@ class IDRTrainRunner():
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
                 loss.backward()
-                #scaler.scale(loss).backward()
-                
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
+                self.optimizer.step()
                 self.clear_gpu_memory()
-                # scaler.unscale_(self.optimizer)
-                # scaler.step(self.optimizer)
-                
-                #scaler.update()
                 if self.train_cameras:
                     self.optimizer_cam.step()
                 
@@ -320,7 +313,6 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
-            
             self.clear_gpu_memory()
             self.scheduler.step()
              

@@ -58,10 +58,10 @@ class FourierFeature(nn.Module):
         self.embeddings_dim  = 2 * channels + 3 if include_input else 2 * channels 
         self.include_input = include_input     
     def forward(self, x):
-        W = self.B
-        xp = torch.matmul(2 * np.pi * x.detach, W)
+        W = self.B.to(x.device)
+        xp = torch.matmul(2 * np.pi * x, W)
         ff_embeds = torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
-        return torch.cat([x.detach,ff_embeds], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
+        return torch.cat([x,ff_embeds], dim=-1) if self.include_input else torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)
 
 #SHencoder 
 class SHEncoder(nn.Module):

@@ -28,8 +28,7 @@ class ImplicitNetwork(nn.Module):
             desired_resolution=None,
             bound:float=1.0
     ):
-        super().__init__()
-
+        super(ImplicitNetwork,self).__init__()
         dims = [d_in] + dims + [d_out + feature_vector_size]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.embed_fn = None
@@ -118,13 +117,10 @@ class ImplicitNetwork(nn.Module):
          # Ensure that the input and model are on the GPU
         x = x.to(self.device)
         self.to(self.device)
-
         x.requires_grad_(True)
 
         # Forward pass
         y = self.forward(x)[:, :1]
-
-        # Create a tensor with the same shape as y filled with ones
         d_output = torch.ones_like(y, requires_grad=False)
 
         # Compute gradients with retain_graph=True and create_graph=True
@@ -135,10 +131,9 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,  # Set to True for higher-order gradients
             retain_graph=True,  # Set to True to retain the computation graph
             only_inputs=True,
-            allow_unused=True,
+            allow_unused=False,
             is_grads_batched=False
         )[0]
-
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -153,7 +148,7 @@ class RenderingNetwork(nn.Module):
             multires_view=0,
             viewdirs_embed_type='NerfPos',
     ):
-        super().__init__()
+        super(RenderingNetwork,self).__init__()
         self.feature_vector_size = feature_vector_size
         self.mode = mode
         dims = [d_in + feature_vector_size] + dims + [d_out]
