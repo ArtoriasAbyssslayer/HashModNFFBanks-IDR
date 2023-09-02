@@ -31,6 +31,7 @@ class ImplicitNetwork(nn.Module):
         super().__init__()
 
         dims = [d_in] + dims + [d_out + feature_vector_size]
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
@@ -114,16 +115,30 @@ class ImplicitNetwork(nn.Module):
         return x
 
     def gradient(self, x):
+         # Ensure that the input and model are on the GPU
+        x = x.to(self.device)
+        self.to(self.device)
+
         x.requires_grad_(True)
-        y = self.forward(x)[:,:1]
-        d_output = torch.ones_like(y, requires_grad=False, device=y.device)
+
+        # Forward pass
+        y = self.forward(x)[:, :1]
+
+        # Create a tensor with the same shape as y filled with ones
+        d_output = torch.ones_like(y, requires_grad=False)
+
+        # Compute gradients with retain_graph=True and create_graph=True
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
             grad_outputs=d_output,
-            create_graph=True,
-            retain_graph=True,
-            only_inputs=True)[0]
+            create_graph=True,  # Set to True for higher-order gradients
+            retain_graph=True,  # Set to True to retain the computation graph
+            only_inputs=True,
+            allow_unused=True,
+            is_grads_batched=False
+        )[0]
+
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
