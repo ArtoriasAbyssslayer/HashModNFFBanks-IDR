@@ -296,8 +296,8 @@ class IDRTrainRunner():
                 
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
                 self.clear_gpu_memory()
-                #scaler.unscale_(self.optimizer)
-                scaler.step(self.optimizer)
+                # scaler.unscale_(self.optimizer)
+                # scaler.step(self.optimizer)
                 
                 #scaler.update()
                 if self.train_cameras:
@@ -321,7 +321,7 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
             
-            
+            self.clear_gpu_memory()
             self.scheduler.step()
              
          
