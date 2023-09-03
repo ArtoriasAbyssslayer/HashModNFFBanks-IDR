@@ -209,6 +209,7 @@ class IDRTrainRunner():
 
     def run(self):
         print("training...")
+        os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
         losses = []  
        
         #scaler = self.scaler
@@ -221,6 +222,8 @@ class IDRTrainRunner():
                 self.save_checkpoints(epoch)
 
             if epoch % self.plot_freq == 0:
+                # Delete Cached Tensors to avoid OOM issues
+                torch.cuda.empty_cache()
                 self.model.eval()
                 if self.train_cameras:
                     self.pose_vecs.eval()
@@ -315,10 +318,9 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
             self.clear_gpu_memory()
             self.scheduler.step()
-             
-         
-
+        self.writer.close()
     def clear_gpu_memory(self):
+        torch.cuda.synchronize(device='cuda')
         torch.cuda.empty_cache()
         gc.collect()
     """

@@ -51,11 +51,11 @@ class PositionalEncoding(nn.Module):
 #Simple Fourier Feature Encoder 
 class FourierFeature(nn.Module):
     '''Fourrier Feature Encoder'''        
-    def __init__(self, channels, sigma=1.0, input_dims=3, include_input=True) -> None:
+    def __init__(self, input_dims=3, sigma=1.0, num_channels=256, include_input=True) -> None:
         super().__init__()
         self.input_dims = input_dims
-        self.register_buffer('B', torch.randn(channels,int(input_dims)) * sigma,persistent=True)
-        self.embeddings_dim  = 2 * channels + 3 if include_input else 2 * channels 
+        self.register_buffer('B', torch.randn(input_dims,int(num_channels)) * sigma,persistent=True)
+        self.embeddings_dim  = 2 * num_channels + 3 if include_input else 2 * num_channels 
         self.include_input = include_input     
     def forward(self, x):
         W = self.B.to(x.device)

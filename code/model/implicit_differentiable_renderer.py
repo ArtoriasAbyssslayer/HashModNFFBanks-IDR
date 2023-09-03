@@ -113,27 +113,20 @@ class ImplicitNetwork(nn.Module):
         x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
         return x
 
+    # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives
     def gradient(self, x):
-         # Ensure that the input and model are on the GPU
-        x = x.to(self.device)
-        self.to(self.device)
         x.requires_grad_(True)
-
-        # Forward pass
-        y = self.forward(x)[:, :1]
-        d_output = torch.ones_like(y, requires_grad=False)
-
-        # Compute gradients with retain_graph=True and create_graph=True
+        y = self.forward(x)[:,:1]
+        d_output = torch.ones_like(y, requires_grad=False, device=y.device)
         gradients = torch.autograd.grad(
             outputs=y,
             inputs=x,
             grad_outputs=d_output,
-            create_graph=True,  # Set to True for higher-order gradients
-            retain_graph=True,  # Set to True to retain the computation graph
-            only_inputs=True,
-            allow_unused=False,
-            is_grads_batched=False
-        )[0]
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True)[0]
+        torch.cuda.synchronize(device=x.device)
+        torch.cuda.empty_cache()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -287,7 +280,6 @@ class IDRNetwork(nn.Module):
             surface_sdf_values = output[:N, 0:1].detach()
 
             g = self.implicit_network.gradient(points_all)
-            torch.cuda.empty_cache()
             # Avoid OOM issue 
             gc.collect()
             surface_points_grad = g[:N, 0, :].clone().detach()
@@ -325,7 +317,6 @@ class IDRNetwork(nn.Module):
     def get_rbg_value(self, points, view_dirs):
         output = self.implicit_network(points)
         g = self.implicit_network.gradient(points)
-        torch.cuda.empty_cache()
         normals = g[:, 0, :]
 
         feature_vectors = output[:, 1:]

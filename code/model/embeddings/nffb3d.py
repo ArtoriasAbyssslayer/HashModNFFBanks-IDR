@@ -30,6 +30,7 @@ class FourierFilterBanks(nn.Module):
         self.num_inputs = GridEncoderNetConfig['in_dim']
         self.n_levels = GridEncoderNetConfig['n_levels']
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
+        self.network_dims = GridEncoderNetConfig['network_dims']
         # Initi Encoders #
         "Multi-Res HashGrid -> Spatial Coord Encoding"
         self.grid_levels = int(self.n_levels)
@@ -38,31 +39,35 @@ class FourierFilterBanks(nn.Module):
                                                 self.n_levels, self.max_points_per_level,
                                                 GridEncoderNetConfig['log2_hashmap_size'],
                                                 GridEncoderNetConfig['base_resolution'],
-                                                GridEncoderNetConfig['desired_resolution'])
+                                                GridEncoderNetConfig['desired_resolution']).to(device)
         
         "Fourier Features Network -> Frequency Encoding"
         ff_enc_list = []
+        # Number of decomposed frequency levels are hardcoded in order to match the Feature Vector Size Dimensions
+        freq_num = self.max_points_per_level**(self.n_levels+1)
         if freq_enc_type == 'FourierFeatureNET':
             for i in range(self.grid_levels):
-                ffenc_layer = FFenc(channels=self.max_points_per_level, 
+                ffenc_layer = FFenc(input_dims=self.max_points_per_level, 
                                     sigma = GridEncoderNetConfig['base_sigma']*GridEncoderNetConfig['exp_sigma']**i,
-                                    input_dims=GridEncoderNetConfig['in_dim'],include_input=self.include_input)
+                                    num_channels=freq_num,
+                                    include_input=False)
                 ff_enc_list.append(ffenc_layer)
         elif freq_enc_type == 'PositionalEncodingNET':
             for i in range(self.grid_levels):
                 posenc_layer = PositionalEncoding(include_input=self.include_input,
                                                 input_dims=self.max_points_per_level,
                                                 max_freq_log2=self.n_levels-1,
-                                                num_freqs=self.n_levels,
+                                                num_freqs= self.n_levels,
                                                 log_sampling=True,
                                                 periodic_fns=[torch.sin, torch.cos])
                 ff_enc_list.append(posenc_layer)
+        # IDR feature vector size in network_dims[-1]= 25 and is hardcoded here (fix this)
         if freq_enc_type == 'FourierFeatureNET':
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim+1]*(self.grid_levels)
+            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
         else:
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels)
+            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
         self.nffb_lin_dims = nffb_lin_dims
-        self.ff_enc = nn.Sequential(*ff_enc_list)
+        self.ff_enc = nn.Sequential(*ff_enc_list).to(device)
         """ The Low - Frequency MLP part """
         self.n_nffb_layers = len(nffb_lin_dims)
         print(f"FFB Encoder Fourier Grid Filters: {self.n_nffb_layers}")
@@ -132,7 +137,7 @@ class FourierFilterBanks(nn.Module):
         augmented_grid_x = self.grid_enc(input)
         grid_x = augmented_grid_x[..., x.shape[-1]:]
         grid_x = grid_x.view(-1, self.grid_levels, self.max_points_per_level)
-        grid_x = grid_x.permute(1, 0, 2)
+        grid_x = grid_x.permute(1, 0, 2).to(input.device)
         # Embeddings_list corresponds to the indermediated outputs O1,O2,O3... in the paper #
         embeddings_list = []
         for i in range(self.grid_levels):
@@ -173,11 +178,9 @@ class FourierFilterBanks(nn.Module):
                     features_list.append(embed_Feat)
 
         if self.has_out:
-            torch.cuda.empty_cache()
             x_out = x_out/(self.grid_levels)
             x = torch.cat([input,x_out],dim=-1)
         else:
-            torch.cuda.empty_cache()
             feats = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
             for i in range(len(features_list)):
                 feats += features_list[i]
