@@ -145,7 +145,7 @@ class Custom_Embedding_Network:
         self.embeddings_dim = self.embedder_obj.embeddings_dim
     # Apply Embedding to the Input
     def embed(self,x): 
-        self.embedder_obj.train()
+        # self.embedder_obj.train()
         return  self.embedder_obj(x)
     
 
