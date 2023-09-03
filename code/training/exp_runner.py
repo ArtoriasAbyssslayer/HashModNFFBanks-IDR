@@ -22,13 +22,12 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
-        gpu = 0
+        gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
     import os
     # Set CUDA_LAUNCH_BLOCKING to 1 to allocate full GPU memory
-    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-    os.environ["TORCH_USE_DSA"] = "1"
+    # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
