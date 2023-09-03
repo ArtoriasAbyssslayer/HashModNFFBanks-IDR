@@ -94,10 +94,9 @@ def evaluate(**kwargs):
     utils.mkdir_ifnotexists(images_dir)
 
     indices, model_input, ground_truth = next(iter(eval_dataloader))
-
+    clear_gpu_memory()
     for i, (new_q, scale) in enumerate(zip(q_new, s_new)):
-        with torch.cuda.device('cuda'):
-            torch.cuda.empty_cache()
+        
 
         new_q = new_q.unsqueeze(0)
         new_t = -rend_util.quat_to_rot(new_q)[:, :, 2] * scale
@@ -131,7 +130,11 @@ def evaluate(**kwargs):
         rgb_eval = rgb_eval.transpose(1, 2, 0)
         img = Image.fromarray((rgb_eval * 255).astype(np.uint8))
         img.save('{0}/eval_{1}.png'.format(images_dir,'%03d' % i))
-
+def clear_gpu_memory():
+        import gc
+        torch.cuda.synchronize(device=torch.device('cuda'))
+        torch.cuda.empty_cache()
+        gc.collect()
 
 if __name__ == '__main__':
 

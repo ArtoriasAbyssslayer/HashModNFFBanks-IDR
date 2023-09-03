@@ -8,7 +8,6 @@ from model.custom_embedder_decoder import Custom_Embedding_Network,Decoder
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
 from model.density_net import LaplaceDensity
-import gc 
 class ImplicitNetwork(nn.Module):
     def __init__(
             self,
@@ -30,7 +29,6 @@ class ImplicitNetwork(nn.Module):
     ):
         super(ImplicitNetwork,self).__init__()
         dims = [d_in] + dims + [d_out + feature_vector_size]
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
@@ -125,8 +123,6 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
-        torch.cuda.synchronize(device=x.device)
-        torch.cuda.empty_cache()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -280,11 +276,8 @@ class IDRNetwork(nn.Module):
             surface_sdf_values = output[:N, 0:1].detach()
 
             g = self.implicit_network.gradient(points_all)
-            # Avoid OOM issue 
-            gc.collect()
             surface_points_grad = g[:N, 0, :].clone().detach()
             grad_theta = g[N:, 0, :]
-
             differentiable_surface_points = self.sample_network(surface_output,
                                                                 surface_sdf_values,
                                                                 surface_points_grad,

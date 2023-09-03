@@ -6,7 +6,7 @@ import torch
 from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
-import gc
+
 from torch.utils.tensorboard import SummaryWriter
 # from torch.cuda.amp import  GradScaler
 
@@ -209,7 +209,6 @@ class IDRTrainRunner():
 
     def run(self):
         print("training...")
-        os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
         losses = []  
        
         #scaler = self.scaler
@@ -222,8 +221,6 @@ class IDRTrainRunner():
                 self.save_checkpoints(epoch)
 
             if epoch % self.plot_freq == 0:
-                # Delete Cached Tensors to avoid OOM issues
-                torch.cuda.empty_cache()
                 self.model.eval()
                 if self.train_cameras:
                     self.pose_vecs.eval()
@@ -264,11 +261,10 @@ class IDRTrainRunner():
                         self.img_res,
                         **self.plot_conf
                         )
-
                 self.model.train()
                 if self.train_cameras:
                     self.pose_vecs.train()
-
+           
             self.train_dataset.change_sampling_idx(self.num_pixels)
 
             for data_index, (indices, model_input, ground_truth) in enumerate(self.train_dataloader):
@@ -295,7 +291,6 @@ class IDRTrainRunner():
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
                 self.optimizer.step()
-                self.clear_gpu_memory()
                 if self.train_cameras:
                     self.optimizer_cam.step()
                 
@@ -320,7 +315,8 @@ class IDRTrainRunner():
             self.scheduler.step()
         self.writer.close()
     def clear_gpu_memory(self):
-        torch.cuda.synchronize(device='cuda')
+        import gc
+        torch.cuda.synchronize(device=torch.device('cuda'))
         torch.cuda.empty_cache()
         gc.collect()
     """
