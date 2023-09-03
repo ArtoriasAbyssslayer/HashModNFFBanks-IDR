@@ -171,7 +171,7 @@ class RenderingNetwork(nn.Module):
                                                            log2_max_hash_size=multires_view-1,
                                                            base_resolution=16,
                                                            desired_resolution=512,
-                                                           bound=1.0)
+                                                           bound=0.4)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:

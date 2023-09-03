@@ -71,7 +71,7 @@ class FourierFilterBanks(nn.Module):
         """ The Low - Frequency MLP part """
         self.n_nffb_layers = len(nffb_lin_dims)
         print(f"FFB Encoder Fourier Grid Filters: {self.n_nffb_layers}")
-        assert self.n_nffb_layers >= 6, "The NFFB  should have more than 5 layers"
+        assert self.n_nffb_layers >= 3, "The NFFB  should have more than 5 layers"
         # Input layer 
         setattr(self, "ff_lin" + str(0), nn.Linear(nffb_lin_dims[0], nffb_lin_dims[1]))
         for layer in range(1, self.n_nffb_layers - 1):
