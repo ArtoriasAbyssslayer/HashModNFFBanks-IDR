@@ -293,7 +293,7 @@ class IDRTrainRunner():
                 self.optimizer.step()
                 if self.train_cameras:
                     self.optimizer_cam.step()
-                
+                self.clear_gpu_memory()
                 print(
                     '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
                         .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
@@ -316,7 +316,6 @@ class IDRTrainRunner():
         self.writer.close()
     def clear_gpu_memory(self):
         import gc
-        torch.cuda.synchronize(device=torch.device('cuda'))
         torch.cuda.empty_cache()
         gc.collect()
     """
