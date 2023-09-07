@@ -123,6 +123,9 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
+        import gc
+        torch.cuda.empty_cache()
+        gc.collect()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):
@@ -171,7 +174,7 @@ class RenderingNetwork(nn.Module):
                                                            log2_max_hash_size=multires_view-1,
                                                            base_resolution=16,
                                                            desired_resolution=512,
-                                                           bound=0.4)
+                                                           bound=1.0)
                     self.embedview_fn, input_ch = embed_model.embed, embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:
@@ -214,7 +217,7 @@ class RenderingNetwork(nn.Module):
 
 class IDRNetwork(nn.Module):
     def __init__(self, conf):
-        super().__init__()
+        super(IDRNetwork,self).__init__()
         self.feature_vector_size = conf.get_int('feature_vector_size')
         if conf.get_config('embedding_network') is not None:
             implicit_network_kwargs = conf.get_config('implicit_network')
@@ -237,6 +240,7 @@ class IDRNetwork(nn.Module):
         pose = input["pose"]
         object_mask = input["object_mask"].reshape(-1)
 
+        # Compute ray directions and camera location
         ray_dirs, cam_loc = rend_util.get_camera_params(uv, pose, intrinsics)
 
         batch_size, num_pixels, _ = ray_dirs.shape

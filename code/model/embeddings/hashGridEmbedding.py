@@ -81,12 +81,11 @@ class _HashGridMLP(nn.Module):
         bin_mask = torch.tensor(neigs & (1 << dims) == 0, dtype=bool) # (neig, dim)
         self.register_buffer('bin_mask', bin_mask, persistent=False)
     def forward(self, x: torch.Tensor):
-        
         # x: (b..., dim), torch.float32, range: [0, 1]
         bdims = len(x.shape[:-1])
         x = x * self.resolution
-        xi = x.long().detach()
-        xf = x - x.float().detach()
+        xi = x.long()
+        xf = x - x.float()
         # to match the input batch shape unsqueeze 
         xi = xi.unsqueeze(dim=-2) # (b..., 1, dim)
         xf = xf.unsqueeze(dim=-2) # (b..., 1, dim)
@@ -99,7 +98,7 @@ class _HashGridMLP(nn.Module):
         w = ws.prod(dim=-1, keepdim=True) # (b..., neig, 1)
         # hash neighbors' id and look up table
         hash_ids = hash_func(inds, self.primes, self.hashmap_size)# (b..., neig)
-        neig_data = self.embedding(hash_ids) # (b..., neig, feat)
+        neig_data = self.embedding(hash_ids)# (b..., neig, feat)
 
         # interpolate neighbors' data
         return torch.sum(neig_data * w, dim=-2) # (b..., feat)
@@ -156,8 +155,7 @@ class MultiResHashGridMLP(nn.Module):
                 self.output_dim = self.n_levels * self.max_points_per_level
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
-                self.embeddings_dim = self.output_dim        
-                
+                self.embeddings_dim = self.output_dim      
     # In forard return concatenated emmbedding grids in each level
     # resolution.
     def forward(self, x: torch.Tensor):

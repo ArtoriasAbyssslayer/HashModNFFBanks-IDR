@@ -94,7 +94,6 @@ def evaluate(**kwargs):
     utils.mkdir_ifnotexists(images_dir)
 
     indices, model_input, ground_truth = next(iter(eval_dataloader))
-    clear_gpu_memory()
     for i, (new_q, scale) in enumerate(zip(q_new, s_new)):
         
 

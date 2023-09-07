@@ -56,7 +56,6 @@ class FourierFeature(nn.Module):
         self.input_dims = input_dims
         self.register_buffer('B', torch.randn(input_dims,int(num_channels)) * sigma,persistent=True)
         self.embeddings_dim  = 2 * num_channels + 3 if include_input else 2 * num_channels 
-        self.include_input = include_input     
     def forward(self, x):
         W = self.B.to(x.device)
         xp = torch.matmul(2 * np.pi * x, W)

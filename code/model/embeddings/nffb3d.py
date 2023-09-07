@@ -115,8 +115,7 @@ class FourierFilterBanks(nn.Module):
                 self.init_ReLU_out()
         else:
             self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).requires_grad_(True)
-
-            
+        
         # Attention Module
         # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)
         # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
@@ -186,7 +185,7 @@ class FourierFilterBanks(nn.Module):
                 feats += features_list[i]
             x = torch.cat([input,feats/(self.grid_levels)],dim=-1)
         return x
-    " Functions Used for RELU layers "
+    " Functions Used for RELU layers - IGR ReLU -> Results to Smooth SDFs"
     def init_ReLU(self):
         for layer in range(0, self.n_nffb_layers - 1):
             lin = getattr(self, "ff_lin" + str(layer))
@@ -223,7 +222,7 @@ class FourierFilterBanks(nn.Module):
                 torch.nn.init.constant_(lin.bias, 0.0)
                 torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(self.nffb_lin_dims[-1]))
     print("IGR Out Head completed")
-    " Functions Used for SIREN Layers "
+    " Functions Used for SIREN Layers -> Results to Sharp SDFs"
     def init_SIREN(self):
         for layer in range(0, self.n_nffb_layers-1):
             lin = getattr(self, "ff_lin" + str(layer)) 

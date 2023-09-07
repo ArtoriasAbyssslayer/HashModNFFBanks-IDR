@@ -7,14 +7,18 @@ from model.metrics import calculate_lpips,calculate_psnr,ssim
 import utils.general as utils
 import utils.plots as plt
 
-from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 # from torch.cuda.amp import  GradScaler
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class IDRTrainRunner():
     def __init__(self,**kwargs):
+        # add fixed random seed for reproducibility
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(42)
+            torch.cuda.manual_seed_all(42)    
         torch.set_default_dtype(torch.float32)
-        torch.set_num_threads(1)
+        torch.set_num_threads(12)
 
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
@@ -210,7 +214,7 @@ class IDRTrainRunner():
     def run(self):
         print("training...")
         losses = []  
-       
+        
         #scaler = self.scaler
         for epoch in range(self.start_epoch, self.nepochs + 1):
             self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
@@ -221,6 +225,7 @@ class IDRTrainRunner():
                 self.save_checkpoints(epoch)
 
             if epoch % self.plot_freq == 0:
+                self.clear_gpu_memory()
                 self.model.eval()
                 if self.train_cameras:
                     self.pose_vecs.eval()
@@ -293,7 +298,7 @@ class IDRTrainRunner():
                 self.optimizer.step()
                 if self.train_cameras:
                     self.optimizer_cam.step()
-                self.clear_gpu_memory()
+                
                 print(
                     '{0} [{1}] ({2}/{3}): loss = {4}, rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
                         .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
@@ -311,7 +316,7 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
-            self.clear_gpu_memory()
+            
             self.scheduler.step()
         self.writer.close()
     def clear_gpu_memory(self):
