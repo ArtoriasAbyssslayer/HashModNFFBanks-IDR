@@ -154,9 +154,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--expname", "NFFB_BUDA_linuxrun",
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
-                "--scan_id","110",
+                "--expname", "NFF_SKULL",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB/dtu_fixed_cameras.conf",
+                "--scan_id","65",
                 "--checkpoint", "latest",
                 "--eval_rendering"
             ]

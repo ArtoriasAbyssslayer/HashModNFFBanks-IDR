@@ -75,7 +75,7 @@ class FourierFilterBanks(nn.Module):
         # Input layer 
         setattr(self, "ff_lin" + str(0), nn.Linear(nffb_lin_dims[0], nffb_lin_dims[1]))
         for layer in range(1, self.n_nffb_layers - 1):
-            setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]).requires_grad_(True))
+            setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]))
         """ Initialize parameters for Linear Layers"""
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         if layers_type == 'SIREN':
@@ -102,11 +102,11 @@ class FourierFilterBanks(nn.Module):
         
             """ The HIGH - Frequency MLP part """
             for layer in range(0, self.grid_levels):
-                setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]).requires_grad_(True))
+                setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
             
             if layers_type  == 'SIREN':  
             
-                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).requires_grad_(True)
+                self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
                 self.out_activation = Sine(w0=self.sin_w0_high)
                 self.init_SIREN_out()
             elif layers_type  == 'ReLU':
@@ -114,7 +114,7 @@ class FourierFilterBanks(nn.Module):
                 self.out_activation = nn.LeakyReLU(negative_slope=1e-2,inplace=False)
                 self.init_ReLU_out()
         else:
-            self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1]).requires_grad_(True)
+            self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
         
         # Attention Module
         # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)

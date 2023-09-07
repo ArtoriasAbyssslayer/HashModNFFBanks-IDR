@@ -56,7 +56,7 @@ class _HashGridMLP(nn.Module):
     """
 
     def __init__(self,dim: int,n_features: int,hashmap_size: int,resolution: float):
-        super().__init__()
+        super(_HashGridMLP,self).__init__()
         self.dim = dim
         self.n_features = n_features
         self.hashmap_size = hashmap_size
@@ -121,7 +121,7 @@ class MultiResHashGridMLP(nn.Module):
             The output of this Multi-Resolution Hash Embedding is obviously the n_levels * max_points_per_level
             which is the voxel size of the hash grid encoding
         """
-        super().__init__()
+        super(MultiResHashGridMLP,self).__init__()
         self.include_input = include_input
         self.in_dim = in_dim
         self.n_levels = n_levels
@@ -156,9 +156,9 @@ class MultiResHashGridMLP(nn.Module):
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
                 self.embeddings_dim = self.output_dim      
-    # In forard return concatenated emmbedding grids in each level
-    # resolution.
+   
     def forward(self, x: torch.Tensor):
+        " In forard return concatenated emmbedding grids in each level resolution." 
         if self.include_input == True:
             return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
         else:

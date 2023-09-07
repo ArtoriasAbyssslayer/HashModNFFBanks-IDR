@@ -33,9 +33,9 @@ class _hash_encode(Function):
         outputs = torch.empty(L, B, C, device=inputs.device, dtype=inputs.dtype)
 
         if calc_grad_inputs:
-            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype).requires_grad_(False)
+            dy_dx = torch.empty(B, L * D * C, device=inputs.device, dtype=inputs.dtype)
         else:
-            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype).requires_grad_(False)
+            dy_dx = torch.empty(1, device=inputs.device, dtype=inputs.dtype)
 
         _backend.hash_encode_forward(inputs, embeddings, offsets, outputs, B, D, C, L, S, H, calc_grad_inputs, dy_dx)
         

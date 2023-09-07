@@ -49,9 +49,9 @@ def calculate_psnr(img1, img2, mask):
     if mse == 0:
         return float('inf')
     return 20 * math.log10(1.0 / math.sqrt(mse))
-def ssim(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
+def ssim_loss(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
     from torchmetrics import StructuralSimilarityIndexMeasure as ssim 
-    value = ssim(image_pred, image_ground_truth, multichannel=True)
+    value = ssim(image_pred, image_ground_truth)
     if valid_mask is not None:
         value = value[valid_mask]
     if reduction == 'mean':

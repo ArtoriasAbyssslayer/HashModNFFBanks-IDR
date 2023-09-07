@@ -174,7 +174,7 @@ def evaluate(**kwargs):
             # Calculate Metrics Per View
             psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
             lpip = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
-            ssim = ssim(rgb_eval_masked,rgb_gt_masked,mask)
+            ssim = ssim_loss(rgb_eval_masked,rgb_gt_masked,mask)
             
             psnrs.append(psnr)
             ssims.append(ssim)

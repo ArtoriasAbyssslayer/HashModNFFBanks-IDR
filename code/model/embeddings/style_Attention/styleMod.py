@@ -17,16 +17,16 @@ class StyleModulation(nn.Module):
     def __init__(self, feature_vector_size=28):
         super().__init__()
         self.feature_vector_size = feature_vector_size
-
         self.linear_transform = nn.Linear(feature_vector_size, feature_vector_size)
         self.attention = nn.Linear(feature_vector_size, 1)
-
         self.norm = nn.InstanceNorm1d(feature_vector_size)
 
     def forward(self, content, style):
         # No need to set the multires_levels
-
-        content_features = content.view(-1, self.feature_vector_size)
+        
+        # Content is the original 3D coordinate Vector
+        content_features = content.view(-1, 3)
+        # Style is its embedding in the latent space of NFFB 
         style_features = style.view(-1, self.feature_vector_size)
 
         # No need to apply AdaIN

@@ -9,7 +9,7 @@ from model.embeddings.nffb3d import FourierFilterBanks
 #from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-class Custom_Embedding_Network:
+class Custom_Embedding_Network(nn.Module):
     """
         This class is responsible for selecting the embedding model and initializing the network object
         * The Fourier Features Embendding Models  are initialized with the same parameters as positional encoding
@@ -17,6 +17,7 @@ class Custom_Embedding_Network:
         * The neural fourier filter banks models are initialized with the hashgrid parameters and the positional encoding parameters
     """
     def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
+        super(Custom_Embedding_Network, self).__init__()
         embed_kwargs = {
             'GridEncoderCUDA':{
                 'input_dim': input_dims,
@@ -144,8 +145,7 @@ class Custom_Embedding_Network:
         self.embedder_obj = EmbedderClass(**selected_kwargs)
         self.embeddings_dim = self.embedder_obj.embeddings_dim
     # Apply Embedding to the Input
-    def embed(self,x): 
-        # self.embedder_obj.train()
+    def forward(self,x): 
         return  self.embedder_obj(x)
     
 
