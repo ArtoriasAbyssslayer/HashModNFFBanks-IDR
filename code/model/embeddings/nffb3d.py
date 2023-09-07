@@ -5,7 +5,8 @@
     (using appropriate Sine Functions - SIREN branch)
     Then we make multiple levels of encodings and get a multi-resolution embeddings that decompose the space-frequency atributes of the
     coordinates input signal to IDR 
-    This is inspired from UBC-Vision NFFB FFB encoder  Look at :https://arxiv.org/abs/2212.01735
+    
+    This is inspired(with many modifications) from UBC-Vision NFFB FFB encoder paper which is explained here :https://arxiv.org/abs/2212.01735
 """
 import torch
 import torch.nn as nn
@@ -115,7 +116,8 @@ class FourierFilterBanks(nn.Module):
                 self.init_ReLU_out()
         else:
             self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
-        
+        for param in self.parameters():
+            param.requires_grad = True
         # Attention Module
         # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)
         # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)

@@ -4,8 +4,10 @@ from torch import nn
 import numpy as np
 class Sine(nn.Module):
     def __init__(self, w0):
-        super().__init__()
+        super(Sine,self).__init__()
         self.w0 = w0
+        for param in self.parameters():
+            param.requires_grad = True
     def forward(self, input):
         return torch.sin(input * self.w0)
 

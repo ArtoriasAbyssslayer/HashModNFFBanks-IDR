@@ -156,7 +156,8 @@ class MultiResHashGridMLP(nn.Module):
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
                 self.embeddings_dim = self.output_dim      
-   
+        for param in self.parameters():
+            param.requires_grad = True
     def forward(self, x: torch.Tensor):
         " In forard return concatenated emmbedding grids in each level resolution." 
         if self.include_input == True:

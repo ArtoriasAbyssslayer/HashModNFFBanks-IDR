@@ -14,6 +14,8 @@ class PositionalEncoding(nn.Module):
             self.embeddings_dim = self.out_dim + kwargs['input_dims']
         else:
             self.embeddings_dim = self.out_dim
+        for param in self.parameters():
+            param.requires_grad = True
     def create_embedding_fn(self):
         embed_fns = []
         d = self.kwargs['input_dims']
@@ -56,6 +58,8 @@ class FourierFeature(nn.Module):
         self.input_dims = input_dims
         self.register_buffer('B', torch.randn(input_dims,int(num_channels)) * sigma,persistent=True)
         self.embeddings_dim  = 2 * num_channels + 3 if include_input else 2 * num_channels 
+        for param in self.parameters():
+            param.requires_grad = True
     def forward(self, x):
         W = self.B.to(x.device)
         xp = torch.matmul(2 * np.pi * x, W)
@@ -122,8 +126,8 @@ class SHEncoder(nn.Module):
                 xy, yz, xz = x * y, y * z, x * z
                 result[..., 4] = self.C2[0] * xy
                 result[..., 5] = self.C2[1] * yz
-                #result[..., 6] = self.C2[2] * (2.0 * zz - xx - yy)
-                result[..., 6] = self.C2[2] * (3.0 * zz - 1) # xx + yy + zz == 1, but this will lead to different backward gradients, interesting...
+                result[..., 6] = self.C2[2] * (2.0 * zz - xx - yy)
+                #result[..., 6] = self.C2[2] * (3.0 * zz - 1) # xx + yy + zz == 1, but this will lead to different backward gradients, interesting...
                 result[..., 7] = self.C2[3] * xz
                 result[..., 8] = self.C2[4] * (xx - yy)
                 if self.degree > 3:
