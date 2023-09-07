@@ -123,9 +123,6 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
-        import gc
-        torch.cuda.empty_cache()
-        gc.collect()
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):

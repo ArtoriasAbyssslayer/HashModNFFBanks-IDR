@@ -146,7 +146,11 @@ class Custom_Embedding_Network(nn.Module):
         self.embeddings_dim = self.embedder_obj.embeddings_dim
     # Apply Embedding to the Input
     def forward(self,x): 
-        return  self.embedder_obj(x)
+        if self.training:
+            self.embedder_obj.train()
+            return self.embedder_obj.forward(x)
+        else:
+            return  self.embedder_obj.forward(x)
     
 
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 

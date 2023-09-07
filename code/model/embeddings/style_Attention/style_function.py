@@ -1,26 +1,26 @@
-import torch 
+import torch
+import torch.nn as nn
 
-def calc_mean_std(feat, eps=0.1):
+
+def calc_mean_std(feat, eps=1e-5):
+    # eps is a small value added to the variance to avoid divide-by-zero.
     size = feat.size()
-    assert (len(size) == 3)
-    N, C = size[1:3]
-    
-    feat_mean = feat.view(N, C, -1).mean(dim=2).view(N, C)
-    feat_centered = feat - feat_mean
-
-    feat_var = (feat_centered ** 2).view(N, C, -1).mean(dim=2) + eps
-    feat_std = feat_var.sqrt()
-
+    assert (len(size) == 4)
+    N, C = size[:2]
+    feat_var = feat.view(N, C, -1).var(dim=2) + eps
+    feat_std = feat_var.sqrt().view(N, C, 1, 1)
+    feat_mean = feat.view(N, C, -1).mean(dim=2).view(N, C, 1, 1)
     return feat_mean, feat_std
 
 
 def adaptive_instance_normalization(content_feat, style_feat):
-    assert (content_feat.size()[2] == style_feat.size()[2])
-    size = content_feat.size()[1:3]
+    assert (content_feat.size()[:2] == style_feat.size()[:2])
+    size = content_feat.size()
     style_mean, style_std = calc_mean_std(style_feat)
     content_mean, content_std = calc_mean_std(content_feat)
 
-    normalized_feat = (content_feat - content_mean.expand(size)) / content_std.expand(size)
+    normalized_feat = (content_feat - content_mean.expand(
+        size)) / content_std.expand(size)
     return normalized_feat * style_std.expand(size) + style_mean.expand(size)
 
 
@@ -61,5 +61,32 @@ def coral(source, target):
                  source_f_norm)
     )
 
+    source_f_transfer = source_f_norm_transfer * \
+                        target_f_std.expand_as(source_f_norm) + \
+                        target_f_mean.expand_as(source_f_norm)
+
+    return source_f_transfer.view(source.size())
 
 
+def styleLoss(input, target):
+    ib, ic, ih, iw = input.size()
+    iF = input.view(ib, ic, -1)
+    iMean = torch.mean(iF, dim=2)
+    iCov = GramMatrix(input)
+
+    tb, tc, th, tw = target.size()
+    tF = target.view(tb, tc, -1)
+    tMean = torch.mean(tF, dim=2)
+    tCov = GramMatrix(target)
+
+    loss = nn.MSELoss(size_average=False)(iMean,tMean) + nn.MSELoss(size_average=False)(iCov, tCov)
+    return loss/tb
+
+
+def GramMatrix(input):
+    b, c, h, w = input.size()
+    f = input.view(b, c, h*w) # bxcx(hxw)
+    # torch.bmm(batch1, batch2, out=None)   #
+    # batch1: bxmxp, batch2: bxpxn -> bxmxn #
+    G = torch.bmm(f, f.transpose(1, 2))  # f: bxcx(hxw), f.transpose: bx(hxw)xc -> bxcxc
+    return G.div_(c*h*w)

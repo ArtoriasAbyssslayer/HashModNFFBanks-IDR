@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.embeddings.style_Attention.utils_function import *
+from model.embeddings.style_Attention.style_function import *
 
 
 
