@@ -123,7 +123,7 @@ class Custom_Embedding_Network(nn.Module):
                 #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
                 #but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
                 'freq_enc_type': 'PositionalEncodingNET',
-                'has_out':True,
+                'has_out':False,
                 'bound': bound,
                 #layer_type = [SIREN,ReLU]
                 'layers_type': 'SIREN'
@@ -145,12 +145,9 @@ class Custom_Embedding_Network(nn.Module):
         self.embedder_obj = EmbedderClass(**selected_kwargs)
         self.embeddings_dim = self.embedder_obj.embeddings_dim
     # Apply Embedding to the Input
-    def forward(self,x): 
-        if self.training:
-            self.embedder_obj.train()
+    def forward(self,x,compute_grad=False): 
             return self.embedder_obj.forward(x)
-        else:
-            return  self.embedder_obj.forward(x)
+
     
 
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 

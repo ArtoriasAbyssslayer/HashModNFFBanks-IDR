@@ -36,14 +36,14 @@ class ImplicitNetwork(nn.Module):
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
-                embed_model = Custom_Embedding_Network(input_dims=d_in,
+                self.embed_model = Custom_Embedding_Network(input_dims=d_in,
                                                     network_dims=dims,embed_type=embed_type, 
                                                     multires=multires,log2_max_hash_size=log2_max_hash_size,
                                                     max_points_per_entry=max_points_per_entry,
                                                     base_resolution=base_resolution,
                                                     desired_resolution=desired_resolution,
                                                     bound=bound)
-                embed_fn, input_ch = embed_model.forward, embed_model.embeddings_dim
+                embed_fn, input_ch = self.embed_model.forward, self.embed_model.embeddings_dim
                 self.embed_fn = embed_fn
                 dims[0] = input_ch    
         elif embed_type == 'NerfPos':
@@ -83,6 +83,9 @@ class ImplicitNetwork(nn.Module):
             setattr(self, "lin" + str(l), lin)
 
         self.softplus = nn.Softplus(beta=100)
+        
+        for param in self.parameters():
+                param.requires_grad = True
 
     def forward(self, input, compute_grad=False):
         " IDR Resnet - With Clamped Output"
@@ -163,7 +166,7 @@ class RenderingNetwork(nn.Module):
                     d_in = 3
                     # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) 
                     # but should mutch ImplicitNetwork's embedding net 
-                    embed_model = Custom_Embedding_Network(input_dims=d_in,
+                    self.embed_model = Custom_Embedding_Network(input_dims=d_in,
                                                            network_dims=dims,
                                                            embed_type='FFB',
                                                            multires=multires_view,
@@ -172,7 +175,7 @@ class RenderingNetwork(nn.Module):
                                                            base_resolution=16,
                                                            desired_resolution=512,
                                                            bound=1.0)
-                    self.embedview_fn, input_ch = embed_model.forward, embed_model.embeddings_dim
+                    self.embedview_fn, input_ch = self.embed_model.forward, self.embed_model.embeddings_dim
                     dims[0] += (input_ch - d_in)
         else:
             raise ValueError('No Embedding Network config provided for VIEWDIRS')
@@ -189,6 +192,8 @@ class RenderingNetwork(nn.Module):
             setattr(self, "lin" + str(l), lin)
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
+        for param in self.parameters():
+            param.requires_grad = True
     def forward(self, points, normals, view_dirs, feature_vectors):
         if self.embedview_fn is not None:
             view_dirs = self.embedview_fn(view_dirs)

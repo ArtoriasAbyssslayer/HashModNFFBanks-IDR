@@ -17,7 +17,7 @@ from model.embeddings.frequency_enc import FourierFeature as FFenc
 from model.embeddings.frequency_enc import PositionalEncoding
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.Sine import *
-from model.embeddings.style_Attention.styleMod import MultiResStyleModulation as StyleModulation
+from model.embeddings.style_Attention.styleMod import StyleAttention,StyleModulation
 # from model.embeddings.style_Attention.multihead_attention import MultiHeadAttentionModule
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -116,12 +116,13 @@ class FourierFilterBanks(nn.Module):
                 self.init_ReLU_out()
         else:
             self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
+        
+        self.StyleAttentionBlock = StyleAttention(self.feature_Vector_size)
+        self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
         for param in self.parameters():
             param.requires_grad = True
-        # Attention Module
-        # self.multi_head_attention = MultiHeadAttentionModule(self.feature_Vector_size,num_heads=4)
-        # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
+
+    def forward(self, input: torch.Tensor,compute_grad=False) -> torch.Tensor:
         """
             Inputs:
                 x: [N, 3] - Input points 3D in [-scale,scale]
@@ -151,8 +152,12 @@ class FourierFilterBanks(nn.Module):
             x_out = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
         else:
             features_list = []
-
-        
+        """                         Style Modulation
+                    Assuming style vector is the embed Feat - which is Fourier Feature Grid
+                    and the feature vector is the x which is derived from the hash grid
+                    Essentially map better ntk fourier features to the hash grid features
+        """
+        # self.StyleModulationBlock(x,embeddings_list)
         """ Grid Fourier Encoding """
         
         for layer in range(0,self.n_nffb_layers-1):
@@ -161,12 +166,12 @@ class FourierFilterBanks(nn.Module):
             x = self.lin_activation(x)     
             if layer > 0:
                 embed_Feat = embeddings_list[layer-1] + x
-                # Apply Style Modulation
-                # embed_Feat= self.StyleModulationBlock(x,embed_Feat[layer-1])
                 
-                # Apply Multi-Head Self-Attention using the custom module
-                # attn_output = self.multi_head_attention(embed_Feat)
-                # embed_Feat = embed_Feat + attn_output
+                """ Style Attention """ 
+                # condition is applied so we apply th style attention only when the number of points is greater than 1000 
+                # meaning we have enough points to apply the attention mechanism (otherwise we get NaNs)
+                if x.shape[0] >= 10:
+                    normalized_embed_Feat = self.StyleAttentionBlock(x,embed_Feat[layer-1])
                 if self.has_out:
                     # For Extended High Frequency MLP Layers # 
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(embed_Feat.device)

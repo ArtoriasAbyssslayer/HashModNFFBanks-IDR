@@ -47,7 +47,7 @@ class PositionalEncoding(nn.Module):
             return torch.cat([inputs, posenc_embeds], -1)
         else:
             return posenc_embeds
-    def forward(self,inputs):
+    def forward(self,inputs,compute_grad=False):
         return self.embed(inputs=inputs)
         
 #Simple Fourier Feature Encoder 

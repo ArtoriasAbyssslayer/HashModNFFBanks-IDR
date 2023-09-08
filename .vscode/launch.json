@@ -32,7 +32,7 @@
             "args": [
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB/dtu_fixed_cameras.conf",
-                "--expname", "NFFB_SKULL",
+                "--expname", "NFFB_SKULL_V2",
                 "--scan_id","65",
                 "--checkpoint", "latest",
                 //"--train_cameras",
@@ -145,6 +145,7 @@
                 
             ]
         },
+        // THIS SHOULD BE CHANGED WHEN EVALUATING DIFFERENT MODEL
         {
             "name": "Run Multi-View IDR evaluation",
             "type": "python",

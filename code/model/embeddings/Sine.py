@@ -8,7 +8,7 @@ class Sine(nn.Module):
         self.w0 = w0
         for param in self.parameters():
             param.requires_grad = True
-    def forward(self, input):
+    def forward(self, input,compute_grad=False):
         return torch.sin(input * self.w0)
 
 def sine_init(m, w0, num_input=None):

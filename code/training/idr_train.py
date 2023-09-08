@@ -3,7 +3,7 @@ from datetime import datetime
 from pyhocon import ConfigFactory
 import sys
 import torch
-from model.metrics import calculate_lpips,calculate_psnr,ssim
+from model.metrics import calculate_lpips,calculate_psnr,ssim_index
 import utils.general as utils
 import utils.plots as plt
 

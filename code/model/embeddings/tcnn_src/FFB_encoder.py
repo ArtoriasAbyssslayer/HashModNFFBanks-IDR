@@ -81,7 +81,7 @@ class FFB_encoder(nn.Module):
             else:
                 sine_init(lin,self.sin_w0_high)
         
-    def forward(self, in_pos):
+    def forward(self, in_pos,compute_grad=False):
         """
             in_pos: [N, 3], in [-bound, bound] - Index position in VoxelGrid
             in_pos (for grid features) should always be located in [0.0, 1.0]
