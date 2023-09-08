@@ -117,7 +117,7 @@ class FourierFilterBanks(nn.Module):
         else:
             self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
         
-        self.StyleAttentionBlock = StyleAttention(self.feature_Vector_size)
+        self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
         self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
         for param in self.parameters():
             param.requires_grad = True
@@ -170,8 +170,8 @@ class FourierFilterBanks(nn.Module):
                 """ Style Attention """ 
                 # condition is applied so we apply th style attention only when the number of points is greater than 1000 
                 # meaning we have enough points to apply the attention mechanism (otherwise we get NaNs)
-                if x.shape[0] > 30:
-                    demodulated_embed_Feat = self.StyleAttentionBlock(x,embed_Feat[layer-1])
+                if input.shape[0] > 1:
+                    demodulated_embed_Feat = self.StyleAttentionBlock(input,embed_Feat[layer-1])
                     embed_Feat = demodulated_embed_Feat
                 if self.has_out:
                     # For Extended High Frequency MLP Layers # 

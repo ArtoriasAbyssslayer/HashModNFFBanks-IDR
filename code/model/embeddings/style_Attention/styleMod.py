@@ -15,18 +15,19 @@ from model.embeddings.style_Attention.style_function import *
 """
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class StyleAttention(nn.Module):
-    def __init__(self, feature_vector_size=28):
+    def __init__(self,d_in=3, feature_vector_size=28):
         super().__init__()
+        self.d_in = d_in
         self.feature_vector_size = feature_vector_size
         self.linear_transform = nn.Linear(feature_vector_size, feature_vector_size).to(device=device)
-        self.attention = nn.Linear(feature_vector_size, 1).to(device=device)
+        self.attention = nn.Linear(d_in, 1).to(device=device)
         self.norm = nn.InstanceNorm1d(feature_vector_size)
 
     def forward(self, content, style):
         # No need to set the multires_levels
         
         # Content is the original 3D coordinate Vector
-        content_features = content.view(-1, self.feature_vector_size)
+        content_features = content.view(-1, self.d_in)
         # Style is its embedding in the latent space of NFFB 
         style_features = style.view(-1, self.feature_vector_size)
 
