@@ -32,6 +32,7 @@ class FourierFilterBanks(nn.Module):
         self.n_levels = GridEncoderNetConfig['n_levels']
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
         self.network_dims = GridEncoderNetConfig['network_dims']
+        self.modulationApplied = True
         # Initi Encoders #
         "Multi-Res HashGrid -> Spatial Coord Encoding"
         self.grid_levels = int(self.n_levels)
@@ -165,14 +166,13 @@ class FourierFilterBanks(nn.Module):
             x = ff_lin(x)
             x = self.lin_activation(x)     
             if layer > 0:
-                embed_Feat = embeddings_list[layer-1] + x
-                
-                """ Style Attention """ 
-                # condition is applied so we apply th style attention only when the number of points is greater than 1000 
-                # meaning we have enough points to apply the attention mechanism (otherwise we get NaNs)
-                if input.shape[0] > 1:
-                    demodulated_embed_Feat = self.StyleAttentionBlock(input,embed_Feat[layer-1])
-                    embed_Feat = demodulated_embed_Feat
+                " Style Attention " 
+                if self.modulationApplied:
+                    demodulated_embed_Feat = self.StyleAttentionBlock(input,embeddings_list[layer-1])
+                    embed_Feat = demodulated_embed_Feat  + x
+                else:
+                    embed_Feat = embeddings_list[layer-1] + x
+              
                 if self.has_out:
                     # For Extended High Frequency MLP Layers # 
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(embed_Feat.device)
