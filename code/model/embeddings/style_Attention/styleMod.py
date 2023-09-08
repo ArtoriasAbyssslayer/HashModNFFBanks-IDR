@@ -27,7 +27,7 @@ class StyleAttention(nn.Module):
         # No need to set the multires_levels
         
         # Content is the original 3D coordinate Vector
-        content_features = content.view(-1, self.d_in)
+        content_features = content.view(-1, self.d_in )
         # Style is its embedding in the latent space of NFFB 
         style_features = style.view(-1, self.feature_vector_size)
 
