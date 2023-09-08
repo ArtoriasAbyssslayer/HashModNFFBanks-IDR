@@ -170,8 +170,9 @@ class FourierFilterBanks(nn.Module):
                 """ Style Attention """ 
                 # condition is applied so we apply th style attention only when the number of points is greater than 1000 
                 # meaning we have enough points to apply the attention mechanism (otherwise we get NaNs)
-                if x.shape[0] >= 10:
-                    normalized_embed_Feat = self.StyleAttentionBlock(x,embed_Feat[layer-1])
+                if x.shape[0] > 30:
+                    demodulated_embed_Feat = self.StyleAttentionBlock(x,embed_Feat[layer-1])
+                    embed_Feat = demodulated_embed_Feat
                 if self.has_out:
                     # For Extended High Frequency MLP Layers # 
                     out_layer = getattr(self,"out_lin" + str(layer-1)).to(embed_Feat.device)

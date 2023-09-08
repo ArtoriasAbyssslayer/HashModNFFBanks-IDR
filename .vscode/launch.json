@@ -37,7 +37,7 @@
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]
