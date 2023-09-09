@@ -1,6 +1,5 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-.vscode*
 *.py[cod]
 *$py.class
 data/DTU/
@@ -146,3 +145,4 @@ code/.idea/
 .DS_Store
 ._.DS_Store
 .idea/
+.vscode/launch.json
