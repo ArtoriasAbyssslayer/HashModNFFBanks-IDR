@@ -244,6 +244,7 @@ class IDRTrainRunner():
 
                 split = utils.split_input(model_input, self.total_pixels)
                 res = []
+                
                 for s in split:
                     out = self.model(s)
                     res.append({
@@ -294,6 +295,7 @@ class IDRTrainRunner():
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
                 loss.backward()
+                self.clear_gpu_memory()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
                 self.optimizer.step()
                 if self.train_cameras:
@@ -316,7 +318,7 @@ class IDRTrainRunner():
             self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/mask_loss',loss_output['mask_loss'].item(),  epoch)
-            
+            self.clear_gpu_memory()
             self.scheduler.step()
         self.writer.close()
     def clear_gpu_memory(self):
