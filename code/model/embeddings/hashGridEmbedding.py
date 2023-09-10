@@ -4,9 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn 
 """
-    Based on Ending Hsiao work on hashGridEmbedding image Features based on instant-ngp hashGridEncoding
-    https://github.com/Ending2015a/hash-grid-encoding
-
+    Code Based on Ending Hsiao work on hashGridEmbedding image Features based on instant-ngp hashGridEncoding
+    https://github.com/Ending2015a/hash-grid-encoding  
 """
 # ---- constants
 HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]

@@ -10,7 +10,7 @@ import utils.general as utils
 def get_Ps(cameras,number_of_cameras):
     Ps = []
     for i in range(0, number_of_cameras):
-        P = cameras['world_mat_%d' % i][:3, :].astype(np.float32)
+        P = cameras['world_mat_%d' % i][:3, :].astype(np.float64)
         Ps.append(P)
     return np.array(Ps)
 

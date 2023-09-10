@@ -82,7 +82,7 @@ class FourierFilterBanks(nn.Module):
         # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
         if layers_type == 'SIREN':
             self.sin_w0 = self.n_levels**self.max_points_per_level - self.n_levels # 36-6 = 30 SIREN frequency as described in the paper
-            self.sin_w0_high = self.max_points_per_level*self.sin_w0 # Double the frequency (max_points_per_level = 2) -> 60
+            self.sin_w0_high = self.sin_w0 # Keep the same frequency for High Frequency MLP Layers because SDF is a stationary function
             self.sin_activation = Sine(w0=self.sin_w0)
             self.sin_activation_high = Sine(w0=self.sin_w0_high)
             self.lin_activation = self.sin_activation

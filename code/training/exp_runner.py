@@ -21,13 +21,14 @@ if __name__ == '__main__':
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
     opt = parser.parse_args()
     if opt.gpu == "auto":
-        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
+        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=True, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
     import os
     # Set CUDA_LAUNCH_BLOCKING to 1 to allocate full GPU memory
-    # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["TORCH_CUDA_USE_DSA"] = "1"
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,

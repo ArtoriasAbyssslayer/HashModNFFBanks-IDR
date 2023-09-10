@@ -67,7 +67,7 @@ class Custom_Embedding_Network(nn.Module):
                     'per_level_scale': 2.0,
                 },
                 'bound': bound,
-                'has_out':True,
+                'has_out':False,
             },
             'FourierFeature':{
                 'channels': network_dims[0],
@@ -123,7 +123,7 @@ class Custom_Embedding_Network(nn.Module):
                 #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
                 #but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
                 'freq_enc_type': 'PositionalEncodingNET',
-                'has_out':True,
+                'has_out':False,
                 'bound': bound,
                 #layer_type = [SIREN,ReLU]
                 'layers_type': 'SIREN'

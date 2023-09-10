@@ -88,7 +88,7 @@ class ImplicitNetwork(nn.Module):
                 param.requires_grad = True
 
     def forward(self, input, compute_grad=False):
-        " IDR Resnet - With Clamped Output"
+        " IDR Resnet - With Laplace Density Clamped Output"
         if self.embed_fn is not None:
             input = self.embed_fn(input)
 
@@ -104,12 +104,12 @@ class ImplicitNetwork(nn.Module):
 
             if l < self.num_layers - 2:
                 x = self.softplus(x)
-
-    
         """
             Truncate/Clamp SDF values with Laplace Density Distribution and Tanh
             to avoid exploding gradients <=> exploding SDF values  
             + avoid loosing yield ray points of the surface
+
+            - This problem occurs with some embedding networks -
         """
         x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
         return x
@@ -160,7 +160,9 @@ class RenderingNetwork(nn.Module):
                     embedview_fn, input_ch = get_embedder(multires_view)
                     self.embedview_fn = embedview_fn
                     dims[0] += input_ch 
-        elif viewdirs_embed_type=='embedding_network':
+        
+        elif viewdirs_embed_type == 'HashGrid' or viewdirs_embed_type == 'FFB' or viewdirs_embed_type == 'FFBTcnn' or viewdirs_embed_type == 'HashGridTcnn':
+            "In this case deep embedding network is used"
             if multires_view > 0:
                 if self.mode == 'idr':
                     d_in = 3
@@ -168,7 +170,7 @@ class RenderingNetwork(nn.Module):
                     # but should mutch ImplicitNetwork's embedding net 
                     self.embed_model = Custom_Embedding_Network(input_dims=d_in,
                                                            network_dims=dims,
-                                                           embed_type='FFB',
+                                                           embed_type=viewdirs_embed_type,
                                                            multires=multires_view,
                                                            max_points_per_entry=2,
                                                            log2_max_hash_size=multires_view-1,
