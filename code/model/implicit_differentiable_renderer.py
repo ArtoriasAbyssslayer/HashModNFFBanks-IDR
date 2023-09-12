@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from utils import rend_util
 from model.embeddings.frequency_enc import get_embedder,SHEncoder
-from model.custom_embedder_decoder import Custom_Embedding_Network,Decoder
+from model.custom_embedder_decoder import Custom_Embedding_Network
 from model.ray_tracing import RayTracing
 from model.sample_network import SampleNetwork
 from model.density_net import LaplaceDensity
@@ -160,8 +160,9 @@ class RenderingNetwork(nn.Module):
                     embedview_fn, input_ch = get_embedder(multires_view)
                     self.embedview_fn = embedview_fn
                     dims[0] += input_ch 
-        
-        elif viewdirs_embed_type == 'HashGrid' or viewdirs_embed_type == 'FFB' or viewdirs_embed_type == 'FFBTcnn' or viewdirs_embed_type == 'HashGridTcnn':
+        # Select Deep Emebedding Network for View Directions
+        elif viewdirs_embed_type == 'HashGrid' or viewdirs_embed_type == 'FFB' or viewdirs_embed_type == 'StyleModNFFB' \
+            or viewdirs_embed_type == 'FFBTcnn' or viewdirs_embed_type == 'HashGridTcnn':
             "In this case deep embedding network is used"
             if multires_view > 0:
                 if self.mode == 'idr':

@@ -11,8 +11,8 @@ use_cuda_blocking=""
 use_cuda_dsa=""
 
 # Set default options
-use_cuda_blocking="CUDA_LAUNCH_BLOCKING=1"
-use_cuda_dsa="TORCH_USE_CUDA_DSA=1"
+use_cuda_blocking="CUDA_LAUNCH_BLOCKING=0"
+use_cuda_dsa="TORCH_USE_CUDA_DSA=0"
 
 # Experiment name to config path mapping
 config_paths=(

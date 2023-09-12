@@ -11,11 +11,14 @@ config_paths=()  # Array to store experiment names and their corresponding confi
 # Define experiment name to config path mappings
 config_paths["PositionalEncoding"]="./confs/dtu_fixed_camers.conf"
 config_paths["FourierFeatures"]="./confs/embedder_conf_var/FourierFeatures"
-config_paths["HashGrid"]="./confs/embedder_conf_var/HashGrid"
+config_paths["HashGrid"]="./confs/embedder_conf_var/HashGrid_3DPoints-Posenc_ViewDirs"
+config_paths["HashGridViewdirs"]="./confs/embedder_conf_var/HashGrid_3DPoints&ViewDirs"
+config_paths["NFFB"]="./confs/embedder_conf_var/FFB"
+config_paths["StyleModNFFB"]="./confs/embedder_conf_var/FFB_StyleMod"
 # Add more mappings here
 
 # Set default options
-use_cuda_blocking="CUDA_LAUNCH_BLOCKING=1"
+use_cuda_blocking="CUDA_LAUNCH_BLOCKING=0"
 use_cuda_dsa="TORCH_USE_CUDA_DSA=1"
 use_multithreading="OMP_NUM_THREADS=$(nproc)"
 

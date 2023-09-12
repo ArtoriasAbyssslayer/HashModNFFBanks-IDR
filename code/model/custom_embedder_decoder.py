@@ -40,15 +40,14 @@ class Custom_Embedding_Network(nn.Module):
                 'log2_hashmap_size': log2_max_hash_size,
                 'desired_resolution': desired_resolution,
             },
-            'multi_resolution': {
+            'hash_grid_encoder_pytorch': {
                 'include_input': True,
                 'in_dim': input_dims,
                 'n_levels':multires,
                 'max_points_per_level': max_points_per_entry,
                 'log2_hashmap_size': log2_max_hash_size,
                 'base_resolution': base_resolution,
-                'desired_resolution': desired_resolution            
-                
+                'desired_resolution': desired_resolution               
             },
             'FFB_TCNN':{
                 'HashGridEncoderConfig':{
@@ -127,13 +126,42 @@ class Custom_Embedding_Network(nn.Module):
                 'bound': bound,
                 #layer_type = [SIREN,ReLU]
                 'layers_type': 'SIREN'
+            },
+            'StyleModulatedNFFB':{
+                'GridEncoderNetConfig':{
+                    'include_input': True,
+                    'in_dim': input_dims,
+                    'embed_type': 'HashGridTcnn',
+                    'network_dims': network_dims,
+                    'n_levels': multires,
+                    'max_points_per_level': max_points_per_entry,
+                    'log2_hashmap_size': log2_max_hash_size,
+                    'base_resolution': base_resolution,
+                    'desired_resolution': desired_resolution,
+                    "base_sigma": 8.0,
+                    "exp_sigma": 1.26,
+                    "grid_embedding_std": 0.0001,
+                    'per_level_scale': 2.0,
+                    'style_modulation':False
+                },
+                #freq_enc_type = [FourierFeatureNET,PositionalEncodingNET]
+                #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
+                #but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
+                'freq_enc_type': 'PositionalEncodingNET',
+                'has_out':False,
+                'bound': bound,
+                #layer_type = [SIREN,ReLU]
+                'layers_type': 'SIREN',
+                'style_modulation':True
             }
+            
         }
         embed_models = {
-            'HashGrid': (MultiResHashGridMLP, 'multi_resolution'),
+            'HashGrid': (MultiResHashGridMLP, 'hash_grid_encoder_pytorch'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
+            'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
             #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             #'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),

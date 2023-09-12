@@ -274,7 +274,7 @@ if __name__ == '__main__':
     opt = parser.parse_args()
 
     if opt.gpu == "auto":
-        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
+        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu

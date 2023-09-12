@@ -18,7 +18,7 @@ class IDRTrainRunner():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)    
         torch.set_default_dtype(torch.float32)
-        
+        torch.set_num_threads(12)
 
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
@@ -35,7 +35,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            eval_epochs = 25
+            eval_epochs = 100
             self.eval_epochs = eval_epochs
             
         if scan_id != -1:
@@ -213,8 +213,8 @@ class IDRTrainRunner():
 
     def run(self):
         print("training...")
+        # Initialize average losses buffer for Validation Slope print
         losses = []  
-        
         #scaler = self.scaler
         for epoch in range(self.start_epoch, self.nepochs + 1):
             self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
@@ -285,7 +285,8 @@ class IDRTrainRunner():
                 else:
                     model_input['pose'] = model_input['pose'].cuda()
 
-                
+                # Clear GPU memory before calling model to avoid CUDA out of memory error
+                self.clear_gpu_memory()
                 model_outputs = self.model(model_input)
                 loss_output = self.loss(model_outputs, ground_truth)
 
@@ -295,8 +296,12 @@ class IDRTrainRunner():
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
                 loss.backward()
+                # Clear GPU memory before calling model to avoid CUDA out of memory error
                 self.clear_gpu_memory()
+                # Clip gradients to avoid gradient explosion and OOM error
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
+                
+                # Step optimizer and scheduler after printing losses 
                 self.optimizer.step()
                 if self.train_cameras:
                     self.optimizer_cam.step()

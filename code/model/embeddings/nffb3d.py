@@ -23,7 +23,7 @@ from model.embeddings.style_Attention.styleMod import StyleAttention,StyleModula
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class FourierFilterBanks(nn.Module):
 
-    def __init__(self, GridEncoderNetConfig,freq_enc_type,has_out,bound,layers_type):
+    def __init__(self, GridEncoderNetConfig,freq_enc_type,has_out,bound,layers_type,style_modulation=False):
         super(FourierFilterBanks, self).__init__()
         self.bound = bound
         self.skip_in = [4]
@@ -32,7 +32,7 @@ class FourierFilterBanks(nn.Module):
         self.n_levels = GridEncoderNetConfig['n_levels']
         self.max_points_per_level = GridEncoderNetConfig['max_points_per_level']
         self.network_dims = GridEncoderNetConfig['network_dims']
-        self.modulationApplied = True
+        self.modulationApplied = style_modulation
         # Initi Encoders #
         "Multi-Res HashGrid -> Spatial Coord Encoding"
         self.grid_levels = int(self.n_levels)
