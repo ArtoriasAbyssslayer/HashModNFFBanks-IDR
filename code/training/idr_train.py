@@ -18,7 +18,8 @@ class IDRTrainRunner():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)    
         torch.set_default_dtype(torch.float32)
-        torch.set_num_threads(12)
+        # Limit the number of pytorch threads to 1 to avoid OOM errors
+        torch.set_num_threads(os.cpu_count() // 2)
 
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
@@ -35,7 +36,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            eval_epochs = 100
+            eval_epochs = 50
             self.eval_epochs = eval_epochs
             
         if scan_id != -1:
@@ -213,6 +214,8 @@ class IDRTrainRunner():
 
     def run(self):
         print("training...")
+        # make sure that the environment variable is set to 1 for using CUDA Dynamic Shared Memory
+        assert os.environ["TORCH_CUDA_USE_DSA"] == "1"
         # Initialize average losses buffer for Validation Slope print
         losses = []  
         #scaler = self.scaler
@@ -220,7 +223,7 @@ class IDRTrainRunner():
             self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-
+            
             if epoch % 25 == 0:
                 self.save_checkpoints(epoch)
 
@@ -350,7 +353,7 @@ class IDRTrainRunner():
             # Calculate the mean loss for each epoch
             mean_losses = np.mean(reshaped_losses, axis=1)
             plt.figure()
-            plt.plot(steps,mean_losses,'-o',label='IDR Loss')
+            plt.plot(steps,mean_losses,'-o',label='IDR Network Loss')
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()

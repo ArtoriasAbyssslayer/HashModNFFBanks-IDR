@@ -73,13 +73,13 @@
             "justMyCode": true,
             "args": [
                
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/MultiResHash/dtu_fixed_cameras.conf",
-                "--expname", "HashGrid_Yellow_Rabbit_",
+                "--conf", "${workspaceFolder}\\code\\confs\\embedder_conf_var\\MultiResHashPointsAndViewDirs\\dtu_fixed_cameras.conf",
+                "--expname", "HashGrid_Yellow_Rabbit_V2",
                 "--scan_id","110",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]

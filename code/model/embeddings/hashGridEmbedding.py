@@ -3,9 +3,12 @@
 import numpy as np
 import torch
 import torch.nn as nn 
+# Freuqency Encoding the auxiliary input features
+from model.embeddings.frequency_enc import FourierFeature as FrequencyEncoding
 """
     Code Based on Ending Hsiao work on hashGridEmbedding image Features based on instant-ngp hashGridEncoding
-    https://github.com/Ending2015a/hash-grid-encoding  
+    https://github.com/Ending2015a/hash-grid-encoding 
+    The code has been modified based on the instant-ngp paper as I interpreted it 
 """
 # ---- constants
 HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
@@ -13,6 +16,8 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # save tensor to gpu slow 
 primes = torch.tensor(HASH_PRIMES).to(DEVICE)
 # repeat the same array to increase the length of hash primes for large dimension inputs
+
+# _get_primes is deprecated and not used because I used fixed primes array 
 def _get_primes(d: torch.Tensor):
     if  d < len(HASH_PRIMES):
         return HASH_PRIMES[:d]
@@ -20,6 +25,8 @@ def _get_primes(d: torch.Tensor):
         repeated_hash_primes = torch.tile(HASH_PRIMES, (d - len(HASH_PRIMES), 1))
         stacked_array = repeated_hash_primes.flatten()
         return stacked_array
+
+
 
 # ---Multi Resolution HashGrid - Spatial Encoding ---
 
@@ -144,17 +151,22 @@ class MultiResHashGridMLP(nn.Module):
                     resolution))
             self.levels = nn.Sequential(*levels).to(DEVICE)
             self.input_dim = in_dim
+            if self.include_input == True:
+                self.freq_encoding = FrequencyEncoding(in_dim,(math.log(desired_resolution) - math.log(base_resolution)) / (base_resolution - 1),num_channels=n_levels,include_input=True).to(DEVICE)  
+            # Frequency Encoding Applied to Auxiliary Input which is concatenated to the HashGrid Embeddings
             if(include_input == True):
-                self.output_dim = self.n_levels * self.max_points_per_level
+                self.output_dim = self.n_levels * self.max_points_per_level + (self.freq_encoding.embeddings_dim-self.input_dim)
                 self.embeddings_dim = self.input_dim + self.output_dim
             else:
-                self.embeddings_dim = self.output_dim      
+                self.embeddings_dim = self.output_dim
+        
+            
         for param in self.parameters():
             param.requires_grad = True
     def forward(self, x: torch.Tensor,compute_grad=False)->torch.Tensor:
         " In forard return concatenated emmbedding grids in each level resolution." 
         if self.include_input == True:
-            return torch.cat([x,torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
+            return torch.cat([self.freq_encoding(x),torch.cat([level(x) for level in self.levels], dim=-1)],dim=-1)
         else:
             return torch.cat([level(x) for level in self.levels], dim=-1)
            
