@@ -19,7 +19,7 @@ class IDRTrainRunner():
             torch.cuda.manual_seed_all(42)    
         torch.set_default_dtype(torch.float32)
         # Limit the number of pytorch threads to 1 to avoid OOM errors
-        torch.set_num_threads(os.cpu_count() // 2)
+        torch.set_num_threads(1)
 
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
