@@ -215,7 +215,7 @@ class IDRTrainRunner():
     def run(self):
         print("training...")
         # make sure that the environment variable is set to 1 for using CUDA Dynamic Shared Memory
-        assert os.environ["TORCH_CUDA_USE_DSA"] == "1"
+        # assert os.environ["TORCH_CUDA_USE_DSA"] == "1"
         # Initialize average losses buffer for Validation Slope print
         losses = []  
         #scaler = self.scaler
