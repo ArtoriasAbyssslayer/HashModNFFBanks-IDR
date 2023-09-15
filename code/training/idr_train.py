@@ -38,7 +38,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            eval_epochs = 50
+            eval_epochs = 100
             self.eval_epochs = eval_epochs
             
         if scan_id != -1:
@@ -345,17 +345,15 @@ class IDRTrainRunner():
             embedder_type = self.model_conf['embedding_network.embed_type']
              # Calculate the mean loss for each epoch
             num_epochs = len(loss_list) // self.plot_dataloader.dataset.n_images
-            num_losses_per_epoch = len(loss_list) // num_epochs  # Calculate the number of losses per epoch
+            num_losses_per_epoch = 1 # Calculate the number of losses per epoch
             # arange steps in order to equal the number of epochs in length 
             steps = np.arange(1,num_epochs+1)
-            # mean_losses = [np.mean(losses.detach().cpu().numpy()) for losses in loss_list]
-            # Reshape the loss list to separate losses for each epoch
             losses = [losses.detach().cpu().numpy() for losses in loss_list]
             reshaped_losses = np.reshape(losses, (num_epochs, num_losses_per_epoch))
             # Calculate the mean loss for each epoch
             mean_losses = np.mean(reshaped_losses, axis=1)
             plt.figure()
-            plt.plot(steps,mean_losses,'-o',label='IDR Network Loss')
+            plt.plot(steps,mean_losses,label='IDR Network Loss')
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()
