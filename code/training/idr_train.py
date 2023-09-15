@@ -14,14 +14,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class IDRTrainRunner():
     def __init__(self,**kwargs):
         # add fixed random seed for reproducibility
+        
         if torch.cuda.is_available():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)    
-        torch.set_default_dtype(torch.float32)
         
-        # Limit the number of pytorch threads to 1 to avoid OOM errors
-        torch.set_num_threads(1)
-
+        
+        # Limit the number of pytorch threads to 1 to avoid OOM errors -> Ommit if you don't care about resources
+        # torch.set_num_threads(1)
+        torch.set_default_dtype(torch.float32)
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
         self.nepochs = kwargs['nepochs']
