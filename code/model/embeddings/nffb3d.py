@@ -65,9 +65,9 @@ class FourierFilterBanks(nn.Module):
                 ff_enc_list.append(posenc_layer)
         # IDR feature vector size in network_dims[-1]= 25 and is hardcoded here (fix this)
         if freq_enc_type == 'FourierFeatureNET':
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
+            nffb_lin_dims = [self.num_inputs] + [2*ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
         else:
-            nffb_lin_dims = [self.num_inputs] + [ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
+            nffb_lin_dims = [self.num_inputs] + [2*ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
         self.nffb_lin_dims = nffb_lin_dims
         self.ff_enc = nn.Sequential(*ff_enc_list).to(device)
         """ The Low - Frequency MLP part """
@@ -139,7 +139,7 @@ class FourierFilterBanks(nn.Module):
         # Compute HashGrid and split it to it's multiresolution levels
         augmented_grid_x = self.grid_enc(input)
         grid_x = augmented_grid_x[..., x.shape[-1]:]
-        grid_x = grid_x.view(-1, self.grid_levels, self.max_points_per_level)
+        grid_x = grid_x.view(-1, self.grid_levels, 2*self.max_points_per_level)
         grid_x = grid_x.permute(1, 0, 2).to(input.device)
         # Embeddings_list corresponds to the indermediated outputs O1,O2,O3... in the paper #
         embeddings_list = []

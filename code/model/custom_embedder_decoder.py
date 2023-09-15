@@ -16,6 +16,7 @@ class Custom_Embedding_Network(nn.Module):
         * HashGrid parameters are initialized based on Nvidia's implementation of HashGrid Encoding (Neural Graphics Primitives)
         * The neural fourier filter banks models are initialized with the hashgrid parameters and the positional encoding parameters
     """
+    #TODO add stylemod parameter to the constructor and pass it to the StyleModulatedNFFB
     def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         super(Custom_Embedding_Network, self).__init__()
         embed_kwargs = {
@@ -142,7 +143,6 @@ class Custom_Embedding_Network(nn.Module):
                     "exp_sigma": 1.26,
                     "grid_embedding_std": 0.0001,
                     'per_level_scale': 2.0,
-                    'style_modulation':False
                 },
                 #freq_enc_type = [FourierFeatureNET,PositionalEncodingNET]
                 #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
