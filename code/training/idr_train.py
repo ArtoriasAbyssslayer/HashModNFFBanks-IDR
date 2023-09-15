@@ -39,8 +39,6 @@ class IDRTrainRunner():
         
         if self.validation_slope_print:
             eval_epochs = 100
-            self.eval_epochs = eval_epochs
-            
         if scan_id != -1:
             self.expname = self.expname + '_{0}'.format(scan_id)
 
@@ -146,7 +144,8 @@ class IDRTrainRunner():
                 os.path.join(old_checkpnts_dir, 'ModelParameters', str(kwargs['checkpoint']) + ".pth"))
             self.model.load_state_dict(saved_model_state["model_state_dict"])
             self.start_epoch = saved_model_state['epoch']
-
+            if self.validation_slope_print:
+                self.eval_epochs = self.start_epoch + eval_epochs
             data = torch.load(
                 os.path.join(old_checkpnts_dir, 'OptimizerParameters', str(kwargs['checkpoint']) + ".pth"))
             self.optimizer.load_state_dict(data["optimizer_state_dict"])
@@ -344,8 +343,8 @@ class IDRTrainRunner():
             import numpy as np 
             embedder_type = self.model_conf['embedding_network.embed_type']
              # Calculate the mean loss for each epoch
-            num_epochs = len(loss_list) // self.plot_dataloader.dataset.n_images
-            num_losses_per_epoch = 1 # Calculate the number of losses per epoch
+            num_epochs = len(loss_list) // (self.plot_dataloader.dataset.n_images//self.batch_size)
+            num_losses_per_epoch = len(loss_list) // (num_epochs)
             # arange steps in order to equal the number of epochs in length 
             steps = np.arange(1,num_epochs+1)
             losses = [losses.detach().cpu().numpy() for losses in loss_list]
