@@ -34,16 +34,21 @@ IDR able to produce high fidelity 3D surface reconstruction, by disentangling ge
 
 The code is compatible with python 3.9 and pytorch 2.1. In addition, the following packages are required:  
 numpy, pyhocon, plotly, scikit-image, trimesh, imageio, opencv, torchvision.
+```
+It is highly recommended to use a pyvenv with the requirments.txt provided as the updated libraries work better
+and there are deprecated features in old library versions 
+```
+
 You can create an anaconda environment called `hashmodnsr` with the required dependencies by running:
 ```
-conda env create -f environment.yml
+conda env create -f environment.yml (be sure to fix image io problems -> restoring depracted code from original IDR repo)
 conda activate hashmodnsr
 ```
 
 ## Usage
 ### Multiview 3D reconstruction
 #### Data
-We apply our multiview surface reconstruction model to real 2D images from the <a href="http://roboimagedata.compute.dtu.dk/?page_id=36" target="_blank">DTU MVS repository</a>. 
+Multiview surface reconstruction model is applied to real 2D images from the <a href="http://roboimagedata.compute.dtu.dk/?page_id=36" target="_blank">DTU MVS repository</a>. 
 The 15 scans data, including the manually annotated masks and the noisy initializations for the trainable cameras setup, can be download using:
 ```
 bash data/download_data.sh 
@@ -51,7 +56,7 @@ bash data/download_data.sh
 For more information on the data convention and how to run IDR on a new data please have a look at <a href="https://github.com/lioryariv/idr/blob/main/DATA_CONVENTION.md">data convention</a>.<br><br>
 
 
-Made different configuration files for each input embedding model selected
+Different configuration files are made for each input embedding model selected
 ### Training with different Embedding model
 ```
 cd ./code 
@@ -105,8 +110,14 @@ python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_c
 Or, for trained cameras:
 ```
 python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_conf_var/{Embedding_Model}/dtu_trained_cameras.conf --scan_id SCAN_ID --checkpoint 2000 --eval_cameras [--eval_rendering]
-```
+```  
+#### Make it simple
+For simpler usage of the code under /code/scripts directory exist scirpts that run with arguments to execute every training with every embedding network and every scan in a failproof manner(meaning handling crashes due to OOM or other issues that may or maynot occure depending on the system specifications)
 
+```
+cd code/scripts
+./run_training_failproof.sh --exp NFFB --scan_id 65 [--is_continue]
+```
 ### Spatial Coordinate Hash Grid Encoding
 
 <p align="center">
