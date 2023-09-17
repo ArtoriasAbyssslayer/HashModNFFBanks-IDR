@@ -7,7 +7,7 @@ from model.metrics import calculate_lpips,calculate_psnr,ssim_index
 import utils.general as utils
 import utils.plots as plt
 
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 # from torch.cuda.amp import  GradScaler
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -19,9 +19,8 @@ class IDRTrainRunner():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)    
         
-        
         # Limit the number of pytorch threads to 1 to avoid OOM errors -> Ommit if you don't care about resources
-        # torch.set_num_threads(1)
+        torch.set_num_threads(1)
         torch.set_default_dtype(torch.float32)
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
@@ -38,7 +37,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            eval_epochs = 100
+            self.eval_epochs = 50
         if scan_id != -1:
             self.expname = self.expname + '_{0}'.format(scan_id)
 
@@ -145,7 +144,7 @@ class IDRTrainRunner():
             self.model.load_state_dict(saved_model_state["model_state_dict"])
             self.start_epoch = saved_model_state['epoch']
             if self.validation_slope_print:
-                self.eval_epochs = self.start_epoch + eval_epochs
+                self.eval_epochs = self.start_epoch + self.eval_epochs
             data = torch.load(
                 os.path.join(old_checkpnts_dir, 'OptimizerParameters', str(kwargs['checkpoint']) + ".pth"))
             self.optimizer.load_state_dict(data["optimizer_state_dict"])
@@ -352,7 +351,7 @@ class IDRTrainRunner():
             # Calculate the mean loss for each epoch
             mean_losses = np.mean(reshaped_losses, axis=1)
             plt.figure()
-            plt.plot(steps,mean_losses,label='IDR Network Loss')
+            plt.plot(steps,mean_losses,label=f'IDR with {embedder_type} Embedding Network Loss'.format(embedder_type))
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()

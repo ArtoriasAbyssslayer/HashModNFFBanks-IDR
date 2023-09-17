@@ -111,7 +111,7 @@ class ImplicitNetwork(nn.Module):
 
             - This problem occurs with some embedding networks -
         """
-        x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
+        x[...,0] = F.tanh(x[...,0]/(self.dencity_net(x[...,0])))
         return x
 
     # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives

@@ -8,7 +8,7 @@ import GPUtil
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=2, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--nepoch', type=int, default=2000, help='number of epochs to train for')
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--expname', type=str, default='')
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
     opt = parser.parse_args()
     if opt.gpu == "auto":
-        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=True, excludeID=[], excludeUUID=[])
+        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.9, maxMemory=0.9, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
