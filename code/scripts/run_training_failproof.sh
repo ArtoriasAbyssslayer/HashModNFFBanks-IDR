@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the memory limit for the Python process (e.g., 90% of available RAM)
-# ulimit -v $(($(awk '/MemTotal/ {print $2}' /proc/meminfo) * 98 / 100))
+ulimit -v $(($(awk '/MemTotal/ {print $2}' /proc/meminfo) * 99 / 100))
 # Function to display usage instructions
 usage() {
     echo "Usage: $0 [OPTIONS]"

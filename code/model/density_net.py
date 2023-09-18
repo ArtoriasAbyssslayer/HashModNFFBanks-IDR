@@ -16,15 +16,15 @@ class Density(nn.Module):
 class LaplaceDensity(Density):  # alpha * Laplace(loc=0, scale=beta).cdf(-sdf)
     def __init__(self, params_init={}, beta_min=0.0001):
         super().__init__(params_init=params_init)
-        self.beta_min = torch.tensor(beta_min)
-
+        self.beta_min = torch.tensor(beta_min).detach()
+    @torch.no_grad()
     def density_func(self, sdf, beta=None):
-        with torch.no_grad():
-            if beta is None:
-                beta = self.get_beta()
-
-            alpha = 1 / beta
-            return alpha * (0.5 + 0.5 * sdf.sign() * torch.expm1(-sdf.abs() / beta))
+        if beta is None:
+            beta = self.get_beta()
+        else:
+            beta = torch.tensor(self.beta_min + self.beta.abs())
+        alpha = 1 / beta
+        return alpha * (0.5 + 0.5 * sdf.sign() * torch.expm1(-sdf.abs() / beta))
 
     def get_beta(self):
         beta = self.beta.abs() + self.beta_min
@@ -32,6 +32,7 @@ class LaplaceDensity(Density):  # alpha * Laplace(loc=0, scale=beta).cdf(-sdf)
 
 
 class AbsDensity(Density):  # like NeRF++
+    @torch.no_grad()
     def density_func(self, sdf, beta=None):
         return torch.abs(sdf)
 
@@ -40,7 +41,7 @@ class SimpleDensity(Density):  # like NeRF
     def __init__(self, params_init={}, noise_std=1.0):
         super().__init__(params_init=params_init)
         self.noise_std = noise_std
-
+    @torch.no_grad()
     def density_func(self, sdf, beta=None):
         if self.training and self.noise_std > 0.0:
             noise = torch.randn(sdf.shape).to(sdf.device) * self.noise_std

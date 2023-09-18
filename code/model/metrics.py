@@ -25,17 +25,6 @@ def torch_psnr(rgb_prediction, rgb_ground_truth, valid_mask=None):
         value = value[valid_mask]
     return value
 
-# Structural Similarity Index
-def ssim_index(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
-    from torchmetrics import StructuralSimilarityIndexMeasure as SSIM
-    ssim_metric = SSIM(data_range=1.0, multichannel=True)
-    value = ssim_metric(image_pred, image_ground_truth)
-    if valid_mask is not None:
-        value = value[valid_mask]
-    if reduction == 'mean':
-        return torch.mean(value)
-    return value
-
 # Calculate PSNR
 def calculate_psnr(img1, img2, mask):
     # img1 and img2 have range [0, 1]
@@ -48,13 +37,10 @@ def calculate_psnr(img1, img2, mask):
 
 # SSIM Loss
 def ssim_loss(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
-    from torchmetrics import StructuralSimilarityIndexMeasure as SSIM
-    ssim_metric = SSIM(data_range=1.0, multichannel=True)
-    value = 1 - ssim_metric(image_pred, image_ground_truth)
+    from torchmetrics.image import StructuralSimilarityIndexMeasure as ssim 
+    value = 1 - ssim(image_pred, image_ground_truth,reduction='elementwise_mean')
     if valid_mask is not None:
         value = value[valid_mask]
-    if reduction == 'mean':
-        return torch.mean(value)
     return value
 
 # Calculate LPIPS

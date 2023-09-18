@@ -173,26 +173,26 @@ def evaluate(**kwargs):
 
             # Calculate Metrics Per View
             psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
-            lpip = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
+            # lpip = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
             ssim = ssim_loss(rgb_eval_masked,rgb_gt_masked,mask)
             
             psnrs.append(psnr)
             ssims.append(ssim)
-            lpips.append(lpip)
+            # lpips.append(lpip)
 
         # Store Metrics 
-        psnrs = np.array(psnrs).astype(np.float64)
-        ssims = np.array(ssims).astype(np.float64)
-        lpips = np.array(lpips).astype(np.float64)
+        psnrs = np.array(psnrs)
+        ssims = np.array(ssims)
+        # lpips = np.array(lpips)
         metrics_dir = '{0}/metrics'.format(evaldir)
         utils.mkdir_ifnotexists(metrics_dir)
         np.savetxt('../evals/metrics/psnrs.csv',psnrs,delimiter=',')
         np.savetxt('../evals/metrics/ssims.csv',ssims,delimiter=',')
-        np.savetxt('../evals/metrics/lpips.csv',lpips,delimiter=',')
+        # np.savetxt('../evals/metrics/lpips.csv',lpips,delimiter=',')
         # Print Metrics Stats
         print("RENDERING EVALUATION {2}: psnr mean = {0} ; psnr std = {1}".format("%.2f" % psnrs.mean(), "%.2f" % psnrs.std(), scan_id))
         print("RENDERING EVALUATION {2}: ssim mean = {0} ; ssim std = {1}".format("%.2f" % ssims.mean(), "%.2f" % ssims.std(), scan_id))
-        print("RENDERING EVALUATION {2}: lpips mean = {0} ; lpips std = {1}".format("%.2f" % lpips.mean(), "%.2f" % lpips.std(), scan_id))
+        # print("RENDERING EVALUATION {2}: lpips mean = {0} ; lpips std = {1}".format("%.2f" % lpips.mean(), "%.2f" % lpips.std(), scan_id))
         
 
 

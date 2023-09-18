@@ -17,7 +17,7 @@ def psnr(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
 # Torch PSNR
 def torch_psnr(rgb_prediction, rgb_ground_truth, valid_mask=None):
     from torchmetrics import PeakSignalNoiseRatio as psnr 
-    value = psnr(rgb_prediction, rgb_ground_truth, multichannel=True)
+    value = psnr(rgb_prediction, rgb_ground_truth)
     if valid_mask is not None:
         value = value[valid_mask]
         return value 
@@ -25,8 +25,9 @@ def torch_psnr(rgb_prediction, rgb_ground_truth, valid_mask=None):
     
 # Structural Similarity Index
 def ssim(image_pred, image_ground_truth, valid_mask=None, reduction='mean'):
-    from torchmetrics import StructuralSimilarityIndexMeasure as ssim 
-    value = ssim(image_pred, image_ground_truth, multichannel=True)
+    from torchmetrics.image import StructuralSimilarityIndexMeasure as ssim 
+    
+    value = ssim(image_pred, image_ground_truth, compute_on_gpu=True)
     if valid_mask is not None:
         value = value[valid_mask]
     if reduction == 'mean':
@@ -62,7 +63,7 @@ class PSNR_SSIM(Loss):
         rgbs_pr = rgbs_pr[h_margin:h - h_margin, w_margin:w - w_margin]
 
         psnr = compute_psnr(rgbs_gt,rgbs_pr)
-        ssim = structural_similarity(rgbs_gt,rgbs_pr,win_size=11,multichannel=True,data_range=255)
+        ssim = structural_similarity(rgbs_gt,rgbs_pr,win_size=11,data_range=255)
         outputs={
             'psnr_nr': torch.tensor([psnr],dtype=torch.float32),
             'ssim_nr': torch.tensor([ssim],dtype=torch.float32),
