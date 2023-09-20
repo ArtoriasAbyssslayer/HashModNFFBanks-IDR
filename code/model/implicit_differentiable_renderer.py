@@ -32,7 +32,7 @@ class ImplicitNetwork(nn.Module):
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta':0.1})
+        self.dencity_net = LaplaceDensity(params_init={'beta': 1.0})
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -107,9 +107,8 @@ class ImplicitNetwork(nn.Module):
         """
             Truncate/Clamp SDF values with Laplace Density Distribution and Tanh
             to avoid exploding gradients <=> exploding SDF values  
-            + avoid loosing yield ray points of the surface
-
-            - This problem occurs with some embedding networks -
+            + yield ray points of the surface that shouldn't be used.
+            - This problem occurs with some embedding networks -> Hash Encoding -
         """
         x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
         return x

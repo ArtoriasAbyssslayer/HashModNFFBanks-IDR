@@ -17,7 +17,7 @@ class IDRTrainRunner():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)       
         # Limit the number of pytorch threads to 1 to avoid OOM errors -> Ommit if you don't care about resources
-        torch.set_num_threads(1)
+        torch.set_num_threads(1)    
         # Set the default data type to float32
         torch.set_default_dtype(torch.float32)
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
@@ -25,6 +25,10 @@ class IDRTrainRunner():
         self.nepochs = kwargs['nepochs']
         self.exps_folder_name = kwargs['exps_folder_name']
         self.GPU_INDEX = kwargs['gpu_index']
+        device = torch.device(f"cuda:{self.GPU_INDEX}" if torch.cuda.is_available() else "cpu")
+        # Set the maximum available GPU memory for the current process
+        # You can set it to a large value, but be cautious about potential memory issues.
+        torch.cuda.set_per_process_memory_fraction(0.9, device=device)
         self.train_cameras = kwargs['train_cameras']
 
         self.expname = self.conf.get_string('train.expname') + kwargs['expname']

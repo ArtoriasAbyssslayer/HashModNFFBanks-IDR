@@ -10,7 +10,7 @@ def set_memory_limit():
     total_memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     
     # Calculate the memory limit (95% of total system memory)
-    memory_limit_bytes = int(0.95 * total_memory_bytes)
+    memory_limit_bytes = int(0.98 * total_memory_bytes)
     
     # Set the memory limit using resource module
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
@@ -39,10 +39,11 @@ if __name__ == '__main__':
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
+    # Debugging options
     # Set CUDA_LAUNCH_BLOCKING to 1 in debug mode 
     # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
     # Set TORCH_CUDA_USE_DSA to 1 for using CUDA Dynamic Shared Memory
-    # os.environ["TORCH_CUDA_USE_DSA"] = "1"
+    os.environ["TORCH_CUDA_USE_DSA"] = "1"
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
