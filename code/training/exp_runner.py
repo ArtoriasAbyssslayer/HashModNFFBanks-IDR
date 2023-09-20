@@ -10,7 +10,7 @@ def set_memory_limit():
     total_memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     
     # Calculate the memory limit (95% of total system memory)
-    memory_limit_bytes = int(0.98 * total_memory_bytes)
+    memory_limit_bytes = int(0.99 * total_memory_bytes)
     
     # Set the memory limit using resource module
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))

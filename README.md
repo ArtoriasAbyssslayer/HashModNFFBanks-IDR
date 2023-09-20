@@ -33,18 +33,30 @@ IDR able to produce high fidelity 3D surface reconstruction, by disentangling ge
 ## Installation Requirments
 
 The code is compatible with python 3.9 and pytorch 2.1. In addition, the following packages are required:  
-numpy, pyhocon, plotly, scikit-image, trimesh, imageio, opencv, torchvision.
+
 ```
-It is highly recommended to use a pyvenv with the requirments.txt provided as the updated libraries work better
-and there are deprecated features in old library versions 
+numpy, pyhocon, plotly, scikit-image, trimesh, imageio, opencv, torchvision.
+[contained in readme.txt with the used versions]
 ```
 
-You can create an anaconda environment called `hashmodnsr` with the required dependencies by running:
+In case you want to use an anaconda environment you can create one called `hashmodnsr` with the required *(some maybe outdated)* dependencies by running:
 ```
 conda env create -f environment.yml (be sure to fix image io problems -> restoring depracted code from original IDR repo)
 conda activate hashmodnsr
 ```
+Last but **not least**. The project is using some models that are supported by *opensource* libraries not in the standard PyPl repository which are:
+<br><br>
+* Nvidia's Tiny-Cuda-NN - used on FullyFusedMLP counterparts of the original pytorch Embedding Networks (You can use the original networks by not removing the comments on [Custom_Embedding_Network.py](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/blob/master/code/model/custom_embedder_decoder.py) selector )
+* Facebook's Pytorch 3d - used to calculate Champher Distance for Mesh Evaluations
+<br><br>
+You can install those libraries with the commands given bellow 
+```
+TinyCUDAnn
+$ pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
 
+Pytorch3D
+$ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
+```
 ## Usage
 ### Multiview 3D reconstruction
 #### Data
@@ -111,12 +123,12 @@ Or, for trained cameras:
 ```
 python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_conf_var/{Embedding_Model}/dtu_trained_cameras.conf --scan_id SCAN_ID --checkpoint 2000 --eval_cameras [--eval_rendering]
 ```  
-#### Make it simple
-For simpler usage of the code under /code/scripts directory exist scirpts that run with arguments to execute every training with every embedding network and every scan in a failproof manner(meaning handling crashes due to OOM or other issues that may or maynot occure depending on the system specifications)
+#### Make it simple -- Avoid Headackes 
+**For simpler usage of the code under /code/scripts directory exist scirpts that run with arguments to execute every training with every embedding network and every scan in a failproof manner(meaning handling crashes due to OOM or other issues that may or maynot occure depending on the system specifications)**
 
 ```
 cd code/scripts
-./run_training_failproof.sh --exp NFFB --scan_id 65 [--is_continue]
+./run_training_failsafe.sh --exp NFFB --scan_id 65 [--is_continue]
 ```
 ### Spatial Coordinate Hash Grid Encoding
 
