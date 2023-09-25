@@ -147,7 +147,7 @@
         },
         // THIS SHOULD BE CHANGED WHEN EVALUATING DIFFERENT MODEL
         {
-            "name": "Run Multi-View IDR evaluation",
+            "name": "Run Multi-View NFFB IDR evaluation",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/code/evaluation/eval.py",
@@ -155,9 +155,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--expname", "NFF_SKULL",
+                "--expname", "NFFB",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB/dtu_fixed_cameras.conf",
-                "--scan_id","65",
+                "--scan_id","114",
                 "--checkpoint", "latest",
                 "--eval_rendering"
             ]

@@ -117,9 +117,12 @@ class FourierFilterBanks(nn.Module):
                 self.init_ReLU_out()
         else:
             self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
-        
-        self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
-        self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
+        if self.modulationApplied:
+            print("NFFB Style Modulation Applied")
+            self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
+        # NFFB pretrained models 114,122,65 were trained with chckpointing the following parameters so we need to uncomment them for evaluation
+        # self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
+        # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
         for param in self.parameters():
             param.requires_grad = True
 

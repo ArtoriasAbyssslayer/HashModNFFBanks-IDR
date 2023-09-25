@@ -17,21 +17,21 @@ class IDRTrainRunner():
             torch.cuda.manual_seed(42)
             torch.cuda.manual_seed_all(42)       
         # Limit the number of pytorch threads to 1 to avoid OOM errors -> Ommit if you don't care about resources
-        # Set it to 2 if you have 32Gb of RAM
-        torch.set_num_threads(2)    
-        # Set the default data type to float32
+        
+        torch.set_num_threads(1)    
         torch.set_default_dtype(torch.float32)
+        
+        # Load Training Parameters
         self.conf = ConfigFactory.parse_file(kwargs['conf'])
         self.batch_size = kwargs['batch_size']
         self.nepochs = kwargs['nepochs']
         self.exps_folder_name = kwargs['exps_folder_name']
         self.GPU_INDEX = kwargs['gpu_index']
-        device = torch.device(f"cuda:{self.GPU_INDEX}" if torch.cuda.is_available() else "cpu")
-        # Set the maximum available GPU memory for the current process
-        # You can set it to a large value, but be cautious about potential memory issues.
-        torch.cuda.set_per_process_memory_fraction(0.9, device=device)
+        
+        # device = torch.device(f"cuda:{self.GPU_INDEX}" if torch.cuda.is_available() else "cpu")
+        # torch.cuda.set_per_process_memory_fraction(0.9, device=device)
+        
         self.train_cameras = kwargs['train_cameras']
-
         self.expname = self.conf.get_string('train.expname') + kwargs['expname']
         scan_id = kwargs['scan_id'] if kwargs['scan_id'] != -1 else self.conf.get_int('dataset.scan_id', default=-1)
         
@@ -222,14 +222,12 @@ class IDRTrainRunner():
         # Initialize average losses buffer for Validation Slope print
         losses = []  
         #scaler = self.scaler
+        self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
         for epoch in range(self.start_epoch, self.nepochs + 1):
-            self.writer = SummaryWriter(log_dir=os.path.join(self.expdir, self.timestamp, 'logs'))
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-            
             if epoch % 25 == 0:
                 self.save_checkpoints(epoch)
-
             if epoch % self.plot_freq == 0:
                 self.clear_gpu_memory()
                 self.model.eval()
@@ -304,9 +302,8 @@ class IDRTrainRunner():
                 loss.backward()
                 # Clear GPU memory before calling model to avoid CUDA out of memory error
                 self.clear_gpu_memory()
-                # Clip gradients to avoid gradient explosion and OOM error
+                # Clip gradients to avoid gradient explosion and OOM error -- ommit
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
-                
                 # Step optimizer and scheduler after printing losses 
                 self.optimizer.step()
                 if self.train_cameras:

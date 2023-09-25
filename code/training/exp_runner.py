@@ -10,17 +10,15 @@ def set_memory_limit():
     total_memory_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     
     # Calculate the memory limit (95% of total system memory)
-    memory_limit_bytes = int(0.99 * total_memory_bytes)
+    memory_limit_bytes = int(0.95 * total_memory_bytes)
     
     # Set the memory limit using resource module
     resource.setrlimit(resource.RLIMIT_AS, (memory_limit_bytes, memory_limit_bytes))
 
 
-
-if __name__ == '__main__':
-    # Use this function to avoid OOM errors on the server
-    set_memory_limit()
-    
+if __name__ == '__main__': 
+    # If memory leak is observed
+    # set_memory_limit()
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--nepoch', type=int, default=2000, help='number of epochs to train for')
@@ -35,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
     opt = parser.parse_args()
     if opt.gpu == "auto":
-        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=0.9, maxMemory=0.9, includeNan=False, excludeID=[], excludeUUID=[])
+        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu

@@ -64,8 +64,11 @@ class SceneDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.n_images
-
+   
     def __getitem__(self, idx):
+        # trying to free up memory 
+        self.__free_mem__()
+        
         uv = np.mgrid[0:self.img_res[0], 0:self.img_res[1]].astype(np.int32)
         uv = torch.from_numpy(np.flip(uv, axis=0).copy()).float()
         uv = uv.reshape(2, -1).transpose(1, 0)
@@ -151,3 +154,7 @@ class SceneDataset(torch.utils.data.Dataset):
         init_quat = torch.cat([init_quat, init_pose[:, :3, 3]], 1)
 
         return init_quat
+    def __free_mem__(self):
+        import gc
+        torch.cuda.empty_cache()
+        gc.collect()

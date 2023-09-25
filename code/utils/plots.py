@@ -107,17 +107,15 @@ def get_3D_quiver_trace(points, directions, color='#bd1540', name=''):
     )
 
     return trace
-
-
 def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
     grid = get_grid_uniform(resolution)
     points = grid['grid_points']
 
     z = []
-    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 10000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
-
+    
     if (not (np.min(z) > 0 or np.max(z) < 0)):
 
         z = z.astype(np.float32)
@@ -129,9 +127,8 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
             spacing=(grid['xyz'][0][2] - grid['xyz'][0][1],
                      grid['xyz'][0][2] - grid['xyz'][0][1],
                      grid['xyz'][0][2] - grid['xyz'][0][1]))
-
+    
         verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
-
         I, J, K = faces.transpose()
 
         traces = [go.Mesh3d(x=verts[:, 0], y=verts[:, 1], z=verts[:, 2],
@@ -152,7 +149,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     z = []
     points = grid['grid_points']
 
-    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 10000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 
@@ -167,13 +164,12 @@ def get_surface_high_res_mesh(sdf, resolution=100):
                  grid['xyz'][0][2] - grid['xyz'][0][1]))
 
     verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
-
     mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
     components = mesh_low_res.split(only_watertight=False)
     areas = np.array([c.area for c in components], dtype=float)
     mesh_low_res = components[areas.argmax()]
 
-    recon_pc = trimesh.sample.sample_surface(mesh_low_res, 9000)[0]
+    recon_pc = trimesh.sample.sample_surface(mesh_low_res, 10000)[0]
     recon_pc = torch.from_numpy(recon_pc).float().cuda()
 
     # Center and align the recon pc
@@ -192,7 +188,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     grid_points = grid_aligned['grid_points']
     g = []
     
-    for i, pnts in enumerate(torch.split(grid_points, 9000, dim=0)):
+    for i, pnts in enumerate(torch.split(grid_points, 10000, dim=0)):
         g.append(torch.bmm(vecs.unsqueeze(0).repeat(pnts.shape[0], 1, 1).transpose(1, 2),
                         pnts.unsqueeze(-1)).squeeze() + s_mean)
     grid_points = torch.cat(g, dim=0)
@@ -201,7 +197,7 @@ def get_surface_high_res_mesh(sdf, resolution=100):
     points = grid_points
     z = []
     
-    for i, pnts in enumerate(torch.split(points, 9000, dim=0)):
+    for i, pnts in enumerate(torch.split(points, 10000, dim=0)):
         z.append(sdf(pnts).detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
 

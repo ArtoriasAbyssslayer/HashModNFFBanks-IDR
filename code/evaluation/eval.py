@@ -121,14 +121,21 @@ def evaluate(**kwargs):
         areas = np.array([c.area for c in components], dtype=float)
         mesh_clean = components[areas.argmax()]
         mesh_clean.export('{0}/surface_world_coordinates_{1}.ply'.format(evaldir, epoch), 'ply')
-
+        # Calculate Chamfer Distance
+        # from model.metrics import chamfer_distance
+        
+        # eval_dataset.point_cloud = torch.from_numpy(eval_dataset.point_cloud).cuda().float()
+        # cd = chamfer_distance(mesh_clean.vertices, eval_dataset.point_cloud)
+        # print("CHAMFER DISTANCE: {0}".format(cd))
+        # save chamfer distance
+        # np.savetxt(os.path.join(evaldir,'chamfer_distance.csv'),np.array([cd]),delimiter=',')
     if eval_rendering:
         images_dir = '{0}/rendering'.format(evaldir)
         utils.mkdir_ifnotexists(images_dir)
 
         psnrs = []
         ssims = []
-        lpips = []
+        lpips_values = []
         for data_index, (indices, model_input, ground_truth) in enumerate(eval_dataloader):
             model_input["intrinsics"] = model_input["intrinsics"].cuda()
             model_input["uv"] = model_input["uv"].cuda()
@@ -173,27 +180,29 @@ def evaluate(**kwargs):
 
             # Calculate Metrics Per View
             psnr = calculate_psnr(rgb_eval_masked, rgb_gt_masked, mask)
-            # lpip = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
-            ssim = ssim_loss(rgb_eval_masked,rgb_gt_masked,mask)
+            lpips = calculate_lpips(rgb_eval_masked,rgb_gt_masked)
+            ssim = ssim_similarity(rgb_eval_masked,rgb_gt_masked)
             
             psnrs.append(psnr)
             ssims.append(ssim)
-            # lpips.append(lpip)
+            lpips_values.append(lpips)
 
         # Store Metrics 
         psnrs = np.array(psnrs)
         ssims = np.array(ssims)
-        # lpips = np.array(lpips)
+        lpips = np.array(lpips_values)
         metrics_dir = '{0}/metrics'.format(evaldir)
         utils.mkdir_ifnotexists(metrics_dir)
-        np.savetxt('../evals/metrics/psnrs.csv',psnrs,delimiter=',')
-        np.savetxt('../evals/metrics/ssims.csv',ssims,delimiter=',')
-        # np.savetxt('../evals/metrics/lpips.csv',lpips,delimiter=',')
+        np.savetxt(os.path.join(metrics_dir,'psnrs.csv'),psnrs,delimiter=',')
+        np.savetxt(os.path.join(metrics_dir,'lpips.csv'),lpips,delimiter=',')
+        np.savetxt(os.path.join(metrics_dir,'ssims.csv'),ssims,delimiter=',')
+        
+       
+       
         # Print Metrics Stats
         print("RENDERING EVALUATION {2}: psnr mean = {0} ; psnr std = {1}".format("%.2f" % psnrs.mean(), "%.2f" % psnrs.std(), scan_id))
         print("RENDERING EVALUATION {2}: ssim mean = {0} ; ssim std = {1}".format("%.2f" % ssims.mean(), "%.2f" % ssims.std(), scan_id))
-        # print("RENDERING EVALUATION {2}: lpips mean = {0} ; lpips std = {1}".format("%.2f" % lpips.mean(), "%.2f" % lpips.std(), scan_id))
-        
+        print("RENDERING EVALUATION {2}: lpips mean = {0} ; lpips std = {1}".format("%.2f" % lpips.mean(), "%.2f" % lpips.std(), scan_id))
 
 
 def get_cameras_accuracy(pred_Rs, gt_Rs, pred_ts, gt_ts,):
@@ -266,7 +275,7 @@ if __name__ == '__main__':
     parser.add_argument('--timestamp', default='latest', type=str, help='The experiemnt timestamp to test.')
     parser.add_argument('--checkpoint', default='latest',type=str,help='The trained model checkpoint to test')
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
-    parser.add_argument('--resolution', default=256, type=int, help='Grid resolution for marching cube')
+    parser.add_argument('--resolution', default=384, type=int, help='Grid resolution for marching cube')
     parser.add_argument('--is_uniform_grid', default=False, action="store_true", help='If set, evaluate marching cube with uniform grid.')
     parser.add_argument('--eval_cameras', default=False, action="store_true", help='If set, evaluate camera accuracy of trained cameras.')
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')

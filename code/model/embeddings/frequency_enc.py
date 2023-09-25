@@ -60,7 +60,7 @@ class FourierFeature(nn.Module):
         self.embeddings_dim  = 2 * num_channels + 3 if include_input else 2 * num_channels 
         for param in self.parameters():
             param.requires_grad = True
-    def forward(self, x):
+    def forward(self, x, compute_grad=False):
         W = self.B.to(x.device)
         xp = torch.matmul(2 * np.pi * x, W)
         ff_embeds = torch.cat([torch.sin(xp), torch.cos(xp)], dim=-1)

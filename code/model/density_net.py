@@ -9,7 +9,7 @@ class Density(nn.Module):
             param = nn.Parameter(torch.tensor(params_init[p]))
             setattr(self, p, param)
 
-    def forward(self, sdf, beta=None):
+    def forward(self, sdf, beta=None,compute_grad=False):
         return self.density_func(sdf, beta=beta)
 
 
@@ -25,7 +25,6 @@ class LaplaceDensity(Density):  # alpha * Laplace(loc=0, scale=beta).cdf(-sdf)
             beta = torch.tensor(self.beta_min + self.beta.abs())
         alpha = 1 / beta
         return alpha * (0.5 + 0.5 * sdf.sign() * torch.expm1(-sdf.abs() / beta))
-
     def get_beta(self):
         beta = self.beta.abs() + self.beta_min
         return beta
