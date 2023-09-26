@@ -137,6 +137,14 @@ cd code/scripts
  
 </p>
 
+### Spatial,Frequency Decomposition NFFB3D (Neural Fourier FIlter Banks)
+
+<p align="center">
+  <img width="25%" src="media/nffb/owl.gif"/>  <img width="25%" src="media/nffb/skull.gif"/> <img width="25%" src="media/nffb/buda.gif"/> <img width="25%" src="media/nffb/rabbit.gif"/>
+ 
+</p>
+
+### StyleModulated Neural Fourier Filter Banks 
 
 ### Disentanglement of geometry and appearance
 

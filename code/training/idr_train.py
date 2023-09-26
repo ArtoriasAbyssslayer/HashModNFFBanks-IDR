@@ -40,7 +40,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            self.eval_epochs = 50
+            self.eval_epochs = 100
         if scan_id != -1:
             self.expname = self.expname + '_{0}'.format(scan_id)
 
@@ -235,7 +235,7 @@ class IDRTrainRunner():
                     self.pose_vecs.eval()
                 self.train_dataset.change_sampling_idx(-1)
                 indices, model_input, ground_truth = next(iter(self.plot_dataloader))
-
+                print("Ploting pose:{0}".format(indices.item()))
                 model_input["intrinsics"] = model_input["intrinsics"].cuda()
                 model_input["uv"] = model_input["uv"].cuda()
                 model_input["object_mask"] = model_input["object_mask"].cuda()
@@ -321,7 +321,7 @@ class IDRTrainRunner():
                 losses.append(loss) 
             if epoch == self.eval_epochs:
                 if self.validation_slope_print:
-                    self.validation_loss_slope(losses)
+                    self.validation_loss_slope(losses,epoch)
             self.writer.add_scalar('Loss/loss',loss.item(), epoch)
             self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
@@ -337,7 +337,7 @@ class IDRTrainRunner():
         During Training - Compute the validation slope
     """
     # Make the validation slope as the training is finished        
-    def validation_loss_slope(self,loss_list):
+    def validation_loss_slope(self,loss_list,curr_epoch):
             import matplotlib.pyplot as plt
             import numpy as np 
             embedder_type = self.model_conf['embedding_network.embed_type']
@@ -345,7 +345,7 @@ class IDRTrainRunner():
             num_epochs = len(loss_list) // (self.plot_dataloader.dataset.n_images//self.batch_size)
             num_losses_per_epoch = len(loss_list) // (num_epochs)
             # arange steps in order to equal the number of epochs in length 
-            steps = np.arange(1,num_epochs+1)
+            steps = np.arange(curr_epoch-num_epochs,curr_epoch)
             losses = [losses.detach().cpu().numpy() for losses in loss_list]
             reshaped_losses = np.reshape(losses, (num_epochs, num_losses_per_epoch))
             # Calculate the mean loss for each epoch

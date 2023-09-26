@@ -19,18 +19,50 @@ def evaluate(**kwargs):
     conf = ConfigFactory.parse_file(kwargs['conf'])
     exps_folder_name = kwargs['exps_folder_name']
     evals_folder_name = kwargs['evals_folder_name']
-    timestamp = '2020'
-    checkpoint = '2000'
-
+    timestamp = 'latest'
+    checkpoint = 'latest'
     expname = conf.get_string('train.expname')
-
+    embedtype = kwargs['embedding_net_type']
     geometry_id = kwargs['geometry_id']
     appearance_id = kwargs['appearance_id']
+    geometry_folder = os.path.join('../', kwargs['exps_folder_name'], expname + embedtype + '_{0}'.format(geometry_id))
+    appearance_folder = os.path.join('../', kwargs['exps_folder_name'], expname + embedtype + '_{0}'.format(appearance_id)) 
+    
+    # Find Latest timestamps of exps for Geometry and Appearance #
+    if timestamp == 'latest':
+        if os.path.exists(geometry_folder):
+            timestamps = os.listdir(geometry_folder)
+            if (len(timestamps)) == 0:
+                print('WRONG EXP FOLDER')
+                exit()
+            else:
+                timestamp_geometry = sorted(timestamps)[-1]
+        else:
+            print('WRONG EXP FOLDER')
+            exit()
+    else:
+        timestamp = timestamp
+    
+    if timestamp == 'latest':
+        if os.path.exists(appearance_folder):
+            timestamps = os.listdir(appearance_folder)
+            if (len(timestamps)) == 0:
+                print('WRONG EXP FOLDER')
+                exit()
+            else:
+                timestamp_appearance = sorted(timestamps)[-1]
+        else:
+            print('WRONG EXP FOLDER')
+            exit()
+    else:
+        timestamp = timestamp
+
+    
 
     utils.mkdir_ifnotexists(os.path.join('../', evals_folder_name))
-    expdir_geometry = os.path.join('../', exps_folder_name, expname + '_{0}'.format(geometry_id))
-    expdir_appearance = os.path.join('../', exps_folder_name, expname + '_{0}'.format(appearance_id))
-    evaldir = os.path.join('../', evals_folder_name, expname + '_{0}_{1}'.format(geometry_id, appearance_id))
+    expdir_geometry = geometry_folder
+    expdir_appearance = appearance_folder
+    evaldir = os.path.join('../', evals_folder_name, expname + embedtype + '_{0}_{1}'.format(geometry_id, appearance_id))
     utils.mkdir_ifnotexists(evaldir)
 
     model = utils.get_class(conf.get_string('train.model_class'))(conf=conf.get_config('model'))
@@ -38,7 +70,7 @@ def evaluate(**kwargs):
         model.cuda()
 
     # Load geometry network model
-    old_checkpnts_dir = os.path.join(expdir_geometry, timestamp, 'checkpoints')
+    old_checkpnts_dir = os.path.join(expdir_geometry, timestamp_geometry, 'checkpoints')
     saved_model_state = torch.load(os.path.join(old_checkpnts_dir, 'ModelParameters', checkpoint + ".pth"))
     model.load_state_dict(saved_model_state["model_state_dict"])
 
@@ -46,7 +78,7 @@ def evaluate(**kwargs):
     model_fake = utils.get_class(conf.get_string('train.model_class'))(conf=conf.get_config('model'))
     if torch.cuda.is_available():
         model_fake.cuda()
-    old_checkpnts_dir = os.path.join(expdir_appearance, timestamp, 'checkpoints')
+    old_checkpnts_dir = os.path.join(expdir_appearance, timestamp_appearance, 'checkpoints')
     saved_model_state = torch.load(os.path.join(old_checkpnts_dir, 'ModelParameters', checkpoint + ".pth"))
     model_fake.load_state_dict(saved_model_state["model_state_dict"])
 
@@ -78,7 +110,7 @@ def evaluate(**kwargs):
     t_in = np.array([0, 2, 3, 5, 6]).astype(np.float32)
 
     n_inter = 5
-    t_out = np.linspace(t_in[0], t_in[-1], n_inter * t_in[-1]).astype(np.float32)
+    t_out = np.linspace(t_in[0], t_in[-1], int(n_inter * t_in[-1])).astype(np.float32)
 
     scales = np.array([4.2, 4.2, 3.8, 3.8, 4.2]).astype(np.float32)
 
@@ -140,9 +172,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--gpu', type=str, default='auto', help='GPU to use [default: GPU auto]')
-    parser.add_argument('--geometry_id', type=int, default=65, help='The scan id of the learned geometry.')
-    parser.add_argument('--appearance_id', type=int, default=110, help='The scan id of the learned appearance.')
-
+    parser.add_argument('--geometry_id', type=int, default=114, help='The scan id of the learned geometry.')
+    parser.add_argument('--appearance_id', type=int, default=65, help='The scan id of the learned appearance.')
+    parser.add_argument('--embedding_net_type', type=str, default=None, help='The type of embedding network.')
     opt = parser.parse_args()
 
     if opt.gpu == "auto":
@@ -155,8 +187,9 @@ if __name__ == '__main__':
         os.environ["CUDA_VISIBLE_DEVICES"] = '{0}'.format(gpu)
 
     evaluate(conf=opt.conf,
-             exps_folder_name='trained_models',
+             exps_folder_name='exps',
              evals_folder_name='evals_disentanglement',
              geometry_id=opt.geometry_id,
-             appearance_id=opt.appearance_id
+             appearance_id=opt.appearance_id,
+             embedding_net_type=opt.embedding_net_type
              )

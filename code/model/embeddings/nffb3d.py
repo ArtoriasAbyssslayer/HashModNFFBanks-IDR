@@ -79,10 +79,10 @@ class FourierFilterBanks(nn.Module):
         for layer in range(1, self.n_nffb_layers - 1):
             setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]))
         """ Initialize parameters for Linear Layers"""
-        # SDF network meaning we don't need to change the sine frequency(omega) for each layer -> ReLU is able to approximate the SDF but Wavelet need sine activation
+        # ReLU is able to approximate the SDF but get better Results with SIREN Layers
         if layers_type == 'SIREN':
-            self.sin_w0 = self.n_levels**self.max_points_per_level - self.n_levels # 36-6 = 30 SIREN frequency as described in the paper
-            self.sin_w0_high = self.sin_w0 # Keep the same frequency for High Frequency MLP Layers because SDF is a stationary function
+            self.sin_w0 = (self.n_levels**self.max_points_per_level - self.n_levels)//2 # 30 proposed SIREN -> 15 Nerf Low Freq Encoding 
+            self.sin_w0_high = self.sin_w0 + 10 # Increase to 25 for High Freq Encoding
             self.sin_activation = Sine(w0=self.sin_w0)
             self.sin_activation_high = Sine(w0=self.sin_w0_high)
             self.lin_activation = self.sin_activation
@@ -100,14 +100,10 @@ class FourierFilterBanks(nn.Module):
         else:
             self.embeddings_dim = self.nffb_lin_dims[-1] 
         if has_out:
-        
-        
             """ The HIGH - Frequency MLP part """
             for layer in range(0, self.grid_levels):
                 setattr(self, "out_lin" + str(layer), nn.Linear(out_layer_width, self.nffb_lin_dims[-1]))
-            
             if layers_type  == 'SIREN':  
-            
                 self.out_layer = nn.Linear(out_layer_width,self.nffb_lin_dims[-1])
                 self.out_activation = Sine(w0=self.sin_w0_high)
                 self.init_SIREN_out()
@@ -120,9 +116,7 @@ class FourierFilterBanks(nn.Module):
         if self.modulationApplied:
             print("NFFB Style Modulation Applied")
             self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
-        # NFFB pretrained models 114,122,65 were trained with chckpointing the following parameters so we need to uncomment them for evaluation
-        # self.StyleAttentionBlock = StyleAttention(self.num_inputs,self.feature_Vector_size)
-        # self.StyleModulationBlock = StyleModulation(self.n_levels,self.feature_Vector_size)
+        # Non StyleMod NFFB models should be retrained #
         for param in self.parameters():
             param.requires_grad = True
 
@@ -196,6 +190,10 @@ class FourierFilterBanks(nn.Module):
                 feats += features_list[i]
             x = torch.cat([input,feats/(self.grid_levels)],dim=-1)
         return x
+    
+    
+    
+    
     " Functions Used for RELU layers - IGR ReLU -> Results to Smooth SDFs"
     def init_ReLU(self):
         for layer in range(0, self.n_nffb_layers - 1):
@@ -234,6 +232,9 @@ class FourierFilterBanks(nn.Module):
                 torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(self.nffb_lin_dims[-1]))
     print("IGR Out Head completed")
     " Functions Used for SIREN Layers -> Results to Sharp SDFs"
+    
+    
+    
     def init_SIREN(self):
         for layer in range(0, self.n_nffb_layers-1):
             lin = getattr(self, "ff_lin" + str(layer)) 

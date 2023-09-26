@@ -4,9 +4,13 @@ import numpy as np
 from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
 from model.embeddings.nffb3d import FourierFilterBanks
-#from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-#from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
-#from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
+# TinyCudaNN implementation of HashGrid Encoder and NFFB
+
+# from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+# from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
+
+# Native Cuda implementation of HashGrid Encoder based on Instant-NGP 
+from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
 "Define Embedding model selection function and Network Object Initialization"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network(nn.Module):
@@ -98,8 +102,6 @@ class Custom_Embedding_Network(nn.Module):
                 'log2_hashmap_size': log2_max_hash_size,
                 'base_resolution': base_resolution,
                 'desired_resolution': desired_resolution,
-                "base_sigma": 8.0,
-                "exp_sigma": 1.26,
                 "grid_embedding_std": 0.0001,
                 'per_level_scale': 2.0,
             },
@@ -114,9 +116,9 @@ class Custom_Embedding_Network(nn.Module):
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
-                    "base_sigma": 8.0,
-                    "exp_sigma": 1.26,
-                    "grid_embedding_std": 0.0001,
+                    "base_sigma": 6.0,
+                    "exp_sigma": 1.2,
+                    "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
                 #freq_enc_type = [FourierFeatureNET,PositionalEncodingNET]
@@ -139,14 +141,14 @@ class Custom_Embedding_Network(nn.Module):
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
-                    "base_sigma": 8.0,
-                    "exp_sigma": 1.26,
-                    "grid_embedding_std": 0.0001,
+                    "base_sigma": 6.0,
+                    "exp_sigma": 1.2,
+                    "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
                 #freq_enc_type = [FourierFeatureNET,PositionalEncodingNET]
                 #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
-                #but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
+                # but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
                 'freq_enc_type': 'PositionalEncodingNET',
                 'has_out':False,
                 'bound': bound,
@@ -164,7 +166,7 @@ class Custom_Embedding_Network(nn.Module):
             'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
             #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
-            #'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
+            'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")
@@ -176,7 +178,6 @@ class Custom_Embedding_Network(nn.Module):
     def forward(self,x,compute_grad=False): 
             return self.embedder_obj.forward(x)
 
-    
 
 # Utility for geometric initialization of MLP - To be used for pre-training the sdf layers - Imlicit Rendering Network / Renderer / 
 # MLP + Positional Encoding
