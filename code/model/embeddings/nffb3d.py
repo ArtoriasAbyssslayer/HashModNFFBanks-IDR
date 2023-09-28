@@ -81,8 +81,8 @@ class FourierFilterBanks(nn.Module):
         """ Initialize parameters for Linear Layers"""
         # ReLU is able to approximate the SDF but get better Results with SIREN Layers
         if layers_type == 'SIREN':
-            self.sin_w0 = (self.n_levels**self.max_points_per_level - self.n_levels)//2 # 30 proposed SIREN -> 15 Nerf Low Freq Encoding 
-            self.sin_w0_high = self.sin_w0 + 10 # Increase to 25 for High Freq Encoding
+            self.sin_w0 = (self.n_levels**self.max_points_per_level - self.n_levels) # 30 proposed in SIREN PAPER
+            self.sin_w0_high = self.sin_w0 + 10 # Increase to 40 for High Freq Encoding
             self.sin_activation = Sine(w0=self.sin_w0)
             self.sin_activation_high = Sine(w0=self.sin_w0_high)
             self.lin_activation = self.sin_activation

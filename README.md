@@ -36,7 +36,7 @@ The code is compatible with python 3.9 and pytorch 2.1. In addition, the followi
 
 ```
 numpy, pyhocon, plotly, scikit-image, trimesh, imageio, opencv, torchvision.
-[contained in readme.txt with the used versions]
+[contained in requirements.txt with the used versions]
 ```
 
 In case you want to use an anaconda environment you can create one called `hashmodnsr` with the required *(some maybe outdated)* dependencies by running:
@@ -124,12 +124,18 @@ Or, for trained cameras:
 python evaluation/eval.py --exps_folder trained_models --conf ./confs/embedder_conf_var/{Embedding_Model}/dtu_trained_cameras.conf --scan_id SCAN_ID --checkpoint 2000 --eval_cameras [--eval_rendering]
 ```  
 #### Make it simple -- Avoid Headackes 
-**For simpler usage of the code under /code/scripts directory exist scirpts that run with arguments to execute every training with every embedding network and every scan in a failproof manner(meaning handling crashes due to OOM or other issues that may or maynot occure depending on the system specifications)**
+
+
+For simpler usage of the code under /code/scripts directory exist scirpts that run with arguments to execute every training with every embedding network and every scan in a failproof manner(meaning handling crashes due to OOM or other issues that may or maynot occure depending on the system specifications)
+
+
 
 ```
 cd code/scripts
 ./run_training_failsafe.sh --exp NFFB --scan_id 65 [--is_continue]
 ```
+
+**An equivalent script hase been made for evaluation of a model**
 ### Spatial Coordinate Hash Grid Encoding
 
 <p align="center">
@@ -145,7 +151,9 @@ cd code/scripts
 </p>
 
 ### StyleModulated Neural Fourier Filter Banks 
-
+<p align="center">
+  <img width="25%" src="media/stylemodnffb/skull.gif"/>  
+</p>
 ### Disentanglement of geometry and appearance
 
 <p align="center">

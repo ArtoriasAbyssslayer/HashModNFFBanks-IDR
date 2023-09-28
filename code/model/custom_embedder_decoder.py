@@ -116,8 +116,8 @@ class Custom_Embedding_Network(nn.Module):
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
-                    "base_sigma": 6.0,
-                    "exp_sigma": 1.2,
+                    "base_sigma": 10.0,
+                    "exp_sigma": 1.26,
                     "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
@@ -125,6 +125,7 @@ class Custom_Embedding_Network(nn.Module):
                 #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
                 #but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
                 'freq_enc_type': 'PositionalEncodingNET',
+                # Parameter For encoding High Frequency Features with extra MLP layers
                 'has_out':False,
                 'bound': bound,
                 #layer_type = [SIREN,ReLU]
@@ -141,18 +142,14 @@ class Custom_Embedding_Network(nn.Module):
                     'log2_hashmap_size': log2_max_hash_size,
                     'base_resolution': base_resolution,
                     'desired_resolution': desired_resolution,
-                    "base_sigma": 6.0,
-                    "exp_sigma": 1.2,
+                    "base_sigma": 10.0,
+                    "exp_sigma": 1.26,
                     "grid_embedding_std": 0.001,
                     'per_level_scale': 2.0,
                 },
-                #freq_enc_type = [FourierFeatureNET,PositionalEncodingNET]
-                #Positional Encoder Match Slower(Feature Vector size small -> Decoding Part on IDR layer) 
-                # but Stable because it is more stationary Neural Tangent Kernel (for the way embedding frequencies are concatenated)
-                'freq_enc_type': 'PositionalEncodingNET',
+                'freq_enc_type': 'PositionalEncodingNET',  
                 'has_out':False,
                 'bound': bound,
-                #layer_type = [SIREN,ReLU]
                 'layers_type': 'SIREN',
                 'style_modulation':True
             }
