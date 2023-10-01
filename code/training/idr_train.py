@@ -351,8 +351,8 @@ class IDRTrainRunner():
             # Calculate the mean loss for each epoch
             mean_losses = np.mean(reshaped_losses, axis=1)
             plt.figure()
-            plt.plot(steps,mean_losses,label=f'IDR with {embedder_type} Embedding Network Loss'.format(embedder_type))
+            plt.plot(steps,mean_losses,label=f'IDR with {0} Embedding Network Loss'.format(embedder_type))
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.legend()
-            plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{embedder_type}.png'.format(embedder_type)))
+            plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{0}_EpochStamp{1}.png'.format(embedder_type,curr_epoch)))
