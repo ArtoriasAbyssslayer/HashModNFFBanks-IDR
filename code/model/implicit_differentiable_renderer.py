@@ -81,9 +81,8 @@ class ImplicitNetwork(nn.Module):
                 lin = nn.utils.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
-
+        print("IGR completed")
         self.softplus = nn.Softplus(beta=100)
-        
         for param in self.parameters():
                 param.requires_grad = True
 

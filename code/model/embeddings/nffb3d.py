@@ -63,7 +63,6 @@ class FourierFilterBanks(nn.Module):
                                                 log_sampling=True,
                                                 periodic_fns=[torch.sin, torch.cos])
                 ff_enc_list.append(posenc_layer)
-        # IDR feature vector size in network_dims[-1]= 25 and is hardcoded here (fix this)
         if freq_enc_type == 'FourierFeatureNET':
             nffb_lin_dims = [self.num_inputs] + [2*ff_enc_list[-1].embeddings_dim]*(self.grid_levels-1)
         else:
@@ -79,7 +78,7 @@ class FourierFilterBanks(nn.Module):
         for layer in range(1, self.n_nffb_layers - 1):
             setattr(self, "ff_lin" + str(layer), nn.Linear(nffb_lin_dims[layer], nffb_lin_dims[layer + 1]))
         """ Initialize parameters for Linear Layers"""
-        # ReLU is able to approximate the SDF but get better Results with SIREN Layers
+       
         if layers_type == 'SIREN':
             self.sin_w0 = (self.n_levels**self.max_points_per_level - self.n_levels) # 30 proposed in SIREN PAPER
             self.sin_w0_high = self.sin_w0 + 10 # Increase to 40 for High Freq Encoding
@@ -88,11 +87,11 @@ class FourierFilterBanks(nn.Module):
             self.lin_activation = self.sin_activation
             self.init_SIREN()
         elif layers_type  == 'ReLU':    
+             # ReLU is able to approximate the SDF but get better Results with SIREN Layers
             self.init_ReLU()
             self.lin_activation = nn.LeakyReLU(negative_slope=1e-2,inplace=False)
         out_layer_width = self.nffb_lin_dims[-1]
         self.feature_Vector_size  = out_layer_width
-        # The ouput layers if SIREN branch selected or not - High Frequencies are Computed using Siren Layers Coherently with Fourier Grid Features 
         self.has_out = has_out
         
         if self.include_input:
@@ -120,7 +119,7 @@ class FourierFilterBanks(nn.Module):
         for param in self.parameters():
             param.requires_grad = True
 
-    def forward(self, input: torch.Tensor,compute_grad=False) -> torch.Tensor:
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
             Inputs:
                 x: [N, 3] - Input points 3D in [-scale,scale]
@@ -150,7 +149,10 @@ class FourierFilterBanks(nn.Module):
             x_out = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
         else:
             features_list = []
-        """                         Style Modulation
+            
+            
+        """                        
+                                    Style Modulation
                     Assuming style vector is the embed Feat - which is Fourier Feature Grid
                     and the feature vector is the x which is derived from the hash grid
                     Essentially map better ntk fourier features to the hash grid features
@@ -212,7 +214,7 @@ class FourierFilterBanks(nn.Module):
             else:
                 torch.nn.init.constant_(lin.bias, 0.0)
                 torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(self.nffb_lin_dims[-1]))
-    print("IGR completed")
+        print("IGR completed")
     def init_ReLU_out(self):
         for layer in range(self.grid_levels):
             lin = getattr(self, "out_lin" + str(layer))
@@ -230,11 +232,8 @@ class FourierFilterBanks(nn.Module):
             else:
                 torch.nn.init.constant_(lin.bias, 0.0)
                 torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(self.nffb_lin_dims[-1]))
-    print("IGR Out Head completed")
+        print("IGR Out Head completed")
     " Functions Used for SIREN Layers -> Results to Sharp SDFs"
-    
-    
-    
     def init_SIREN(self):
         for layer in range(0, self.n_nffb_layers-1):
             lin = getattr(self, "ff_lin" + str(layer)) 
