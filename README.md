@@ -139,20 +139,20 @@ cd code/scripts
 ### Spatial Coordinate Hash Grid Encoding
 
 <p align="center">
-  <img width="30%" src="media/owl.gif"/>  <img width="30%" src="media/skull.gif"/>
+  <img width="20%" src="media/owl.gif"/>  <img width="20%" src="media/skull.gif"/>
  
 </p>
 
 ### Spatial,Frequency Decomposition NFFB3D (Neural Fourier FIlter Banks)
 
 <p align="center">
-  <img width="25%" src="media/nffb/owl.gif"/>  <img width="25%" src="media/nffb/skull.gif"/> <img width="25%" src="media/nffb/buda.gif"/> <img width="25%" src="media/nffb/rabbit.gif"/>
+  <img width="20%" src="media/nffb/owl.gif"/>  <img width="20%" src="media/nffb/skull.gif"/> <img width="20%" src="media/nffb/buda.gif"/> <img width="20%" src="media/nffb/rabbit.gif"/>
  
 </p>
 
 ### StyleModulated Neural Fourier Filter Banks 
 <p align="center">
-  <img width="25%" src="media/stylemodnffb/skull.gif"/>  
+  <img width="20%" src="media/stylemodnffb/skull.gif"/>  
 </p>
 ### Disentanglement of geometry and appearance
 
