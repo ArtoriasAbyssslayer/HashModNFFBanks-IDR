@@ -317,6 +317,14 @@ class IDRTrainRunner():
                                 loss_output['mask_loss'].item(),
                                 self.loss.alpha,
                                 self.scheduler.get_lr()[0]))
+                # print( 
+                #       '{0} [{1}] ({2}/{3}): loss = {4}, mape_rgb_loss={10},rgb_loss = {5}, eikonal_loss = {6}, mask_loss = {7}, alpha = {8}, lr = {9}'
+                #         .format(self.expname, epoch, data_index, self.n_batches, loss.item(),
+                #                 loss_output['rgb_loss'].item(),
+                #                 loss_output['eikonal_loss'].item(),
+                #                 loss_output['mask_loss'].item(),
+                #                 self.loss.alpha,
+                #                 self.scheduler.get_lr()[0],loss_output['mape_rgb_loss'].item()))
             # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
                 losses.append(loss) 
             if epoch == self.eval_epochs:
