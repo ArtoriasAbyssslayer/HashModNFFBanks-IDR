@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Function to display usage instructions
 usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -12,11 +13,15 @@ usage() {
     exit 1
 }
 
+
+
 # Default values
 EXPERIMENT="HashGrid"
 TRAINABLE_CAMERAS=false
 SCAN_ID=114
 EVAL_RENDERING=false
+
+
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do

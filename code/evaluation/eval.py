@@ -118,7 +118,7 @@ def evaluate(**kwargs):
 
         # Taking the biggest connected component
         components = mesh.split(only_watertight=False)
-        areas = np.array([c.area for c in components], dtype=float)
+        areas = np.array([c.area for c in components], dtype=np.float64)
         mesh_clean = components[areas.argmax()]
         mesh_clean.export('{0}/surface_world_coordinates_{1}.ply'.format(evaldir, epoch), 'ply')
         # Calculate Chamfer Distance
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     parser.add_argument('--timestamp', default='latest', type=str, help='The experiemnt timestamp to test.')
     parser.add_argument('--checkpoint', default='latest',type=str,help='The trained model checkpoint to test')
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
-    parser.add_argument('--resolution', default=256, type=int, help='Grid resolution for marching cube')
+    parser.add_argument('--resolution', default=384, type=int, help='Grid resolution for marching cube')
     parser.add_argument('--is_uniform_grid', default=False, action="store_true", help='If set, evaluate marching cube with uniform grid.')
     parser.add_argument('--eval_cameras', default=False, action="store_true", help='If set, evaluate camera accuracy of trained cameras.')
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')
