@@ -59,7 +59,7 @@ case "$EXPERIMENT" in
         CONFIG_DIR="./confs/embedder_conf_var/PosEnc"
         ;;
     "FourierNTK")
-        CONFIG_DIR="./code/confs/embedder_conf_var/FourierFeatures"
+        CONFIG_DIR="./confs/embedder_conf_var/FourierFeatures"
         ;;
     "HashGridCUDA")
         CONFIG_DIR="./confs/embedder_conf_var/CUDA_HashGrid"

@@ -74,7 +74,7 @@ class Custom_Embedding_Network(nn.Module):
                 'has_out':False,
             },
             'FourierFeature':{
-                'channels': network_dims[0],
+                'num_channels': network_dims[0],
                 'sigma': 1.0,
                 'input_dims': input_dims,
                 'include_input': True,
