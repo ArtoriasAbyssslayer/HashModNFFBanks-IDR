@@ -7,7 +7,7 @@ from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
 
 from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
+from model.embeddings.tcnn_src.FFB_encoder import FFBEncoder as FFB_encoder
 
 # Native Cuda implementation of HashGrid Encoder based on Instant-NGP 
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
@@ -55,7 +55,7 @@ class Custom_Embedding_Network(nn.Module):
                 'desired_resolution': desired_resolution               
             },
             'FFB_TCNN':{
-                'HashGridEncoderConfig':{
+                'GridEncoderNetConfig':{
                     'include_input': True,
                     'in_dim': input_dims,
                     'embed_type': 'HashGridTcnn',
@@ -70,8 +70,11 @@ class Custom_Embedding_Network(nn.Module):
                     "grid_embedding_std": 0.0001,
                     'per_level_scale': 2.0,
                 },
-                'bound': bound,
+                'freq_enc_type': 'PositionalEncodingNET',  
                 'has_out':False,
+                'bound': bound,
+                'layers_type': 'SIREN',
+                'style_modulation':True
             },
             'FourierFeature':{
                 'num_channels': network_dims[0],
