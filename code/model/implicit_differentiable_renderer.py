@@ -170,8 +170,6 @@ class RenderingNetwork(nn.Module):
             if multires_view > 0:
                 if self.mode == 'idr':
                     d_in = 3
-                    # embed_Type can be HashGrid(and its variations) or NFFB and its(Variations) 
-                    # but should mutch ImplicitNetwork's embedding net 
                     self.embed_model = Custom_Embedding_Network(input_dims=d_in,
                                                            network_dims=dims,
                                                            embed_type=viewdirs_embed_type,
