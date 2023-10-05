@@ -32,9 +32,21 @@
 #define CHECK_IS_FLOATING(x) TORCH_CHECK(x.scalar_type() == at::ScalarType::Float || x.scalar_type() == at::ScalarType::Half || x.scalar_type() == at::ScalarType::Double, #x " must be a floating tensor")
 
 
+
+
+
+
 // requires CUDA >= 10 and ARCH >= 70
 // this is very slow compared to float or __half2, do not use!
 // just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
+/*
+ // Original attomicadd for __half
+
+static inline  __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
+  return atomicAdd(reinterpret_cast<__half*>(address), val);
+}
+
+*/
 static inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
     float* address_as_float = reinterpret_cast<float*>(address);
     float old_val = atomicAdd(address_as_float, static_cast<float>(val));
