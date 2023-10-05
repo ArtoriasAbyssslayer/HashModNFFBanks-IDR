@@ -57,7 +57,7 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                                            // vatives).
             }
         """
-        if self.embed_type == 'HashGridTcnn':
+        if embed_type == 'HashGridTcnn':
                 otype = "Grid"
                 type = "Hash"
         self.grid_encoder = tcnn.Encoding(
@@ -78,13 +78,13 @@ class MultiResHashGridEncoderTcnn(nn.Module):
                 
             }
         )
-        self.grid_levels = self.n_levels
+        self.grid_levels = n_levels
         print(f"Selected Grid Encoder Levels: {self.grid_levels}")
         if(self.include_input == True):
-                self.output_dim = self.n_levels * self.max_points_per_level 
+                self.output_dim = self.grid_levels * max_points_per_level 
                 self.embeddings_dim = self.in_dim + self.output_dim
         else:
-            self.output_dim = self.n_levels * self.max_points_per_level
+            self.output_dim = self.grid_levels * max_points_per_level
             self.embeddings_dim = self.output_dim
     def forward(self,x,compute_grad=False):
         if self.include_input == True:

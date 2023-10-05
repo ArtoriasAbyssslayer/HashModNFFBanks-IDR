@@ -38,7 +38,7 @@
 static inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
     float* address_as_float = reinterpret_cast<float*>(address);
     float old_val = atomicAdd(address_as_float, static_cast<float>(val));
-    return __float2half_rn(old_val);
+    return __float2half(old_val);
 }
 
 

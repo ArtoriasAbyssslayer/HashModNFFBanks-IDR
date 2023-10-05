@@ -6,8 +6,8 @@ from model.embeddings.frequency_enc import *
 from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
 
-# from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
-# from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
+from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
+from model.embeddings.tcnn_src.FFB_encoder import FFB_encoder
 
 # Native Cuda implementation of HashGrid Encoder based on Instant-NGP 
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
@@ -96,7 +96,7 @@ class Custom_Embedding_Network(nn.Module):
                 'include_input':True,
                 'in_dim': input_dims,
                 'network_dims': network_dims,
-                'embed_type': embed_type,
+                'embed_type':'HashGridTcnn',
                 'n_levels': multires,
                 'max_points_per_level': max_points_per_entry,
                 'log2_hashmap_size': log2_max_hash_size,
@@ -104,6 +104,8 @@ class Custom_Embedding_Network(nn.Module):
                 'desired_resolution': desired_resolution,
                 "grid_embedding_std": 0.0001,
                 'per_level_scale': 2.0,
+                "base_sigma": 8.0,
+                "exp_sigma": 1.26
             },
             'fourier_filter_banks':{
                 'GridEncoderNetConfig':{
@@ -161,8 +163,8 @@ class Custom_Embedding_Network(nn.Module):
             'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
             'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
-            #'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
-            #'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
+            'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
+            'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
             'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
         }   
         if embed_type not in embed_models:

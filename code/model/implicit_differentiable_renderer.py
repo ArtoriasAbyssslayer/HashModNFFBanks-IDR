@@ -159,8 +159,13 @@ class RenderingNetwork(nn.Module):
                     self.embedview_fn = embedview_fn
                     dims[0] += input_ch 
         # Select Deep Emebedding Network for View Directions
-        elif viewdirs_embed_type == 'HashGrid' or viewdirs_embed_type == 'FFB' or viewdirs_embed_type == 'StyleModNFFB' or viewdirs_embed_type == 'FourierFeatures'\
-            or viewdirs_embed_type == 'FFBTcnn' or viewdirs_embed_type == 'HashGridTcnn':
+        elif viewdirs_embed_type == 'HashGrid' or\
+            viewdirs_embed_type == 'FFB' or\
+            viewdirs_embed_type == 'StyleModNFFB' or\
+            viewdirs_embed_type == 'FourierFeatures' or\
+            viewdirs_embed_type == 'HashGridCUDA' or\
+            viewdirs_embed_type == 'FFBTcnn' or\
+            viewdirs_embed_type == 'HashGridTcnn':
             "In this case deep embedding network is used"
             if multires_view > 0:
                 if self.mode == 'idr':
