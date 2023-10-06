@@ -138,7 +138,7 @@ cd code/scripts
 **An equivalent script hase been made for evaluation of a model**
 ### Spatial Coordinate Hash Grid Encoding
 <p align="center">
-<img width="100%" src="media/architectures/3DHashgridEmbeddingNet.png"/> 
+<img width="100%" src="media/architectures/3DHashgridEmbeddingNetArchitecture.png"/> 
 </p>
 <p align="center">
   <img width="20%" src="media/owl.gif"/>  <img width="20%" src="media/skull.gif"/>
