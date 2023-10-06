@@ -146,7 +146,9 @@ cd code/scripts
 </p>
 
 ### Spatial,Frequency Decomposition NFFB3D (Neural Fourier FIlter Banks)
-
+<p align="center">
+<img width="100%" src="media/architectures/NFFBNetArchitecture.png"/> 
+</p>
 <p align="center">
   <img width="20%" src="media/nffb/owl.gif"/>  <img width="20%" src="media/nffb/skull.gif"/> <img width="20%" src="media/nffb/buda.gif"/> <img width="20%" src="media/nffb/rabbit.gif"/>
  
