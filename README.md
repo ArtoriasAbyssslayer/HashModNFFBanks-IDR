@@ -1,6 +1,9 @@
 # HashModFFBanks-IDR NSR(Neural Surface Reconstruction)
 This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and focuses on neural encoding High Frequency 3D content for fast SDF convergence. This work is also applied in the NeuS project and is part of my diploma thesis. 
 
+<p align="center">
+  <img width="20%" src="media/reconstruction_procedure_viz.gif"/>
+</p>
 ## HASH ENCODING  
 This repository applies spatial input encoding with multi resolution spatial embeddings as proposed in instant-ngp [Paper](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf) 
 
