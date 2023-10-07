@@ -4,6 +4,7 @@ This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and
 <p align="center">
   <img width="20%" src="media/reconstruction_procedure_viz.gif"/>
 </p>
+
 ## HASH ENCODING  
 This repository applies spatial input encoding with multi resolution spatial embeddings as proposed in instant-ngp [Paper](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf) 
 
