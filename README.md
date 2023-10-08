@@ -2,7 +2,7 @@
 This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and focuses on neural encoding High Frequency 3D content for fast SDF convergence. This work is also applied in the NeuS project and is part of my diploma thesis. 
 
 <p align="center">
-  <img width="20%" src="media/reconstruction_procedure_viz.gif"/>
+  <img width="20%" src="media/reconstruction_procedure_viz.gif"/>   <img width="20%", height="40%" src="media/stylemodnffbtcnn/skull.gif"/> 
 </p>
 
 ## HASH ENCODING  
