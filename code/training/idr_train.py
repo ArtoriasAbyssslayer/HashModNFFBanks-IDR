@@ -40,7 +40,7 @@ class IDRTrainRunner():
         self.validation_slope_print = kwargs['validation_slope_print']
         
         if self.validation_slope_print:
-            self.eval_epochs = 100
+            self.eval_epochs = 49
         if scan_id != -1:
             self.expname = self.expname + '_{0}'.format(scan_id)
 
