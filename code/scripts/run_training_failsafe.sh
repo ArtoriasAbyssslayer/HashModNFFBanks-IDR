@@ -2,9 +2,9 @@
 
 # Set the memory limit for the Python process (e.g., 90% of available RAM)
 MemTotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-MemoryLimit=$((MemTotal * 90 / 100))
-ulimit -v "$MemoryLimit"
-echo "Total available memory: $((MemoryLimit / 1024 / 1024))GB"
+#MemoryLimit=$((MemTotal * 90 / 100))
+#ulimit -v "$MemoryLimit"
+echo "Total available memory: $((MemoryTotal/ 1024 / 1024))GB"
 # Function to display usage instructions
 usage() {
     echo "Usage: $0 [OPTIONS]"
