@@ -47,22 +47,17 @@ static inline  __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
 }
 
 */
-
-// **** Alternate Implementation Using Float casting of Half operations **** 
- inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
-    float* address_as_float = reinterpret_cast<float*>(address);
-    float old_val = atomicAdd(address_as_float, static_cast<float>(val));
-    return __float2half(old_val);
+static inline __device__ float atomicADDfloat(float* address, float val) {
+    return atomicAdd(address, val);
 }
 
 
-// just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
-//  __device__ inline at::Half atomicAdd(at::Half *address, at::Half val) {
-//   // requires CUDA >= 10 and ARCH >= 70
-//   // this is very slow compared to float or __half2, never use it.
-//   //return atomicAdd(reinterpret_cast<__half*>(address), val);
-// }
-
+// **** Alternate Implementation Using Float casting of Half2float and float2Half casts **** 
+inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
+    float* address_as_float = reinterpret_cast<float*>(address);
+    float old_val = atomicADDfloat(address_as_float, static_cast<float>(val));
+    return __float2half(old_val);
+}
 
 template <typename T>
 static inline __host__ __device__ T div_round_up(T val, T divisor) {
@@ -72,12 +67,12 @@ static inline __host__ __device__ T div_round_up(T val, T divisor) {
 
 template <uint32_t D>
 __device__ uint32_t fast_hash(const uint32_t pos_grid[D]) {
-	static_assert(D <= 7, "fast_hash can only hash up to 7 dimensions.");
+	static_assert(D <= 9, "fast_hash can only hash up to 7 dimensions.");
 
 	// While 1 is technically not a good prime for hashing (or a prime at all), it helps memory coherence
 	// and is sufficient for our use case of obtaining a uniformly colliding index from high-dimensional
 	// coordinates.
-    constexpr uint32_t primes[7] = { 1, 2654435761, 805459861, 3674653429, 2097192037, 1434869437, 21652197373 };
+    constexpr uint32_t primes[9] = { 1, 2654435761, 805459861, 3674653429, 2097192037, 1434869437, 2165219737,3,7};
 
 	uint32_t result = 0;
 	#pragma unroll
@@ -448,6 +443,7 @@ void hash_encode_backward_cuda(const scalar_t *grad, const scalar_t *inputs, con
 
 
 
+
 void hash_encode_fwd(const at::Tensor inputs, const at::Tensor embeddings, const at::Tensor offsets, at::Tensor outputs, const uint32_t B, const uint32_t D, const uint32_t C, const uint32_t L, const float S, const uint32_t H, const bool calc_grad_inputs, at::Tensor dy_dx) {
     CHECK_CUDA(inputs);
     CHECK_CUDA(embeddings);
@@ -472,6 +468,7 @@ void hash_encode_fwd(const at::Tensor inputs, const at::Tensor embeddings, const
         hash_encode_forward_cuda<scalar_t>(inputs.data_ptr<scalar_t>(), embeddings.data_ptr<scalar_t>(), offsets.data_ptr<int>(), outputs.data_ptr<scalar_t>(), B, D, C, L, S, H, calc_grad_inputs, dy_dx.data_ptr<scalar_t>());
     }));
 }
+
 
 void hash_encode_bwd(const at::Tensor grad, const at::Tensor inputs, const at::Tensor embeddings, const at::Tensor offsets, at::Tensor grad_embeddings, const uint32_t B, const uint32_t D, const uint32_t C, const uint32_t L, const float S, const uint32_t H, const bool calc_grad_inputs, const at::Tensor dy_dx, at::Tensor grad_inputs) {
     CHECK_CUDA(grad);
@@ -502,5 +499,4 @@ void hash_encode_bwd(const at::Tensor grad, const at::Tensor inputs, const at::T
     grad.scalar_type(), "hash_encode_backward", ([&] {
         hash_encode_backward_cuda<scalar_t>(grad.data_ptr<scalar_t>(), inputs.data_ptr<scalar_t>(), embeddings.data_ptr<scalar_t>(), offsets.data_ptr<int>(), grad_embeddings.data_ptr<scalar_t>(), B, D, C, L, S, H, calc_grad_inputs, dy_dx.data_ptr<scalar_t>(), grad_inputs.data_ptr<scalar_t>());
     }));
-    
 }
