@@ -123,7 +123,7 @@ class MultiResolutionHashEncoderCUDA(nn.Module):
     def __repr__(self):
         return f"HashEncoder: input_dim={self.input_dim} num_levels={self.num_levels} level_dim={self.level_dim} base_resolution={self.base_resolution} per_level_scale={self.per_level_scale} params={tuple(self.embeddings.shape)}"
     
-    def forward(self, inputs, size=0.4):
+    def forward(self, inputs, size=0.5):
         
         
         # inputs: [..., input_dim], normalized real world positions in [-size, size]

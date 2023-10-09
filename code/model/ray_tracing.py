@@ -172,6 +172,7 @@ class RayTracing(nn.Module):
                 acc_end_dis[not_projected_end] += ((1 - self.line_search_step) / (2 ** not_proj_iters)) * curr_sdf_end[not_projected_end]
                 curr_end_points[not_projected_end] = (cam_loc.unsqueeze(1) + acc_end_dis.reshape(batch_size, num_pixels, 1) * ray_directions).reshape(-1, 3)[not_projected_end]
 
+                
                 # Calc sdf
                 next_sdf_start[not_projected_start] = sdf(curr_start_points[not_projected_start])
                 next_sdf_end[not_projected_end] = sdf(curr_end_points[not_projected_end])

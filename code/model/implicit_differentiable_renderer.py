@@ -113,7 +113,7 @@ class ImplicitNetwork(nn.Module):
         return x
 
     # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives
-    def gradient(self, x):
+    def gradient(self, x):   
         x.requires_grad_(True)
         y = self.forward(x)[:,:1]
         d_output = torch.ones_like(y, requires_grad=False, device=y.device)
@@ -124,6 +124,7 @@ class ImplicitNetwork(nn.Module):
             create_graph=True,
             retain_graph=True,
             only_inputs=True)[0]
+        gradients = gradients.to(x.device)
         return gradients.unsqueeze(1)
 
 class RenderingNetwork(nn.Module):

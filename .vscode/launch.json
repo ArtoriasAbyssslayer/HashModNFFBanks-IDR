@@ -97,7 +97,7 @@
                 "--nepoch", "1000",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/CUDA_HashGrid/dtu_fixed_cameras.conf",
                 "--expname", "HashGridCUDA",
-                "--scan_id","0",
+                "--scan_id","55",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
