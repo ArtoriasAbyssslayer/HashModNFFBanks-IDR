@@ -47,11 +47,21 @@ static inline  __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
 }
 
 */
-static inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
+
+// **** Alternate Implementation Using Float casting of Half operations **** 
+ inline __device__ at::Half atomicAdd(at::Half *address, at::Half val) {
     float* address_as_float = reinterpret_cast<float*>(address);
     float old_val = atomicAdd(address_as_float, static_cast<float>(val));
     return __float2half(old_val);
 }
+
+
+// just for compatability of half precision in AT_DISPATCH_FLOATING_TYPES_AND_HALF... program will never reach here!
+//  __device__ inline at::Half atomicAdd(at::Half *address, at::Half val) {
+//   // requires CUDA >= 10 and ARCH >= 70
+//   // this is very slow compared to float or __half2, never use it.
+//   //return atomicAdd(reinterpret_cast<__half*>(address), val);
+// }
 
 
 template <typename T>

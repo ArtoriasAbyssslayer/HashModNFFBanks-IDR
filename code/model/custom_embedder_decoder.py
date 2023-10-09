@@ -5,13 +5,14 @@ from model.embeddings.hashGridEmbedding import MultiResHashGridMLP
 from model.embeddings.frequency_enc import *
 from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
-
 from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcnn_src.FFB_encoder import FFBEncoder as FFB_encoder
-
 # Native Cuda implementation of HashGrid Encoder based on Instant-NGP 
 from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
-"Define Embedding model selection function and Network Object Initialization"
+
+
+
+" --- Define Embedding model selection function and Network Object Initialization ---"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Custom_Embedding_Network(nn.Module):
     """
@@ -24,18 +25,6 @@ class Custom_Embedding_Network(nn.Module):
     def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         super(Custom_Embedding_Network, self).__init__()
         embed_kwargs = {
-            'GridEncoderCUDA':{
-                'input_dim': input_dims,
-                'num_levels': multires,
-                'level_dim': max_points_per_entry,
-                'per_level_scale': 2.0,
-                'base_resolution': base_resolution,
-                'log2_hashmap_size': log2_max_hash_size,
-                'desired_resolution': desired_resolution,
-                'gridtype': 'hash',
-                'align_corners': False,
-                'interpolation': 'linear'
-            },
             'MultiResHashEncoderCUDA':{
                 'input_dim': input_dims,
                 'num_levels': multires,
