@@ -182,8 +182,6 @@ This script will produce novel views of the geometry of the `GEOMETRY_ID` scan t
 
 **TinyCudaNN HashGrid Implementation seems to work faster with lower memory usage and optimized for RTX card and get better appearence results but same geometry**
 
-On the other hand CUDA hashgrid has modified AttomicAdd operation for cards that not support half operation which results on bad headstart of the algorithm -> If RTX card is available the attomic add should be swapped with the original commented out AttomicAdd that uses half operations
-
 ## References
 ```
 @article{yariv2020multiview,
