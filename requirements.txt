@@ -8,7 +8,7 @@ future>=0.18.2
 retrying
 scs
 trimesh
-imageio==2.5.0
+imageio
 lpips==0.1.4
 matplotlib==3.7.2
 numpy==1.25.2
@@ -20,9 +20,9 @@ pyrender==0.1.45
 scipy==1.11.2
 setuptools==68.0.0
 scikit-image
-torch==2.0.1+cu117
-torchmetrics==1.1.0
-torchvision==0.15.2+cu117
+torch
+torchmetrics
+torchvision
 trimesh==3.23.0
 tensorboardX
 ninja
