@@ -16,7 +16,7 @@ def set_memory_limit():
 
 if __name__ == '__main__': 
     # If memory leak is observed
-    set_memory_limit()
+    # set_memory_limit()
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--nepoch', type=int, default=2000, help='number of epochs to train for')

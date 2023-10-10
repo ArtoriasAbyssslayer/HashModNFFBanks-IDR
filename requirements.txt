@@ -27,3 +27,8 @@ torchvision==0.15.2+cu117
 trimesh==3.23.0
 tensorboardX
 ninja
+open3d 
+scikit-learn 
+tqdm 
+multiprocessing 
+argparse
