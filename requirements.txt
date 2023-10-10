@@ -20,7 +20,7 @@ scikit-image
 torch
 torchmetrics
 torchvision
-trimesh==3.23.0
+trimesh==3.23.5
 tensorboardX
 ninja
 open3d 
