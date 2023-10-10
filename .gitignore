@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 data/DTU/
 data/DTU.zip
+data/EVAL_DIR
 # C extensions
 *.so
 # Leave experiments folder out
