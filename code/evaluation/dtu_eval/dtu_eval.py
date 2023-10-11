@@ -39,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--patch_size', type=float, default=60)
     parser.add_argument('--max_dist', type=float, default=20)
     parser.add_argument('--visualize_threshold', type=float, default=10)
+    parser.add_argument('--mesh_type', type=str, default='stl')
     args = parser.parse_args()
 
     thresh = args.downsample_density
@@ -112,10 +113,13 @@ if __name__ == '__main__':
     data_in_obs = data_in[grid_inbound][in_obs]
 
     pbar.update(1)
-    pbar.set_description('read STL pcd')
-    stl_pcd = o3d.io.read_point_cloud(f'{args.dataset_dir}/Points/stl/stl{args.scan:03}_total.ply')
+    pbar.set_description('read {arg.mesh_type} pcd')
+  
+    print(f'{args.dataset_dir}/Points/{0}/{0}{args.scan:03}_total.ply'.format(args.mesh_type))
+    stl_pcd = o3d.io.read_point_cloud(f'{args.dataset_dir}/Points/{0}/{0}{args.scan:03}_total.ply'.format(args.mesh_type))
+    
     stl = np.asarray(stl_pcd.points)
-
+    
     pbar.update(1)
     pbar.set_description('compute data2stl')
     nn_engine.fit(stl)

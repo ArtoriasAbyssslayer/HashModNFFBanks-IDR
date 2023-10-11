@@ -2,7 +2,7 @@
 This repository is based on MV-NSR(Multi-View Neural Surface Reconstruction) and focuses on neural encoding High Frequency 3D content for fast SDF convergence. This work is also applied in the NeuS project and is part of my diploma thesis. 
 
 <p align="center">
-  <img width="20%" src="media/reconstruction_procedure_viz.gif"/>   <img width="20%", height="40%" src="media/stylemodnffbtcnn/skull.gif"/> 
+  <img width="20%" src="media/reconstruction_procedure_viz.gif"/>  
 </p>
 
 ## HASH ENCODING  
@@ -159,15 +159,27 @@ cd code/scripts
 </p>
 
 ### StyleModulated Neural Fourier Filter Banks 
+* style attention on Fourier-Grid Features
 <p align="center">
-  <img width="20%" src="media/stylemodnffb/skull.gif"/>  
+  <img width="24%" src="media/stylemodnffb/owl.gif"/>  
+  <img width="24%" src="media/stylemodnffb/skull.gif"/>  
+  <img width="24%" src="media/stylemodnffb/buda.gif"/>  
+  <img width="24%" src="media/stylemodnffb/rabbit.gif"/>  
 </p>
+
+### StyleModulated Neural Fourier Filter Banks using TinyCUDANN HashGrid
+<p align="center">
+  <img width="25%" src="media/stylemodnffbtcnn/skull.gif"/>  
+  <img width="25%" src="media/stylemodnffbtcnn/buda.gif"/>  
+  <img width="25%" src="media/stylemodnffbtcnn/rabbit.gif"/>  
+</p>
+
 ### Disentanglement of geometry and appearance
 
+using Stylemod NFFB
 <p align="center">
-  <img width="100%" src="media/switch_wn_flatt.jpg"/>
+  <img width="100%" src="media/transferred_appearance/skull-rabbit.gif"/>
 </p>
-
 
 For transferring the appearance learned from one scene to unseen geometry, run:
 

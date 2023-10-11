@@ -39,8 +39,7 @@ if __name__ == '__main__':
     # Set CUDA_LAUNCH_BLOCKING to 1 in debug mode 
     # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
     # Set TORCH_CUDA_USE_DSA to 1 for using CUDA Dynamic Shared Memory
-    os.environ["TORCH_USE_CUDA_DSA"] = "1"
-    
+    # os.environ["TORCH_USE_CUDA_DSA"] = "1"
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,

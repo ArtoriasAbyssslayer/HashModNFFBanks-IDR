@@ -33,6 +33,10 @@ while [[ $# -gt 0 ]]; do
             dataset_dir="$2"
             shift 2
             ;;
+        -m|--meshtype)
+            meshtype="$2"
+            shift 2
+            ;;
         -v|--vis_out_dir)
             vis_out_dir="$2"
             shift 2
@@ -55,7 +59,7 @@ fi
 
 # Generate the command based on provided arguments
 data_path="../../../evals/dtu_fixed_cameras${expname}_${scan}/surface_world_coordinates_2000.ply"
-command="python3 dtu_eval.py --data $data_path --scan $scan --mode mesh --dataset_dir $dataset_dir --vis_out_dir $vis_out_dir"
+command="python3 dtu_eval.py --data $data_path --scan $scan --mode mesh --dataset_dir $dataset_dir --vis_out_dir $vis_out_dir --mesh_type $meshtype"
 
 # Print the generated command
 echo "Generated command:"
