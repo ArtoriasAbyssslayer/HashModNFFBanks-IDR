@@ -24,7 +24,8 @@ torchvision
 trimesh==3.23.5
 tensorboardX
 ninja
-open3d 
+open3d-python
+#open3d
 scikit-learn 
 tqdm 
 
