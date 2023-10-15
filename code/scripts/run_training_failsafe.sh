@@ -1,5 +1,5 @@
 #!/bin/bash
-
+alias python3=python
 # Set the memory limit for the Python process (e.g., 90% of available RAM)
 MemTotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 #MemoryLimit=$((MemTotal * 90 / 100))
