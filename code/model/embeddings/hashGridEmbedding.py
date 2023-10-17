@@ -11,12 +11,10 @@ from model.embeddings.frequency_enc import FourierFeature as FrequencyEncoding
     The code has been modified based on the instant-ngp paper as I interpreted it 
 """
 # ---- constants
-HASH_PRIMES = [1,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
+HASH_PRIMES = [1,3,2654435761,805459861,3674653429,2097192037,1434869437,2165219737]
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # save tensor to gpu slow 
 primes = torch.tensor(HASH_PRIMES).to(DEVICE)
-# repeat the same array to increase the length of hash primes for large dimension inputs
-
 # _get_primes is deprecated and not used because I used fixed primes array 
 def _get_primes(d: torch.Tensor):
     if  d < len(HASH_PRIMES):
@@ -123,46 +121,32 @@ class MultiResHashGridMLP(nn.Module):
         """
         super(MultiResHashGridMLP,self).__init__()
         self.include_input = include_input
-        self.in_dim = in_dim
-        self.n_levels = n_levels
-        self.max_points_per_level = max_points_per_level
-        self.log2_hashmap_size = log2_hashmap_size
-        self.base_resolution = base_resolution
-        self.desired_resolution = desired_resolution
-
         # from paper eq(3)
         import math
-        beta_growth = math.exp((math.log(desired_resolution) - math.log(base_resolution)) / (base_resolution - 1))
+        beta_growth = math.exp((math.log(desired_resolution) - math.log(base_resolution)) / (n_levels - 1))
 
         levels = []
-
-        for level_idx in range(self.n_levels):
-            resolution = math.floor(
-                self.base_resolution * (beta_growth ** level_idx))
+        for level_idx in range(n_levels):
+            resolution = math.floor(base_resolution * (beta_growth ** level_idx))
             #self.register_buffer('current_res', resolution, persistent=False)
-            self.hashmap_size = min(
-                resolution ** in_dim,
-                2 ** log2_hashmap_size)
+            self.hashmap_size = min(resolution ** in_dim,2 ** log2_hashmap_size)
             levels.append(
                 _HashGridMLP(
-                    self.in_dim,
-                    self.max_points_per_level,
+                    in_dim,
+                    max_points_per_level,
                     self.hashmap_size,
                     resolution))
             self.levels = nn.Sequential(*levels).to(DEVICE)
-            self.input_dim = in_dim
             if self.include_input == True:
                 self.freq_encoding = FrequencyEncoding(in_dim,(math.log(desired_resolution) - math.log(base_resolution)) / (base_resolution - 1),num_channels=n_levels,include_input=True).to(DEVICE)  
             # Frequency Encoding Applied to Auxiliary Input which is concatenated to the HashGrid Embeddings
             if(include_input == True):
-                self.output_dim = self.n_levels * self.max_points_per_level + (self.freq_encoding.embeddings_dim-self.input_dim)
-                self.embeddings_dim = self.input_dim + self.output_dim
+                output_dim = n_levels * max_points_per_level + (self.freq_encoding.embeddings_dim-in_dim)
+                self.embeddings_dim = in_dim + output_dim
             else:
                 self.embeddings_dim = self.output_dim
-        
-            
-        for param in self.parameters():
-            param.requires_grad = True
+                
+                
     def forward(self, x: torch.Tensor,compute_grad=False)->torch.Tensor:
         " In forard return concatenated emmbedding grids in each level resolution." 
         if self.include_input == True:
