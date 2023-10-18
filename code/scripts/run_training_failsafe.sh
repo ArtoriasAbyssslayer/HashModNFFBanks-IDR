@@ -2,8 +2,8 @@
 alias python3=python
 # Set the memory limit for the Python process (e.g., 90% of available RAM)
 MemTotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-#MemoryLimit=$((MemTotal * 90 / 100))
-#ulimit -v "$MemoryLimit"
+MemoryLimit=$((MemTotal * 90 / 100))
+ulimit -v "$MemoryLimit"
 echo "Total available memory: $(echo "scale=2; $MemTotal/1024/1024" | bc) (GB)"
 # Function to display usage instructions
 usage() {
