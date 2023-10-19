@@ -152,7 +152,7 @@ class Custom_Embedding_Network(nn.Module):
         embed_models = {
             'HashGrid': (MultiResHashGridMLP, 'hash_grid_encoder_pytorch'),
             'FFB': (FourierFilterBanks, 'fourier_filter_banks'),
-            'PositionalEncoding': (PositionalEncoding, 'positional_encoding'),
+            'NerfPos': (PositionalEncoding, 'positional_encoding'),
             'FourierFeatures':(FourierFeature,'FourierFeature'),
             'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),

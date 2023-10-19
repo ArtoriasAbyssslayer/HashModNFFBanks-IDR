@@ -136,7 +136,7 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/dtu_fixed_cameras.conf",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/PosEnc/dtu_fixed_cameras.conf",
                 "--expname", "NerfPositionalEncoding",
                 "--scan_id","122",
                 "--checkpoint", "latest",
