@@ -140,16 +140,34 @@ cd code/scripts
 ```
 
 **An equivalent script hase been made for evaluation of a model**
+
 ### Spatial Coordinate Hash Grid Encoding
+
 <p align="center">
 <img width="100%" src="media/architectures/3DHashgridEmbeddingNetArchitecture.png"/> 
 </p>
 <p align="center">
-  <img width="20%" src="media/owl.gif"/>  <img width="20%" src="media/skull.gif"/>
+  <img width="20%" src="media/owl.gif"/>  <img width="20%" src="media/skull.gif"/> 
  
 </p>
 
+### Spatial Coordinate Hash Grid Encoding Using Tiny Cuda NN Fully Fused MLPs
+</p>
+<p align="center">
+  <img width="20%" src="media/hashgrid/owl.gif"/> 
+ 
+</p>
+<img width="100%" src="media/architectures/3DHashgridEmbeddingNetArchitecture.png"/> 
+</p>
+<p align="center">
+  <img width="20%" src="media/owl.gif"/>  <img width="20%" src="media/skull.gif"/>  <img width="20%" src="media/skull.gif"/> 
+ 
+</p>
+
+
 ### Spatial,Frequency Decomposition NFFB3D (Neural Fourier FIlter Banks)
+
+
 <p align="center">
 <img width="100%" src="media/architectures/NFFBNetArchitecture.png"/> 
 </p>
@@ -169,6 +187,7 @@ cd code/scripts
 
 ### StyleModulated Neural Fourier Filter Banks using TinyCUDANN HashGrid
 <p align="center">
+
   <img width="25%" src="media/stylemodnffbtcnn/skull.gif"/>  
   <img width="25%" src="media/stylemodnffbtcnn/buda.gif"/>  
   <img width="25%" src="media/stylemodnffbtcnn/rabbit.gif"/>  

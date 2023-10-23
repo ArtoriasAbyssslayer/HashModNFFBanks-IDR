@@ -8,7 +8,7 @@ from tqdm import tqdm
 from scipy.io import loadmat
 import multiprocessing as mp
 import argparse
-
+import os
 def sample_single_tri(input_):
     n1, n2, v1, v2, tri_vert = input_
     c = np.mgrid[:n1+1, :n2+1]
@@ -35,11 +35,13 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='mesh', choices=['mesh', 'pcd'])
     parser.add_argument('--dataset_dir', type=str, default='.')
     parser.add_argument('--vis_out_dir', type=str, default='.')
-    parser.add_argument('--downsample_density', type=float, default=0.2)
+    parser.add_argument('--downsample_density', type=float, default=0.19)
     parser.add_argument('--patch_size', type=float, default=60)
     parser.add_argument('--max_dist', type=float, default=20)
     parser.add_argument('--visualize_threshold', type=float, default=10)
     parser.add_argument('--mesh_type', type=str, default='stl')
+    parser.add_argument('--expname', type=str, default='expname')
+    parser.add_argument('--onlySurfaces', action='store_true', default=False, help="Specify whether to evaluate only surfaces.")
     args = parser.parse_args()
 
     thresh = args.downsample_density
@@ -114,9 +116,12 @@ if __name__ == '__main__':
 
     pbar.update(1)
     pbar.set_description('read {arg.mesh_type} pcd')
-  
-    print(f'{args.dataset_dir}/Points/{0}/{0}{args.scan:03}_total.ply'.format(args.mesh_type))
-    stl_pcd = o3d.io.read_point_cloud(f'{args.dataset_dir}/Points/{0}/{0}{args.scan:03}_total.ply'.format(args.mesh_type))
+    if args.onlySurfaces:
+        print(f'{args.dataset_dir}/Surfaces/{args.mesh_type}/{args.mesh_type}{args.scan:03}.ply')
+        stl_pcd = o3d.io.read_point_cloud(f'{args.dataset_dir}/Surfaces/{args.mesh_type}/{args.mesh_type}{args.scan:03}.ply')
+    else:
+        print(f'{args.dataset_dir}/Points/{args.mesh_type}/{args.mesh_type}{args.scan:03}.ply')
+        stl_pcd = o3d.io.read_point_cloud(f'{args.dataset_dir}/Points/{args.mesh_type}/{args.mesh_type}{args.scan:03}.ply')
     
     stl = np.asarray(stl_pcd.points)
     
@@ -141,6 +146,7 @@ if __name__ == '__main__':
 
     pbar.update(1)
     pbar.set_description('visualize error')
+    os.makedirs(args.vis_out_dir, exist_ok=True)
     vis_dist = args.visualize_threshold
     R = np.array([[1,0,0]], dtype=np.float64)
     G = np.array([[0,1,0]], dtype=np.float64)
@@ -150,11 +156,13 @@ if __name__ == '__main__':
     data_alpha = dist_d2s.clip(max=vis_dist) / vis_dist
     data_color[ np.where(inbound)[0][grid_inbound][in_obs] ] = R * data_alpha + W * (1-data_alpha)
     data_color[ np.where(inbound)[0][grid_inbound][in_obs][dist_d2s[:,0] >= max_dist] ] = G
+
     write_vis_pcd(f'{args.vis_out_dir}/vis_{args.scan:03}_d2s.ply', data_down, data_color)
     stl_color = np.tile(B, (stl.shape[0], 1))
     stl_alpha = dist_s2d.clip(max=vis_dist) / vis_dist
     stl_color[ np.where(above)[0] ] = R * stl_alpha + W * (1-stl_alpha)
     stl_color[ np.where(above)[0][dist_s2d[:,0] >= max_dist] ] = G
+
     write_vis_pcd(f'{args.vis_out_dir}/vis_{args.scan:03}_s2d.ply', stl, stl_color)
 
     pbar.update(1)
@@ -162,3 +170,15 @@ if __name__ == '__main__':
     pbar.close()
     over_all = (mean_d2s + mean_s2d) / 2
     print(mean_d2s, mean_s2d, over_all)
+    
+    
+    # Create the log.txt in logfilepath
+    log_file_path = os.path.join(args.vis_out_dir, 'log.txt')
+
+    # Open the file in write mode and write the values
+    with open(log_file_path, 'w') as log_file:
+        log_file.write(f'mean_d2s: {mean_d2s}\n')
+        log_file.write(f'mean_s2d: {mean_s2d}\n')
+        log_file.write(f'over_all: {over_all}\n')
+
+    print(f'Values have been written to {log_file_path}')
