@@ -31,7 +31,7 @@ def load_K_Rt_from_P(filename, P=None):
         P = np.asarray(lines).astype(np.float32).squeeze()
 
     out = cv2.decomposeProjectionMatrix(P)
-    K = out[0]
+    K = out[0].transpose(0,1)
     R = out[1]
     t = out[2]
 
