@@ -8,21 +8,21 @@ retrying
 resource
 scs
 imageio
-lpips==0.1.4
+lpips
 matplotlib==3.7.2
 numpy==1.25.2
 opencv_python
 Pillow
-plotly==5.17.0
-pyrender==0.1.45
-scipy==1.11.2
-setuptools==78.1.1
+plotly
+pyrender
+scipy
+setuptools
 scikit-image
-torch
-torchmetrics
-torchvision
+# torch
+# torchmetrics
+# torchvision
 trimesh==3.23.5
-tensorboardX
+tensorboard
 ninja
 open3d-python
 #open3d

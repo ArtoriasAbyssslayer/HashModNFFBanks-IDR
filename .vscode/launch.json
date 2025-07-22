@@ -17,7 +17,7 @@
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--is_continue"
+                //"--is_continue"
                 //"--calc_image_similarity"
 
             ]
@@ -53,7 +53,7 @@
             "justMyCode": true,
             "args": [
 
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGridTCNN/dtu_fixed_cameras.conf",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGrid_TCNN_PointsAndViewDirs/dtu_fixed_cameras.conf",
                 "--expname", "HashGridTCNN",
                 "--scan_id","65",
                 "--checkpoint", "latest",

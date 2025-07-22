@@ -7,10 +7,6 @@ from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
 from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcnn_src.FFB_encoder import FFBEncoder as FFB_encoder
-# Native Cuda implementation of HashGrid Encoder based on Instant-NGP 
-from model.embeddings.hash_encoder.hashgridencoder import MultiResolutionHashEncoderCUDA as MultiResHashGridEncoderCUDA 
-
-
 
 " --- Define Embedding model selection function and Network Object Initialization ---"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,7 +17,6 @@ class Custom_Embedding_Network(nn.Module):
         * HashGrid parameters are initialized based on Nvidia's implementation of HashGrid Encoding (Neural Graphics Primitives)
         * The neural fourier filter banks models are initialized with the hashgrid parameters and the positional encoding parameters
     """
-    #TODO add stylemod parameter to the constructor and pass it to the StyleModulatedNFFB
     def __init__(self,input_dims,network_dims,embed_type, multires,log2_max_hash_size,max_points_per_entry,base_resolution,desired_resolution,bound):
         super(Custom_Embedding_Network, self).__init__()
         embed_kwargs = {
@@ -157,7 +152,6 @@ class Custom_Embedding_Network(nn.Module):
             'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
-            'HashGridCUDA': (MultiResHashGridEncoderCUDA, 'MultiResHashEncoderCUDA'),
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")
