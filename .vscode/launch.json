@@ -156,9 +156,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--expname", "NFFB",
-                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB/dtu_fixed_cameras.conf",
-                "--scan_id","110",
+                "--expname", "NFFB_TCNN",
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
+                "--scan_id","65",
                 "--checkpoint", "latest",
                 "--eval_rendering"
             ]
