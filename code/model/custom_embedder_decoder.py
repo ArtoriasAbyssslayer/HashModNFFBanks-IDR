@@ -7,6 +7,7 @@ from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
 from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcnn_src.FFB_encoder import FFBEncoder as FFB_encoder
+from model.embeddings.permutohedral_encoder.permuto_enc import PermutohedralEncoder
 
 " --- Define Embedding model selection function and Network Object Initialization ---"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -141,7 +142,12 @@ class Custom_Embedding_Network(nn.Module):
                 'bound': bound,
                 'layers_type': 'SIREN',
                 'style_modulation':True
-            }
+            },
+            'PermutohedralEncoder':{
+                'input_dims': input_dims,
+                'num_channels': network_dims[0],
+                'include_input': True
+            },
             
         }
         embed_models = {
@@ -152,6 +158,7 @@ class Custom_Embedding_Network(nn.Module):
             'StyleModNFFB':(FourierFilterBanks,'StyleModulatedNFFB'),
             'HashGridTcnn':(MRHashGridEncTcnn,'hashGridEncoderTcnn'),
             'FFBTcnn':(FFB_encoder,'FFB_TCNN'),
+            'PermutohedralEncoder':(PermutohedralEncoder,'PermutohedralEncoder'),
         }   
         if embed_type not in embed_models:
             raise ValueError("Not a valid embedding model type")
