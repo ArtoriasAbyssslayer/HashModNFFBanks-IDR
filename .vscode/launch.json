@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "IDR training - NFFB-TCNN",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -24,7 +24,7 @@
         },
         {
             "name": "IDR training - NFFB",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -45,7 +45,7 @@
         },
         {
             "name": "IDR training HashGridEncodingTCNN",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -66,7 +66,7 @@
         },
         {
             "name": "IDR training Multi Resolution Hash Grid Encoding",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -87,7 +87,7 @@
         },
         {
             "name": "IDR training CUDA Hash Grid Encoding",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -108,7 +108,7 @@
         },
         {
             "name": "IDR training Fourier Feature Encoding",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -128,7 +128,7 @@
         },
         {
             "name": "IDR training Positional Encoding",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/training/exp_runner.py",
             "cwd": "${workspaceFolder}/code",
@@ -146,10 +146,31 @@
                 
             ]
         },
+        {
+            "name": "IDR training PermutohedralEncoder",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/PermutohedralEncoder/dtu_fixed_cameras.conf",
+                "--expname", "PermutohedralEncoding",
+                "--scan_id","65",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                //"--is_continue"
+                
+            ]
+
+        },
         // THIS SHOULD BE CHANGED WHEN EVALUATING DIFFERENT MODEL
         {
             "name": "Run Multi-View NFFB IDR evaluation",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/evaluation/eval.py",
             "cwd": "${workspaceFolder}/code",

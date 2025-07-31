@@ -9,7 +9,7 @@ class PermutohedralEncoder(torch.nn.Module):
         super(PermutohedralEncoder, self).__init__()
         self.pos_dim = input_dims
         self.capacity = 2 * num_channels
-        self.nr_levels = 16
+        self.nr_levels = 24
         self.nr_feat_per_level = 2
         self.coarsest_scale = 1.0
         self.finest_scale = 0.00001

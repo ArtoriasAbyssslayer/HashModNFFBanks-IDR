@@ -166,7 +166,8 @@ class RenderingNetwork(nn.Module):
             viewdirs_embed_type == 'FourierFeatures' or\
             viewdirs_embed_type == 'HashGridCUDA' or\
             viewdirs_embed_type == 'FFBTcnn' or\
-            viewdirs_embed_type == 'HashGridTcnn':
+            viewdirs_embed_type == 'HashGridTcnn' or\
+            viewdirs_embed_type == 'PermutohedralEncoder':
             "In this case deep embedding network is used"
             if multires_view > 0:
                 if self.mode == 'idr':
