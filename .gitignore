@@ -11,7 +11,7 @@ data/EVAL_DIR
 exps/
 # Distribution / packaging
 .Python
-
+/MeshDTUEvalChamferDistance/
 # TODO remove the ommited gui IDR if code completed
 code/model/dearImGUI_idr.py
 

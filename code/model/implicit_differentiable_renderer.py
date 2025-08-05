@@ -32,7 +32,7 @@ class ImplicitNetwork(nn.Module):
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
-        self.dencity_net = LaplaceDensity(params_init={'beta': 0.9})
+        self.density_net = LaplaceDensity(params_init={'beta': 0.9})
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -109,7 +109,7 @@ class ImplicitNetwork(nn.Module):
             + yield ray points of the surface that shouldn't be used.
             - This problem occurs with some embedding networks -> Hash Encoding -
         """
-        x[...,0] = F.tanh(x[...,0]/(2+self.dencity_net(x[...,0])))
+        x[...,0] = F.tanh(x[...,0]/(1+self.density_net(x[...,0])))
         return x
 
     # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives

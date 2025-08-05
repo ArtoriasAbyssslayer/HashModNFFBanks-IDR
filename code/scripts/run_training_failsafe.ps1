@@ -1,9 +1,7 @@
 # Set alias for python
 Set-Alias python3 python
 
-# Get total memory in KB
-$MemTotal = (Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1KB
-$MemoryLimit = [int]($MemTotal * 0.9)
+
 
 # Set memory limit (Windows does not support ulimit, so this is informational)
 Write-Host "Total available memory: {0:N2} GB" -f ($MemTotal / 1024 / 1024)
@@ -56,6 +54,7 @@ switch ($EXPERIMENT) {
     "HashGridTCNN"    { $CONFIG_DIR = "./confs/embedder_conf_var/HashGrid_TCNN_PointsAndViewDirs" }
     "HashNerf"        { $CONFIG_DIR = "./confs/embedder_conf_var/MultiResHashPointsPosencViews" }
     "NFFB_TCNN"       { $CONFIG_DIR = "./confs/embedder_conf_var/FFB_TCNN" }
+    "Permutohedral"   { $CONFIG_DIR = "./confs/embedder_conf_var/PermutohedralEncoder" }
     default {
         Write-Error "Invalid experiment name: $EXPERIMENT"
         exit 1

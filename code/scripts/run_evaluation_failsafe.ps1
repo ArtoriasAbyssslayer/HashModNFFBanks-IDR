@@ -36,6 +36,7 @@ switch ($exp) {
     "HashGridTCNN"   { $configBase = "./confs/embedder_conf_var/HashGrid_TCNN_PointsAndViewDirs" }
     "HashNerf"       { $configBase = "./confs/embedder_conf_var/MultiResHashPointsPosencViews" }
     "NFFB_TCNN"      { $configBase = "./confs/embedder_conf_var/FFB_TCNN" }
+    "Permutohedral"  { $configBase = "./confs/embedder_conf_var/PermutohedralEncoder" }
     default {
         Write-Error "Invalid experiment name: $exp"
         exit 1

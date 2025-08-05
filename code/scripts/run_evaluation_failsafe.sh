@@ -87,6 +87,9 @@ case "$EXPERIMENT" in
     "NFFB_TCNN")
         CONFIG_DIR="./confs/embedder_conf_var/FFB_TCNN"
         ;;
+    "Permutohedral")
+        CONFIG_DIR="./confs/embedder_conf_var/PermutohedralEncoder"
+        ;;
     *)
         echo "Invalid experiment name: $EXPERIMENT" >&2
         exit 1
