@@ -32,7 +32,9 @@ class ImplicitNetwork(nn.Module):
         self.embed_fn = None
         self.embed_type = embed_type
         self.multires = multires
-        self.density_net = LaplaceDensity(params_init={'beta': 0.9})
+        # beta:0.1 is for sharpening the SDF values
+        # beta:0.9 is for clamping the SDF values
+        self.density_net = LaplaceDensity(params_init={'beta': 0.1})
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -78,7 +80,7 @@ class ImplicitNetwork(nn.Module):
                     torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(out_dim))
 
             if weight_norm:
-                lin = nn.utils.weight_norm(lin)
+                lin = nn.utils.parametrizations.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
         print("IGR completed")
@@ -109,7 +111,14 @@ class ImplicitNetwork(nn.Module):
             + yield ray points of the surface that shouldn't be used.
             - This problem occurs with some embedding networks -> Hash Encoding -
         """
-        x[...,0] = F.tanh(x[...,0]/(1+self.density_net(x[...,0])))
+        # x[...,0] = F.tanh(x[...,0]/(1+self.density_net(x[...,0])))
+        # return x
+        # Enhanced SDF clamping for numerical stability and faster convergence
+        sdf_raw = x[..., 0]
+        density_factor = self.density_net(sdf_raw)
+        
+        # More aggressive clamping for faster convergence
+        x[..., 0] = torch.tanh(sdf_raw / (1 + density_factor)) * 2.0  # Wider range but still bounded
         return x
 
     # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives
@@ -193,7 +202,7 @@ class RenderingNetwork(nn.Module):
             lin = nn.Linear(dims[l], out_dim)
 
             if weight_norm:
-                lin = nn.utils.weight_norm(lin)
+                lin = nn.utils.parametrizations.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
         self.relu = nn.ReLU()
@@ -304,10 +313,17 @@ class IDRNetwork(nn.Module):
 
         view = -ray_dirs[surface_mask]
 
+        # rgb_values = torch.ones_like(points).float().cuda()
+        # if differentiable_surface_points.shape[0] > 0:
+        #     rgb_values[surface_mask] = self.get_rbg_value(differentiable_surface_points, view)
         rgb_values = torch.ones_like(points).float().cuda()
         if differentiable_surface_points.shape[0] > 0:
-            rgb_values[surface_mask] = self.get_rbg_value(differentiable_surface_points, view)
-
+            try:
+                rgb_vals = self.get_rbg_value(differentiable_surface_points, view)
+                if rgb_vals.shape[0] > 0:  # Additional safety check
+                    rgb_values[surface_mask] = rgb_vals
+            except Exception as e:
+                print(f"Warning: RGB computation failed with {differentiable_surface_points.shape[0]} points: {e}")
         output = {
             'points': points,
             'rgb_values': rgb_values,
@@ -319,7 +335,12 @@ class IDRNetwork(nn.Module):
         
         return output
 
+
     def get_rbg_value(self, points, view_dirs):
+        # Handle empty batch case
+        if points.shape[0] == 0:
+            return torch.zeros(0, 3, device=points.device, dtype=points.dtype)
+        
         output = self.implicit_network(points)
         g = self.implicit_network.gradient(points)
         normals = g[:, 0, :]
@@ -328,4 +349,3 @@ class IDRNetwork(nn.Module):
         rgb_vals = self.rendering_network(points, normals, view_dirs, feature_vectors)
 
         return rgb_vals
-

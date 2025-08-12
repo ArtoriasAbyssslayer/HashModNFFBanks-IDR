@@ -7,7 +7,7 @@ from model.embeddings.nffb3d import FourierFilterBanks
 # TinyCudaNN implementation of HashGrid Encoder and NFFB
 from model.embeddings.tcnn_src.hashGridEncoderTcnn import MultiResHashGridEncoderTcnn as MRHashGridEncTcnn
 from model.embeddings.tcnn_src.FFB_encoder import FFBEncoder as FFB_encoder
-from model.embeddings.permutohedral_encoder.permuto_enc import PermutohedralEncoder
+from model.embeddings.permutohedral_encoder.permuto_enc import PermutohedralEncoderIDROptimized as PermutohedralEncoder
 
 " --- Define Embedding model selection function and Network Object Initialization ---"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -145,8 +145,9 @@ class Custom_Embedding_Network(nn.Module):
             },
             'PermutohedralEncoder':{
                 'input_dims': input_dims,
-                'num_channels': network_dims[0],
-                'include_input': True
+                'num_channels': max(8, multires),
+                'include_input': True,
+                'bound':bound
             },
             
         }

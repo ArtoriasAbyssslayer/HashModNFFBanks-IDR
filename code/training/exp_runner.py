@@ -3,6 +3,19 @@ sys.path.append('../code')
 import argparse
 import GPUtil
 import os
+import warnings
+
+# Suppress pkg_resources deprecation warning (more comprehensive)
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources")
+warnings.filterwarnings("ignore", message=".*pkg_resources.*", category=UserWarning)
+
+# Suppress the specific asset.symbol warning
+warnings.filterwarnings("ignore", category=UserWarning, module="asset.symbol")
+
+# Configure TensorFlow environment variables BEFORE importing TensorFlow
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN for consistent results
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'   # Show errors only, suppress info/warning
 
 if __name__ == '__main__': 
     parser = argparse.ArgumentParser()

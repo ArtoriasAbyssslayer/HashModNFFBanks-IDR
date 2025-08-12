@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 from pyhocon import ConfigFactory
 import sys
@@ -87,7 +88,14 @@ class IDRTrainRunner():
             utils.mkdir_ifnotexists(os.path.join(self.checkpoints_path, self.optimizer_cam_params_subdir))
             utils.mkdir_ifnotexists(os.path.join(self.checkpoints_path, self.cam_params_subdir))
 
-        os.system("""cp -r {0} "{1}" """.format(kwargs['conf'], os.path.join(self.expdir, self.timestamp, 'runconf.conf')))
+        # os.system("""cp -r {0} "{1}" """.format(kwargs['conf'], os.path.join(self.expdir, self.timestamp, 'runconf.conf')))
+        source = kwargs['conf']
+        destination = os.path.join(self.expdir, self.timestamp, 'runconf.conf')
+
+        if os.path.isdir(source):
+            shutil.copytree(source, destination)
+        else:
+            shutil.copy2(source, destination)
 
         if (not self.GPU_INDEX == 'ignore'):
             os.environ["CUDA_VISIBLE_DEVICES"] = '{0}'.format(self.GPU_INDEX)
