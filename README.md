@@ -213,6 +213,13 @@ This script will produce novel views of the geometry of the `GEOMETRY_ID` scan t
 
 **TinyCudaNN HashGrid Implementation seems to work faster with lower memory usage and optimized for RTX card and get better appearence results but same geometry**
 
+To install the libraries maybe you should set the variables bellow (especially in windows and with older GPUs)
+```
+set TORCH_USE_CUDA_DSA=1
+set DISTUTILS_USE_SDK=1
+set MSSDK=1
+```
+
 ## References
 ```
 @article{yariv2020multiview,

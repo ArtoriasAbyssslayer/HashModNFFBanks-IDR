@@ -34,7 +34,7 @@ class ImplicitNetwork(nn.Module):
         self.multires = multires
         # beta:0.1 is for sharpening the SDF values
         # beta:0.9 is for clamping the SDF values
-        self.density_net = LaplaceDensity(params_init={'beta': 0.1})
+        self.density_net = LaplaceDensity(params_init={'beta': 0.9})
         if embed_type:
             if multires > 0:
                 print("embed_type",embed_type)
@@ -113,7 +113,7 @@ class ImplicitNetwork(nn.Module):
         """
         # x[...,0] = F.tanh(x[...,0]/(1+self.density_net(x[...,0])))
         # return x
-        # Enhanced SDF clamping for numerical stability and faster convergence
+
         sdf_raw = x[..., 0]
         density_factor = self.density_net(sdf_raw)
         

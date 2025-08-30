@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="asset.symbol")
 # Configure TensorFlow environment variables BEFORE importing TensorFlow
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN for consistent results
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'   # Show errors only, suppress info/warning
-
+os.environ['TORCH_USE_CUDA_DSA'] = '1'     # For kernel proble
 if __name__ == '__main__': 
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=1, help='input batch size')

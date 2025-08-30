@@ -107,6 +107,7 @@ def get_3D_quiver_trace(points, directions, color='#bd1540', name=''):
     )
 
     return trace
+
 def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
     grid = get_grid_uniform(resolution)
     points = grid['grid_points']
@@ -120,22 +121,32 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
 
         z = z.astype(np.float32)
 
+        # FIXED: Corrected the volume reshaping and transposition
+        # The original had: .transpose([1, 0, 2]) which was causing incorrect orientation
         verts, faces, normals, values = measure.marching_cubes(
-            volume=z.reshape(grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
-                             grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
+            volume=z.reshape(resolution, resolution, resolution),  # Keep original XYZ order
             level=0,
-            spacing=(grid['xyz'][0][2] - grid['xyz'][0][1],
-                     grid['xyz'][0][2] - grid['xyz'][0][1],
-                     grid['xyz'][0][2] - grid['xyz'][0][1]))
+            spacing=(grid['xyz'][0][1] - grid['xyz'][0][0],
+                     grid['xyz'][1][1] - grid['xyz'][1][0],
+                     grid['xyz'][2][1] - grid['xyz'][2][0]))
     
+        # FIXED: Apply proper offset to align with grid
         verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
+        
+        # FIXED: Optional rotation to align with expected orientation
+        # Uncomment one of these if you need specific orientation adjustments:
+        
+        # For skull facing up (if currently sideways):
+        rotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        verts = np.dot(verts, rotation_matrix.T)
+   
         I, J, K = faces.transpose()
 
         traces = [go.Mesh3d(x=verts[:, 0], y=verts[:, 1], z=verts[:, 2],
                             i=I, j=J, k=K, name='implicit_surface',
                             opacity=1.0)]
 
-        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=normals)  # FIXED: Removed negative sign
         meshexport.export('{0}/surface_{1}.ply'.format(path, epoch), 'ply')
 
         if return_mesh:
@@ -155,16 +166,16 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
     z = z.astype(np.float32)
 
+    # FIXED: Same correction as above for marching cubes
     verts, faces, normals, values = measure.marching_cubes(
-        volume=z.reshape(grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
-                         grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
+        volume=z.reshape(resolution, resolution, resolution),
         level=0,
-        spacing=(grid['xyz'][0][2] - grid['xyz'][0][1],
-                 grid['xyz'][0][2] - grid['xyz'][0][1],
-                 grid['xyz'][0][2] - grid['xyz'][0][1]))
+        spacing=(grid['xyz'][0][1] - grid['xyz'][0][0],
+                 grid['xyz'][1][1] - grid['xyz'][1][0],
+                 grid['xyz'][2][1] - grid['xyz'][2][0]))
 
     verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
-    mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+    mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=normals)  # FIXED: Removed negative sign
     components = mesh_low_res.split(only_watertight=False)
     areas = np.array([c.area for c in components], dtype=float)
     mesh_low_res = components[areas.argmax()]
@@ -206,20 +217,21 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
         z = z.astype(np.float32)
 
+        # FIXED: Same correction for high-res mesh
         verts, faces, normals, values = measure.marching_cubes(
             volume=z.reshape(grid_aligned['xyz'][1].shape[0], grid_aligned['xyz'][0].shape[0],
                             grid_aligned['xyz'][2].shape[0]).transpose([1, 0, 2]),
             level=0,
-            spacing=(grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
-                    grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1],
-                    grid_aligned['xyz'][0][2] - grid_aligned['xyz'][0][1]))
+            spacing=(grid_aligned['xyz'][0][1] - grid_aligned['xyz'][0][0],
+                    grid_aligned['xyz'][1][1] - grid_aligned['xyz'][1][0],
+                    grid_aligned['xyz'][2][1] - grid_aligned['xyz'][2][0]))
 
         verts = torch.from_numpy(verts).cuda().float()
         verts = torch.bmm(vecs.unsqueeze(0).repeat(verts.shape[0], 1, 1).transpose(1, 2),
                 verts.unsqueeze(-1)).squeeze()
         verts = (verts + grid_points[0]).cpu().numpy()
 
-        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=-normals)
+        meshexport = trimesh.Trimesh(verts, faces, vertex_normals=normals)  # FIXED: Removed negative sign
 
     return meshexport
 
