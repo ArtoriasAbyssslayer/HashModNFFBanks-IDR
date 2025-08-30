@@ -17,8 +17,7 @@
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                //"--is_continue"
-                //"--calc_image_similarity"
+                "--calc_image_similarity"
 
             ]
         },
@@ -43,6 +42,27 @@
 
             ]
         },
+         {
+            "name": "IDR training - Style Modulated NFFB",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/training/exp_runner.py",
+            "cwd": "${workspaceFolder}/code",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_StyleMod/dtu_fixed_cameras.conf",
+                "--expname", "StyleModNFFB",
+                "--scan_id","65",
+                "--checkpoint", "latest",
+                //"--train_cameras",
+                "--validation_slope_print",
+                "--calc_image_similarity",
+                //"--is_continue",
+               
+
+            ]
+        },
         {
             "name": "IDR training HashGridEncodingTCNN",
             "type": "debugpy",
@@ -56,13 +76,11 @@
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGrid_TCNN_PointsAndViewDirs/dtu_fixed_cameras.conf",
                 "--expname", "HashGridTCNN",
                 "--scan_id","65",
-                "--checkpoint", "latest",
-                //"--train_cameras",
                 "--validation_slope_print",
-                //"--calc_image_similarity"
-                "--is_continue"
-                
-
+                "--calc_image_similarity",
+                //"--is_continue"
+                //"--checkpoint", "latest",
+                //"--train_cameras",
             ]
         },
         {

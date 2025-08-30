@@ -15,32 +15,33 @@ from model.embeddings.style_Attention.style_function import *
 """
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class StyleAttention(nn.Module):
-    def __init__(self,d_in=3, feature_vector_size=28):
+    def __init__(self, d_in=3, feature_vector_size=28):
         super().__init__()
         self.d_in = d_in
         self.feature_vector_size = feature_vector_size
         self.linear_transform = nn.Linear(feature_vector_size, feature_vector_size).to(device=device)
         self.attention = nn.Linear(d_in, 1).to(device=device)
-        self.norm = nn.InstanceNorm1d(feature_vector_size)
-
-    def forward(self, content, style):
-        # No need to set the multires_levels
         
+        # Fix: Use LayerNorm instead of InstanceNorm1d (moreappropriate for features)
+        self.norm = nn.LayerNorm(feature_vector_size, elementwise_affine=False).to(device=device)
+        
+        # Alternative fix if you must use InstanceNorm1d:
+        # self.norm = nn.InstanceNorm1d(num_features=feature_vector_size, affine=False).to(device=device)
+        
+    def forward(self, content, style):
         # Content is the original 3D coordinate Vector
-        content_features = content.view(-1, self.d_in )
-        # Style is its embedding in the latent space of NFFB 
+        content_features = content.view(-1, self.d_in)
+        # Style is its embedding in the latent space of NFFB  
         style_features = style.view(-1, self.feature_vector_size)
-
-        # No need to apply AdaIN
+        
         modulated_features = self.linear_transform(style_features)
-
         attention_weights = self.attention(content_features)
         attention_weights = F.softmax(attention_weights, dim=1)
-
         weighted_features = attention_weights * modulated_features
-
+        
+        # LayerNorm works directly on [batch, features]
         demodulated_features = self.norm(weighted_features)
-
+        
         return demodulated_features
 
 """
@@ -58,7 +59,7 @@ class StyleModulation(nn.Module):
         self.linear_transform = nn.Linear(feature_vector_size, feature_vector_size).to(device=device)
         self.attention = nn.Linear(feature_vector_size, 1).to(device=device)
 
-        self.norm = nn.InstanceNorm1d(feature_vector_size)
+        self.norm = nn.InstanceNorm1d(affine=False).to(device=device)
 
     def forward(self, content, style):
         # Set the multires_levels to 1, since the content and style feature vectors are in a single resolution level

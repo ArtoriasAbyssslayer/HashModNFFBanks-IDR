@@ -6,13 +6,17 @@ import os
 import warnings
 
 # Suppress pkg_resources deprecation warning (more comprehensive)
-warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources")
-warnings.filterwarnings("ignore", message=".*pkg_resources.*", category=UserWarning)
+# warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+# warnings.filterwarnings("ignore", category=DeprecationWarning, module="pkg_resources")
+# warnings.filterwarnings("ignore", message=".*pkg_resources.*", category=UserWarning)
 
 # Suppress the specific asset.symbol warning
 warnings.filterwarnings("ignore", category=UserWarning, module="asset.symbol")
-
+# Debugging options
+# # Set CUDA_LAUNCH_BLOCKING to 1 in debug mode 
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+# # Set TORCH_CUDA_USE_DSA to 1 for using CUDA Dynamic Shared Memory
+os.environ["TORCH_USE_CUDA_DSA"] = "1"
 # Configure TensorFlow environment variables BEFORE importing TensorFlow
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN for consistent results
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'   # Show errors only, suppress info/warning
@@ -30,17 +34,14 @@ if __name__ == '__main__':
     parser.add_argument('--train_cameras', default=False, action="store_true", help='If set, optimizing also camera location.')
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
+    parser.add_argument('--calc_image_similarity', default=False, action='store_true', help='If set, calculates image similarity metrics during training.')
     opt = parser.parse_args()
     if opt.gpu == "auto":
         deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=False, excludeID=[], excludeUUID=[])
         gpu = deviceIDs[0]
     else:
         gpu = opt.gpu
-    # Debugging options
-    # Set CUDA_LAUNCH_BLOCKING to 1 in debug mode 
-    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-    # Set TORCH_CUDA_USE_DSA to 1 for using CUDA Dynamic Shared Memory
-    os.environ["TORCH_USE_CUDA_DSA"] = "1"
+
     from training.idr_train import IDRTrainRunner
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
@@ -53,6 +54,7 @@ if __name__ == '__main__':
                                  checkpoint=opt.checkpoint,
                                  scan_id=opt.scan_id,
                                  train_cameras=opt.train_cameras,
-                                 validation_slope_print=opt.validation_slope_print)
+                                 validation_slope_print=opt.validation_slope_print,
+                                 calc_image_similarity=opt.calc_image_similarity)
 
     trainrunner.run()

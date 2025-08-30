@@ -8,7 +8,7 @@ import utils.general as utils
 import utils.plots as plt
 
 from torch.utils.tensorboard import SummaryWriter
-# from torch.cuda.amp import  GradScaler
+#from torch.cuda.amp import  GradScaler
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class IDRTrainRunner():
@@ -39,7 +39,7 @@ class IDRTrainRunner():
         
         # Evaluate while training Parameters - Validation Slope
         self.validation_slope_print = kwargs['validation_slope_print']
-        
+        self.calc_image_similarity = kwargs['calc_image_similarity']
         if self.validation_slope_print:
             self.eval_epochs = 49
         if scan_id != -1:
@@ -327,9 +327,11 @@ class IDRTrainRunner():
                                 self.scheduler.get_lr()[0]))
             # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
                 losses.append(loss) 
-            if epoch == self.eval_epochs:
+            if epoch == self.eval_epochs + 1:
                 if self.validation_slope_print:
                     self.validation_loss_slope(losses,epoch)
+                if self.calc_image_similarity:
+                    self.calc_image_similarity_metrics(model_outputs['rgb_values'],ground_truth['rgb'].cuda(),epoch)
             self.writer.add_scalar('Loss/loss',loss.item(), epoch)
             self.writer.add_scalar('Loss/color_loss', loss_output['rgb_loss'].item(),  epoch)
             self.writer.add_scalar('Loss/eikonal_loss', loss_output['eikonal_loss'].item(),  epoch)
@@ -346,8 +348,8 @@ class IDRTrainRunner():
     """
     # Make the validation slope as the training is finished        
     def validation_loss_slope(self,loss_list,curr_epoch):
-            import matplotlib.pyplot as plt
             import numpy as np 
+            import matplotlib.pyplot as plt
             embedder_type = self.model_conf['embedding_network.embed_type']
              # Calculate the mean loss for each epoch
             num_epochs = len(loss_list) // (self.plot_dataloader.dataset.n_images//self.batch_size)
@@ -365,4 +367,55 @@ class IDRTrainRunner():
             plt.legend()
             plt.savefig(os.path.join(self.plots_dir, f'loss_plot_{embedder_type}_EpochStamp{curr_epoch}.png'.format(embedder_type,curr_epoch)))
             plt.close()
-                        
+    
+    def calc_image_similarity_metrics(self, pred_rgb, gt_rgb, epoch):
+        import numpy as np
+        import os
+        from skimage.metrics import structural_similarity as ssim
+        from skimage.metrics import peak_signal_noise_ratio as psnr
+        
+        pred_rgb = pred_rgb.detach().cpu().numpy()
+        gt_rgb = gt_rgb.detach().cpu().numpy()
+        
+        # Remove batch dimensions and ensure both are [2018, 3]
+        pred_img = np.squeeze(pred_rgb)  # Remove batch dim
+        gt_img = np.squeeze(gt_rgb)      # Remove batch dim
+        
+        # Handle shape consistency - ensure both are [2018, 3]
+        if pred_img.ndim == 1:  # If pred is [2018]
+            if pred_img.shape[0] % 3 == 0:
+                pred_img = pred_img.reshape(-1, 3)  # Reshape flattened RGB
+            else:
+                pred_img = np.stack([pred_img] * 3, axis=-1)  # Replicate to RGB
+        
+        if gt_img.ndim == 1:
+            gt_img = gt_img.reshape(-1, 3)
+        
+        # Clip values
+        pred_img = np.clip(pred_img, 0, 1)
+        gt_img = np.clip(gt_img, 0, 1)
+        
+        # Calculate metrics (both arrays should be [2018, 3])
+        ssim_index = ssim(pred_img, gt_img, channel_axis=-1, data_range=1.0)
+        psnr_index = psnr(gt_img, pred_img, data_range=1.0)
+        
+        print(f'Epoch {epoch}: SSIM: {ssim_index:.4f}, PSNR: {psnr_index:.4f}')
+        
+        # Write to file with proper error handling
+        metrics_file = os.path.join(self.plots_dir, 'image_similarity_metrics.txt')
+        
+        # Create header if file doesn't exist
+        if not os.path.exists(metrics_file):
+            with open(metrics_file, 'w') as f:
+                f.write('Image Similarity Metrics\n')
+                f.write('========================\n')
+        
+        # Append metrics
+        with open(metrics_file, 'a') as f:
+            f.write(f'Epoch {epoch}: SSIM: {ssim_index:.4f}, PSNR: {psnr_index:.4f}\n')
+        
+        # Log to tensorboard
+        self.writer.add_scalar('ImageSimilarity/SSIM', ssim_index, epoch)
+        self.writer.add_scalar('ImageSimilarity/PSNR', psnr_index, epoch)
+        
+        return ssim_index, psnr_index

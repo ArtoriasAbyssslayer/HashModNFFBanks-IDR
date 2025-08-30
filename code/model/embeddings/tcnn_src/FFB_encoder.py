@@ -129,81 +129,79 @@ class FFBEncoder(nn.Module):
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         """
-            Inputs:
-                x: [N, 3] - Input points 3D in [-scale,scale]
-            Ouputs:
-                out: (N,3+feature_Vector_size), embeddings
+        Inputs:
+            input: [N, 3] - Input points 3D in [-scale, scale]
+        Outputs:
+            out: [N, 3 + feature_Vector_size] - embeddings
         """
-
+        device = input.device
+        batch_size = input.shape[0]
         
+        # Normalize inputs
         x = input / self.bound  # Bound the input between [-1,1]
-        input = (input + self.bound) / (2 * self.bound) 
-
-
-        # Compute HashGrid and split it to it's multiresolution levels
-        augmented_grid_x = self.grid_enc(input)
-        grid_x = augmented_grid_x[..., x.shape[-1]:]
-        grid_x = grid_x.view(-1, self.grid_levels, self.max_points_per_level)
-        grid_x = grid_x.permute(1, 0, 2).to(input.device)
-        # Embeddings_list corresponds to the indermediated outputs O1,O2,O3... in the paper #
+        input_normalized = (input + self.bound) / (2 * self.bound)
+        
+        # Compute HashGrid and split to multi-resolution levels
+        augmented_grid_x = self.grid_enc(input_normalized)
+        grid_x = augmented_grid_x[..., input.shape[-1]:]
+        
+        # Reshape more efficiently
+        grid_x = grid_x.view(batch_size, self.grid_levels, self.max_points_per_level)
+        grid_x = grid_x.transpose(0, 1)  # [grid_levels, batch_size, max_points_per_level]
+        
+        # Process frequency encodings in parallel where possible
         embeddings_list = []
         for i in range(self.grid_levels):
             grid_ff_output = self.ff_enc[i](grid_x[i])
             embeddings_list.append(grid_ff_output)
-        embeddings_list = torch.stack(embeddings_list,dim=0).to(device=input.device)
-
-
+        
+        # Stack more efficiently
+        embeddings_tensor = torch.stack(embeddings_list, dim=0)  # [grid_levels, batch_size, embed_dim]
+        
+        # Initialize output tensors
         if self.has_out:
-            x_out = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
+            x_out = torch.zeros(batch_size, self.embeddings_dim - self.num_inputs, 
+                            device=device, dtype=input.dtype)
         else:
             features_list = []
-            
-            
-        """                        
-                                    Style Modulation
-                    Assuming style vector is the embed Feat - which is Fourier Feature Grid
-                    and the feature vector is the x which is derived from the hash grid
-                    Essentially map better ntk fourier features to the hash grid features
-        """
-        # self.StyleModulationBlock(x,embeddings_list)
-        """ Grid Fourier Encoding """
         
-        for layer in range(0,self.n_nffb_layers-1):
-            ff_lin = getattr(self,'ff_lin' + str(layer)).to(x.device)
-            x = ff_lin(x)
-            x = self.lin_activation(x)     
+        # Process through FFB layers
+        current_x = x
+        for layer in range(self.n_nffb_layers - 1):
+            ff_lin = getattr(self, f'ff_lin{layer}')
+            current_x = ff_lin(current_x)
+            current_x = self.lin_activation(current_x)
+            
             if layer > 0:
-                " Style Attention " 
+                # Apply style attention if enabled
                 if self.modulationApplied:
-                    demodulated_embed_Feat = self.StyleAttentionBlock(input,embeddings_list[layer-1])
-                    embed_Feat = demodulated_embed_Feat  + x
+                    embed_feat = self.StyleAttentionBlock(input_normalized, embeddings_tensor[layer-1])
+                    embed_feat = embed_feat + current_x
                 else:
-                    embed_Feat = embeddings_list[layer-1] + x
-              
+                    embed_feat = embeddings_tensor[layer-1] + current_x
+                
                 if self.has_out:
-                    # For Extended High Frequency MLP Layers # 
-                    out_layer = getattr(self,"out_lin" + str(layer-1)).to(embed_Feat.device)
-                    x_high = out_layer(embed_Feat)
-                    x_high = self.out_activation(x_high)
+                    # High frequency MLP processing
+                    out_layer = getattr(self, f"out_lin{layer-1}")
+                    x_high = self.out_activation(out_layer(embed_feat))
                     x_out = x_out + x_high
                 else:
-                    lin_out = self.out_layer.to(x.device)
-                    embed_Feat = lin_out(embed_Feat)
-                    features_list.append(embed_Feat)
-
+                    processed_feat = self.out_layer(embed_feat)
+                    features_list.append(processed_feat)
+        
+        # Final output assembly
         if self.has_out:
-            x_out = x_out/(self.grid_levels)
-            x = torch.cat([input,x_out],dim=-1)
+            x_out = x_out / self.grid_levels
+            final_output = torch.cat([input_normalized, x_out], dim=-1)
         else:
-            feats = torch.zeros(x.shape[0],self.embeddings_dim-self.num_inputs,device=input.device)
-            for i in range(len(features_list)):
-                feats += features_list[i]
-            x = torch.cat([input,feats/(self.grid_levels)],dim=-1)
-        return x
-    
-    
-    
-    
+            if features_list:
+                feats = torch.stack(features_list, dim=0).mean(dim=0)  # More efficient averaging
+            else:
+                feats = torch.zeros(batch_size, self.embeddings_dim - self.num_inputs, 
+                                device=device, dtype=input.dtype)
+            final_output = torch.cat([input_normalized, feats], dim=-1)
+        
+        return final_output
     " Functions Used for RELU layers - IGR ReLU -> Results to Smooth SDFs"
     def init_ReLU(self):
         for layer in range(0, self.n_nffb_layers - 1):
