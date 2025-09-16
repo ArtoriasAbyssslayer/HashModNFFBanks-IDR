@@ -5,11 +5,11 @@
 # pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 # 
 # ===================================================
-cvxpy==1.3.1
+cvxpy==1.1.5
 GPUtil==1.4.0
 pyhocon==0.3.55
 dask==2023.9.1
-ecos==2.0.12
+ecos==2.0.7.post1
 future==0.18.3
 retrying==1.3.4
 scs>=3.2.2
@@ -23,7 +23,7 @@ Pillow==10.0.1
 plotly==5.15.0
 pyrender==0.1.45
 ninja==1.11.1
-scipy>=1.12.0
+scipy==1.8.1
 setuptools>=68.0.0
 scikit-image>=0.21.0
 trimesh

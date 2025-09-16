@@ -111,14 +111,9 @@ class ImplicitNetwork(nn.Module):
             + yield ray points of the surface that shouldn't be used.
             - This problem occurs with some embedding networks -> Hash Encoding -
         """
-        # x[...,0] = F.tanh(x[...,0]/(1+self.density_net(x[...,0])))
-        # return x
-
         sdf_raw = x[..., 0]
         density_factor = self.density_net(sdf_raw)
-        
-        # More aggressive clamping for faster convergence
-        x[..., 0] = torch.tanh(sdf_raw / (1 + density_factor)) * 2.0  # Wider range but still bounded
+        x[..., 0] = torch.tanh(sdf_raw / (1 + density_factor)) * 2.0  
         return x
 
     # Compute Gradient of the SDF w.r.t. the input points -> High order derivatives

@@ -147,3 +147,4 @@ code/.idea/
 ._.DS_Store
 .idea/
 .vscode/launch.json
+.vscode/settings.json

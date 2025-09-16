@@ -13,11 +13,12 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
                 "--expname", "NFFBTcnn",
-                "--scan_id","65",
+                "--scan_id","55",
                 "--checkpoint", "latest",
                 //"--train_cameras",
                 "--validation_slope_print",
-                "--calc_image_similarity"
+                "--calc_image_similarity",
+                //"--is_continue"
 
             ]
         },
@@ -75,7 +76,7 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/HashGrid_TCNN_PointsAndViewDirs/dtu_fixed_cameras.conf",
                 "--expname", "HashGridTCNN",
-                "--scan_id","65",
+                "--scan_id","55",
                 "--validation_slope_print",
                 "--calc_image_similarity",
                 //"--is_continue"
@@ -188,7 +189,7 @@
         },
         // THIS SHOULD BE CHANGED WHEN EVALUATING DIFFERENT MODEL
         {
-            "name": "Run Multi-View NFFB IDR evaluation",
+            "name": "Run Multi-View NFFB-TCNN IDR evaluation",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/code/evaluation/eval.py",
@@ -198,7 +199,7 @@
             "args": [
                 "--expname", "NFFB_TCNN",
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
-                "--scan_id","65",
+                "--scan_id","0",
                 "--checkpoint", "latest",
                 "--eval_rendering"
             ]

@@ -13,6 +13,7 @@ def plot(model, indices, model_outputs ,pose, rgb_gt, path, epoch, img_res, plot
     batch_size, num_samples, _ = rgb_gt.shape
 
     network_object_mask = model_outputs['network_object_mask']
+    
     points = model_outputs['points'].reshape(batch_size, num_samples, 3)
     rgb_eval = model_outputs['rgb_values']
     rgb_eval = rgb_eval.reshape(batch_size, num_samples, 3)
@@ -153,6 +154,50 @@ def get_surface_trace(path, epoch, sdf, resolution=100, return_mesh=False):
             return meshexport
         return traces
     return None
+
+import torch
+
+def sdf_chunked_gpu(points, model, model_input=None, pose_vecs=None, indices=None, eval_cameras=False, chunk_size=2**16):
+    """
+    Evaluate SDF in chunks to avoid GPU memory OOM.
+    
+    Args:
+        points (torch.Tensor): [N, 3] points where SDF should be evaluated
+        model (nn.Module): model with implicit_network(x) -> [N, 1]
+        model_input (dict, optional): canonical input dict (intrinsics, uv, mask, etc.)
+        pose_vecs (nn.Embedding, optional): camera poses if eval_cameras=True
+        indices (torch.Tensor, optional): indices for pose_vecs
+        eval_cameras (bool): whether to evaluate in camera space
+        chunk_size (int): max number of points per chunk
+    Returns:
+        torch.Tensor: SDF values [N]
+    """
+    device = next(model.parameters()).device
+    points = points.to(device)
+    sdf_vals = []
+
+    # Split points into chunks
+    chunks = torch.split(points, chunk_size, dim=0)
+    for pts_chunk in chunks:
+        if model_input is not None:
+            # Copy inputs for this chunk
+            input_chunk = {k: v.clone() for k, v in model_input.items()}
+        else:
+            input_chunk = {}
+
+        if eval_cameras and pose_vecs is not None:
+            input_chunk['pose'] = pose_vecs(indices.to(device))
+
+        # Evaluate the SDF
+        with torch.no_grad():
+            sdf_chunk = model.implicit_network(pts_chunk)[:, 0]  # [chunk_size]
+            sdf_vals.append(sdf_chunk)
+
+    # Concatenate all chunks
+    return torch.cat(sdf_vals, dim=0)
+
+
+
 
 def get_surface_high_res_mesh(sdf, resolution=100):
     # get low res mesh to sample point cloud
@@ -315,6 +360,77 @@ def plot_images(rgb_points, ground_true, path, epoch, plot_nrow, img_res):
     img = Image.fromarray(tensor)
     img.save('{0}/rendering_{1}.png'.format(path, epoch))
 
+# def lin2img(tensor, img_res):
+#     batch_size, num_samples, channels = tensor.shape
+#     return tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
 def lin2img(tensor, img_res):
+    """
+    Convert linear tensor to image format, handling dynamic tensor sizes.
+    
+    Args:
+        tensor: Input tensor of shape [batch_size, num_samples, channels]
+        img_res: Target image resolution [height, width]
+    
+    Returns:
+        Reshaped tensor of shape [batch_size, channels, height, width]
+    """
     batch_size, num_samples, channels = tensor.shape
-    return tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
+    target_pixels = img_res[0] * img_res[1]
+    
+    if num_samples == target_pixels:
+        # Perfect match - use original logic
+        return tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
+    
+    elif num_samples < target_pixels:
+        # Not enough pixels - pad with zeros
+        print(f"Warning: Padding tensor from {num_samples} to {target_pixels} pixels")
+        padding_needed = target_pixels - num_samples
+        padding = torch.zeros(batch_size, padding_needed, channels, device=tensor.device, dtype=tensor.dtype)
+        padded_tensor = torch.cat([tensor, padding], dim=1)
+        return padded_tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
+    
+    else:
+        # Too many pixels - truncate
+        print(f"Warning: Truncating tensor from {num_samples} to {target_pixels} pixels")
+        truncated_tensor = tensor[:, :target_pixels, :]
+        return truncated_tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
+
+
+def lin2img_adaptive(tensor, img_res):
+    """
+    Alternative version that adapts the image resolution to fit the actual data.
+    Use this if you want to see the actual data without padding/truncating.
+    """
+    batch_size, num_samples, channels = tensor.shape
+    target_pixels = img_res[0] * img_res[1]
+    
+    if num_samples == target_pixels:
+        # Perfect match
+        return tensor.permute(0, 2, 1).view(batch_size, channels, img_res[0], img_res[1])
+    
+    # Calculate closest image dimensions that fit the actual samples
+    aspect_ratio = img_res[1] / img_res[0]  # width / height
+    
+    # Find dimensions that best fit our sample count
+    height = int(np.sqrt(num_samples / aspect_ratio))
+    width = int(height * aspect_ratio)
+    
+    # Adjust to fit exactly
+    actual_pixels = height * width
+    if actual_pixels > num_samples:
+        # Try square dimensions
+        side = int(np.sqrt(num_samples))
+        height = width = side
+        actual_pixels = side * side
+    
+    if actual_pixels > num_samples:
+        # Final fallback - use whatever fits
+        height = 1
+        width = num_samples
+        actual_pixels = num_samples
+    
+    print(f"Adapting resolution from {img_res} to [{height}, {width}] to fit {num_samples} samples")
+    
+    # Truncate to fit the calculated dimensions
+    tensor_resized = tensor[:, :actual_pixels, :]
+    return tensor_resized.permute(0, 2, 1).view(batch_size, channels, height, width)
