@@ -12,6 +12,7 @@ from scipy.interpolate import CubicSpline
 import utils.general as utils
 import utils.plots as plt
 from utils import rend_util
+import warnings
 
 def evaluate(**kwargs):
     torch.set_default_dtype(torch.float32)
@@ -25,8 +26,11 @@ def evaluate(**kwargs):
     embedtype = kwargs['embedding_net_type']
     geometry_id = kwargs['geometry_id']
     appearance_id = kwargs['appearance_id']
+    
     geometry_folder = os.path.join('../', kwargs['exps_folder_name'], expname + embedtype + '_{0}'.format(geometry_id))
     appearance_folder = os.path.join('../', kwargs['exps_folder_name'], expname + embedtype + '_{0}'.format(appearance_id)) 
+    print('Geometry folder: ', geometry_folder)
+    print('Appearance folder: ', appearance_folder)
     
     # Find Latest timestamps of exps for Geometry and Appearance #
     if timestamp == 'latest':
@@ -168,7 +172,12 @@ def clear_gpu_memory():
         gc.collect()
 
 if __name__ == '__main__':
-
+    warnings.filterwarnings("ignore", category=UserWarning, module="asset.symbol")
+    # Set environment variables for consistent behavior
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["TORCH_USE_CUDA_DSA"] = "1"
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
     parser = argparse.ArgumentParser()
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--gpu', type=str, default='auto', help='GPU to use [default: GPU auto]')

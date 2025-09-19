@@ -234,7 +234,7 @@ class IDRTrainRunner():
         for epoch in range(self.start_epoch, self.nepochs + 1):
             if epoch in self.alpha_milestones:
                 self.loss.alpha = self.loss.alpha * self.alpha_factor
-            if epoch % 25 == 0:
+            if epoch % 10 == 0:
                 self.save_checkpoints(epoch)
             if epoch % self.plot_freq == 0:
                 self.clear_gpu_memory()

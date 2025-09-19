@@ -211,14 +211,16 @@ def get_surface_high_res_mesh(sdf, resolution=100):
 
     z = z.astype(np.float32)
 
-    # FIXED: Same correction as above for marching cubes
+    # FIXED: Corrected the volume reshaping and transposition
+    # The original had: .transpose([1, 0, 2]) which was causing incorrect orientation
     verts, faces, normals, values = measure.marching_cubes(
-        volume=z.reshape(resolution, resolution, resolution),
+        volume=z.reshape(resolution, resolution, resolution),  # Keep original XYZ order
         level=0,
         spacing=(grid['xyz'][0][1] - grid['xyz'][0][0],
-                 grid['xyz'][1][1] - grid['xyz'][1][0],
-                 grid['xyz'][2][1] - grid['xyz'][2][0]))
-
+                    grid['xyz'][1][1] - grid['xyz'][1][0],
+                    grid['xyz'][2][1] - grid['xyz'][2][0]))
+    
+        
     verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
     mesh_low_res = trimesh.Trimesh(verts, faces, vertex_normals=normals)  # FIXED: Removed negative sign
     components = mesh_low_res.split(only_watertight=False)

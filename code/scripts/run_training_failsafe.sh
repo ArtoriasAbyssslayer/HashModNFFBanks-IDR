@@ -1,10 +1,30 @@
-#!/bin/bash
-alias python3=python
+#!/bin/zsh
+# Ensure we're using zsh-specific features properly
+setopt BASH_REMATCH 2>/dev/null || true
+
+# Use python instead of python3 alias (cleaner approach)
+# Check if python3 is available, otherwise use python
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Neither python3 nor python found in PATH" >&2
+    exit 1
+fi
+
 # Set the memory limit for the Python process (e.g., 90% of available RAM)
-MemTotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-MemoryLimit=$((MemTotal * 90 / 100))
-ulimit -v "$MemoryLimit"
-echo "Total available memory: $(echo "scale=2; $MemTotal/1024/1024" | bc) (GB)"
+# Check if bc is installed, use arithmetic expansion as fallback
+if command -v bc >/dev/null 2>&1; then
+    MemTotal=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+    MemoryLimit=$((MemTotal * 90 / 100))
+    ulimit -v "$MemoryLimit"
+    echo "Total available memory: $(echo "scale=2; $MemTotal/1024/1024" | bc) GB"
+else
+    echo "Warning: bc not found, skipping memory limit calculation"
+    echo "Install bc with: sudo pacman -S bc"
+fi
+
 # Function to display usage instructions
 usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -27,6 +47,10 @@ INCLUDE_IS_CONTINUE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --exp)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo "Error: --exp requires an argument" >&2
+                exit 1
+            fi
             EXPERIMENT="$2"
             shift 2
             ;;
@@ -35,6 +59,10 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --scan_id)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo "Error: --scan_id requires an argument" >&2
+                exit 1
+            fi
             SCAN_ID="$2"
             shift 2
             ;;
@@ -42,12 +70,12 @@ while [[ $# -gt 0 ]]; do
             INCLUDE_IS_CONTINUE=true
             shift
             ;;
-        -h)
+        -h|--help)
             usage
             ;;
         *)
             echo "Unknown option: $1" >&2
-            exit 1
+            usage
             ;;
     esac
 done
@@ -86,42 +114,63 @@ case "$EXPERIMENT" in
         ;;
     *)
         echo "Invalid experiment name: $EXPERIMENT" >&2
+        echo "Valid options: HashGrid, Posenc, FourierNTK, HashGridCUDA, NFFB, StylemodNFFB, HashGridTCNN, HashNerf, NFFB_TCNN, Permutohedral"
         exit 1
         ;;
 esac
 
 # If trainable cameras flag is set, change the config directory
-if [ "$TRAINABLE_CAMERAS" = true ]; then
+if [[ "$TRAINABLE_CAMERAS" == "true" ]]; then
     CONFIG_DIR="$CONFIG_DIR/dtu_trained_cameras.conf"
 else
     CONFIG_DIR="$CONFIG_DIR/dtu_fixed_cameras.conf"
 fi
 
-# Define the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Define the directory where the script is located (zsh-compatible)
+SCRIPT_DIR="${0:A:h}"
 
 # Change the directory to the parent directory of the script
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/.." || {
+    echo "Error: Cannot change to parent directory of script" >&2
+    exit 1
+}
+
+# Verify the config file exists
+if [[ ! -f "$CONFIG_DIR" ]]; then
+    echo "Error: Configuration file not found: $CONFIG_DIR" >&2
+    exit 1
+fi
+
 echo "Is continue: $INCLUDE_IS_CONTINUE"
+
 while true; do
     echo "Working directory: $(pwd)"
     echo "Starting Neural Surface Reconstruction Experiment...$EXPERIMENT" 
     echo "Config directory: $CONFIG_DIR"
     echo "Scan ID: $SCAN_ID"
-    if [ "$INCLUDE_IS_CONTINUE" = true ]; then
+    echo "Python command: $PYTHON_CMD"
+    
+    if [[ "$INCLUDE_IS_CONTINUE" == "true" ]]; then
         echo "Continue training from the latest checkpoint"
-        python3 -u ./training/exp_runner.py --conf "$CONFIG_DIR" --expname "$EXPERIMENT" --scan_id "$SCAN_ID" --checkpoint latest --validation_slope_print --is_continue
+        $PYTHON_CMD -u ./training/exp_runner.py --conf "$CONFIG_DIR" --expname "$EXPERIMENT" --scan_id "$SCAN_ID" --checkpoint latest --validation_slope_print --is_continue
     else
         echo "Start training from scratch"
-        python3 -u ./training/exp_runner.py --conf "$CONFIG_DIR" --expname "$EXPERIMENT" --scan_id "$SCAN_ID" --checkpoint latest --validation_slope_print
+        $PYTHON_CMD -u ./training/exp_runner.py --conf "$CONFIG_DIR" --expname "$EXPERIMENT" --scan_id "$SCAN_ID" --checkpoint latest --validation_slope_print
     fi
+    
     # Exit the loop based on the success or failure of the Python command
     EXIT_CODE=$?
-    if [ $EXIT_CODE -eq 0 ]; then
+    if [[ $EXIT_CODE -eq 0 ]]; then
         echo "Python script finished successfully, exiting loop."
         break
     else
         echo "Python script failed with exit code $EXIT_CODE, restarting..."
         INCLUDE_IS_CONTINUE=true  # Set the flag to true for the next iteration
+        
+        # Optional: Add a brief delay before restarting
+        echo "Waiting 5 seconds before restart..."
+        sleep 5
     fi
 done
+
+echo "Script execution completed."

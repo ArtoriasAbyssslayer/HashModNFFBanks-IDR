@@ -1,5 +1,4 @@
 {
-    "version": "0.2.0",
     "configurations": [
         {
             "name": "IDR training - NFFB-TCNN",
@@ -13,15 +12,18 @@
 
                 "--conf", "${workspaceFolder}/code/confs/embedder_conf_var/FFB_TCNN/dtu_fixed_cameras.conf",
                 "--expname", "NFFBTcnn",
-                "--scan_id","55",
+                "--scan_id","55", 
                 "--checkpoint", "latest",
-                //"--train_cameras",
                 "--validation_slope_print",
                 "--calc_image_similarity",
-                //"--is_continue"
-
-            ]
+                "--is_continue",
+            ],
+            "env": {
+                "CUDA_LAUNCH_BLOCKING": "1",
+                "TORCH_USE_CUDA_DSA": "1"
+            }   
         },
+        
         {
             "name": "IDR training - NFFB",
             "type": "debugpy",

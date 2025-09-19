@@ -9,7 +9,7 @@ import numpy as np
 import cvxpy as cp
 from PIL import Image
 import math
-
+import warnings
 import utils.general as utils
 import utils.plots as plt
 from utils import rend_util
@@ -279,7 +279,12 @@ def calculate_psnr(img1, img2, mask):
     return 20 * math.log10(1.0 / math.sqrt(mse))
 
 if __name__ == '__main__':
-
+    warnings.filterwarnings("ignore", category=UserWarning, module="asset.symbol")
+    # Set environment variables for consistent behavior
+    os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+    os.environ["TORCH_USE_CUDA_DSA"] = "1"
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  
     parser = argparse.ArgumentParser()
     parser.add_argument('--conf', type=str, default='./confs/dtu_fixed_cameras.conf')
     parser.add_argument('--expname', type=str, default='', help='The experiment name to be evaluated.')
@@ -292,7 +297,7 @@ if __name__ == '__main__':
     parser.add_argument('--is_uniform_grid', default=False, action="store_true", help='If set, evaluate marching cube with uniform grid.')
     parser.add_argument('--eval_cameras', default=False, action="store_true", help='If set, evaluate camera accuracy of trained cameras.')
     parser.add_argument('--eval_rendering', default=False, action="store_true", help='If set, evaluate rendering quality.')
-
+    
     opt = parser.parse_args()
 
     if opt.gpu == "auto":
