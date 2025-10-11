@@ -1,0 +1,41 @@
+# ===================================================
+# PyTorch + CUDA should be installed manually first:
+# CUDA version should match Pytorch-CUDA API version
+# working cuda-pytorch version for GTX 1080: cu126
+# pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+# Although for above setup recommended setup is: Python 3.10, CUDA 11.8, Pytorch-CUDA-11.8
+# 
+# ===================================================
+cvxpy>=1.3.2
+GPUtil==1.4.0
+pyhocon==0.3.55
+dask==2023.9.1
+ecos==2.0.7.post1
+future==0.18.3
+retrying==1.3.4
+scs>=3.2.2
+imageio==2.31.1
+lpips==0.1.4
+torchmetrics==0.11.4
+matplotlib>=3.7,<3.9
+numpy>=1.21.2,<1.27
+scipy>=1.10.0
+opencv-python>=4.8.0
+Pillow==10.3.0
+plotly==5.15.0
+pyrender==0.1.45
+ninja==1.11.1
+setuptools>=68.0.0
+scikit-image>=0.21.0
+trimesh
+open3d-python
+tensorboard
+scikit-learn
+tqdm==4.66.1
+importlib_metadata==6.8.0
+# ===================================================
+# Packages built from source
+# ===================================================
+git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch&egg=tinycudann
+git+https://github.com/ArtoriasAbyssslayer/permutohedral_encoding.git#egg=permutohedral_encoding
+git+https://github.com/facebookresearch/pytorch3d.git#egg=pytorch3d
