@@ -34,7 +34,7 @@ The paper introduce Implicit Differentiable Renderer (IDR): a neural network arc
 IDR able to produce high fidelity 3D surface reconstruction, by disentangling geometry and appearance, learned solely from masked 2D images and rough camera estimates.
 
 ## INSTALLATION
-Now you can pull the docker image  I made and exists in the packages and run the project easily (manual python, library installation is pain in the ass) 
+Now you can pull the docker image  I made and exists in the packages and run the project easily (manual python, library installation is pain in the ass) <br>
 Docker image: [docker_image](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/pkgs/container/hashmod-nffbanks-idr) <br>
 Docker Files/INFO [docker-files](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/tree/master/.docker)<br>
 Docker Setup: [DOCKER_SETUP.md](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/blob/master/.docker/DOCKER_SETUP.md)
@@ -235,4 +235,5 @@ set MSSDK=1
       archivePrefix={arXiv}
 }
 ```
+
 
