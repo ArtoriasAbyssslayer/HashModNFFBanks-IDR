@@ -45,25 +45,43 @@ RUN pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url h
 
 # Set working directory
 WORKDIR /workspace
+COPY requirements.txt /tmp/requirements.txt
 
-# Copy requirements.txt
-COPY requirements.txt /workspace/
+# Install Python requirements
+RUN pip install --no-cache-dir --use-pep517 --no-build-isolation -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
-# Install all requirements including git packages
-RUN pip install --no-cache-dir --use-pep517 --no-build-isolation -r requirements.txt
+# Create non-root user
+RUN useradd -m -s /bin/bash developer
 
-# Copy the entire project into the container
-COPY . /workspace/
+# Set up cache directories and permissions BEFORE switching user
+ENV TCNN_CUDA_CACHE="/home/developer/.cache/tinycudann"
+RUN mkdir -p $TCNN_CUDA_CACHE && \
+    mkdir -p /home/developer/.cache && \
+    mkdir -p /workspace && \
+    chown -R developer:developer /home/developer && \
+    chown -R developer:developer /workspace && \
+    chmod -R 755 /home/developer
 
-# Set up non-root user
-RUN useradd -m -s /bin/bash developer && \
-    chown -R developer:developer /workspace
+# Give write permissions to tinycudann cache in site-packages
+RUN mkdir -p /usr/local/lib/python3.10/dist-packages/tinycudann/rtc/cache && \
+    chmod -R 777 /usr/local/lib/python3.10/dist-packages/tinycudann/rtc/cache
 
+# Copy entrypoint script (must be done as root before USER switch)
+COPY --chown=root:root ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Switch to non-root user
 USER developer
 
-# Label the image
-LABEL maintainer="HF3DNeuralReco"
-LABEL description="CUDA 11.8 environment for HF3DNeuralReco project with PyTorch and neural rendering libraries"
+# Labels
+LABEL maintainer="ArtoriasAbyssslayer/HarryFilis"
+LABEL description="CUDA 11.8 environment for HashModNFFBanks-IDR with PyTorch and neural rendering libraries"
+LABEL org.opencontainers.image.source="https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR"
+LABEL org.opencontainers.image.description="3D Neural Surface Reconstruction with Hash-based Multi-Resolution Feature Banks"
+LABEL org.opencontainers.image.licenses="MIT"
 
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Default command
 CMD ["/bin/bash"]

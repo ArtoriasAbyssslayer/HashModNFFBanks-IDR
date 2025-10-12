@@ -1,13 +1,12 @@
-version: '3.8'
 
 services:
   hf3d-neural-reco:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..  # Changed from . to .. (parent directory)
+      dockerfile: .docker/Dockerfile  # Added path to Dockerfile
     image: hf3d-neural-reco:latest
     container_name: hf3d-neural-reco
-
+    
     # GPU configuration
     deploy:
       resources:
@@ -16,34 +15,32 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
+    
     # Alternative GPU configuration (for older docker-compose versions)
     # runtime: nvidia
-
+    
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CUDA_VISIBLE_DEVICES=0
-
+    
     # Mount project directory for live development
     volumes:
-      - ./data:/workspace/data
-      - ./code:/workspace/code
-      - ./evals:/workspace/evals
-      - ./exps:/workspace/exps
-      - ./trained_models:/workspace/trained_models
-      - ./MeshDTUEvalChamferDistance:/workspace/MeshDTUEvalChamferDistance
-      - ./evals_disentanglement:/workspace/evals_disentanglement
-
+      - ../data:/workspace/data
+      - ../code:/workspace/code
+      - ../evals:/workspace/evals
+      - ../exps:/workspace/exps
+      - ../trained_models:/workspace/trained_models
+    
     # Keep container running
     stdin_open: true
     tty: true
-
+    
     # Shared memory size (important for PyTorch DataLoader)
     shm_size: '16gb'
-
+    
     # Working directory
     working_dir: /workspace
-
+    
     # Command to run on startup
     command: /bin/bash
