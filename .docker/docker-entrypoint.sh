@@ -51,8 +51,8 @@ fi
 
 # Quick start guide
 echo -e "${CYAN}Quick Start Commands:${NC}"
-echo -e "  ${GREEN}•${NC} Train:      ${BLUE}./training/train.sh --exp HashGrid --scan_id 114${NC}"
-echo -e "  ${GREEN}•${NC} Evaluate:   ${BLUE}./evaluation/eval_script.sh --exp HashGrid --scan_id 114${NC}"
+echo -e "  ${GREEN}•${NC} Train:      ${BLUE}.code/scripts/run_training_failsafe.sh --exp HashGrid --scan_id 114${NC}"
+echo -e "  ${GREEN}•${NC} Evaluate:   ${BLUE}.code/scripts/run_evaluation_failsafe.sh --exp HashGrid --scan_id 114${NC}"
 echo -e "  ${GREEN}•${NC} Test CUDA:  ${BLUE}python -c 'import torch; print(torch.cuda.is_available())'${NC}"
 echo ""
 echo -e "${CYAN}Repository:${NC} https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR"

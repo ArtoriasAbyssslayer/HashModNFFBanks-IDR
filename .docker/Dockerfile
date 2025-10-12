@@ -67,10 +67,6 @@ RUN mkdir -p $TCNN_CUDA_CACHE && \
 RUN mkdir -p /usr/local/lib/python3.10/dist-packages/tinycudann/rtc/cache && \
     chmod -R 777 /usr/local/lib/python3.10/dist-packages/tinycudann/rtc/cache
 
-# Copy entrypoint script (must be done as root before USER switch)
-COPY --chown=root:root ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Switch to non-root user
 USER developer
 
@@ -82,6 +78,8 @@ LABEL org.opencontainers.image.description="3D Neural Surface Reconstruction wit
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Set entrypoint
+COPY --chown=root:root ./.docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+#RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Default command
 CMD ["/bin/bash"]
