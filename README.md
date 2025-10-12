@@ -33,34 +33,11 @@ This repository contains an implementation for the NeurIPS 2020 paper <a href="h
 The paper introduce Implicit Differentiable Renderer (IDR): a neural network architecture that simultaneously learns the 3D geometry, appearance and cameras from a set of 2D images.
 IDR able to produce high fidelity 3D surface reconstruction, by disentangling geometry and appearance, learned solely from masked 2D images and rough camera estimates.
 
-
-## Installation Requirments
-
-The code is compatible with python 3.9 and pytorch 2.1. In addition, the following packages are required:  
-
-```
-numpy, pyhocon, plotly, scikit-image, trimesh, imageio, opencv, torchvision.
-[contained in requirements.txt with the used versions]
-```
-
-In case you want to use an anaconda environment you can create one called `hashmodnsr` with the required *(some maybe outdated)* dependencies by running:
-```
-conda env create -f environment.yml (be sure to fix image io problems -> restoring depracted code from original IDR repo)
-conda activate hashmodnsr
-```
-Last but **not least**. The project is using some models that are supported by *opensource* libraries not in the standard PyPl repository which are:
-<br><br>
-* Nvidia's Tiny-Cuda-NN - used on FullyFusedMLP counterparts of the original pytorch Embedding Networks (You can use the original networks by not removing the comments on [Custom_Embedding_Network.py](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/blob/master/code/model/custom_embedder_decoder.py) selector )
-* Facebook's Pytorch 3d - used to calculate Champher Distance for Mesh Evaluations
-<br><br>
-You can install those libraries with the commands given bellow 
-```
-TinyCUDAnn
-$ pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
-
-Pytorch3D
-$ pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-```
+## INSTALLATION
+Now you can pull the docker image  I made and exists in the packages and run the project easily (manual python, library installation is pain in the ass) 
+Docker image: [docker_image](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/pkgs/container/hashmod-nffbanks-idr) <br>
+Docker Files/INFO [docker-files](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/tree/master/.docker)<br>
+Docker Setup: [DOCKER_SETUP.md](https://github.com/ArtoriasAbyssslayer/HashModNFFBanks-IDR/blob/master/.docker/DOCKER_SETUP.md)
 ## Usage
 ### Multiview 3D reconstruction
 #### Data
@@ -258,3 +235,4 @@ set MSSDK=1
       archivePrefix={arXiv}
 }
 ```
+
