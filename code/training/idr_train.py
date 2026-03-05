@@ -290,6 +290,7 @@ class IDRTrainRunner():
                 model_input["intrinsics"] = model_input["intrinsics"].cuda()
                 model_input["uv"] = model_input["uv"].cuda()
                 model_input["object_mask"] = model_input["object_mask"].cuda()
+                ground_truth["rgb"] = ground_truth["rgb"].cuda()
 
                 if self.train_cameras:
                     pose_input = self.pose_vecs(indices.cuda())
@@ -297,8 +298,6 @@ class IDRTrainRunner():
                 else:
                     model_input['pose'] = model_input['pose'].cuda()
 
-                # Clear GPU memory before calling model to avoid CUDA out of memory error
-                self.clear_gpu_memory()
                 model_outputs = self.model(model_input)
                 loss_output = self.loss(model_outputs, ground_truth)
 
@@ -308,8 +307,6 @@ class IDRTrainRunner():
                 if self.train_cameras:
                     self.optimizer_cam.zero_grad()
                 loss.backward()
-                # Clear GPU memory before calling model to avoid CUDA out of memory error
-                self.clear_gpu_memory()
                 # Clip gradients to avoid gradient explosion and OOM error -- ommit
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(),max_norm=1.0)
                 # Step optimizer and scheduler after printing losses 
@@ -326,7 +323,7 @@ class IDRTrainRunner():
                                 self.loss.alpha,
                                 self.scheduler.get_lr()[0]))
             # Append losses buffer with the current loss [rgh_loss, eikonal_loss, mask_loss] accumulated over the batchs
-                losses.append(loss) 
+                losses.append(loss.detach()) 
             if epoch % (self.eval_epochs + 1) == 0:
                 if self.validation_slope_print:
                     self.validation_loss_slope(losses,epoch)

@@ -83,10 +83,10 @@ while ($true) {
 
     if ($INCLUDE_IS_CONTINUE) {
         Write-Host "Continue training from the latest checkpoint"
-        python3 -u ./training/exp_runner.py --conf $CONFIG_DIR --expname $EXPERIMENT --scan_id $SCAN_ID --checkpoint latest --validation_slope_print --is_continue
+        python3 -u ./training/exp_runner_amd.py --conf $CONFIG_DIR --expname $EXPERIMENT --scan_id $SCAN_ID --checkpoint latest --validation_slope_print --is_continue
     } else {
         Write-Host "Start training from scratch"
-        python3 -u ./training/exp_runner.py --conf $CONFIG_DIR --expname $EXPERIMENT --scan_id $SCAN_ID --checkpoint latest --validation_slope_print
+        python3 -u ./training/exp_runner_amd.py --conf $CONFIG_DIR --expname $EXPERIMENT --scan_id $SCAN_ID --checkpoint latest --validation_slope_print
     }
 
     if ($LASTEXITCODE -eq 0) {

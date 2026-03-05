@@ -80,7 +80,7 @@ class ImplicitNetwork(nn.Module):
                     torch.nn.init.normal_(lin.weight, 0.0, np.sqrt(2) / np.sqrt(out_dim))
 
             if weight_norm:
-                lin = nn.utils.weight_norm(lin)
+                lin = nn.utils.parametrizations.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
         print("IGR completed")
@@ -197,7 +197,7 @@ class RenderingNetwork(nn.Module):
             lin = nn.Linear(dims[l], out_dim)
 
             if weight_norm:
-                lin = nn.utils.weight_norm(lin)
+                lin = nn.utils.parametrizations.weight_norm(lin)
 
             setattr(self, "lin" + str(l), lin)
         self.relu = nn.ReLU()
@@ -290,16 +290,19 @@ class IDRNetwork(nn.Module):
 
             output = self.implicit_network(surface_points)
             surface_sdf_values = output[:N, 0:1].detach()
+            del output
 
             g = self.implicit_network.gradient(points_all)
             surface_points_grad = g[:N, 0, :].clone().detach()
             grad_theta = g[N:, 0, :]
+            del g
             differentiable_surface_points = self.sample_network(surface_output,
                                                                 surface_sdf_values,
                                                                 surface_points_grad,
                                                                 surface_dists,
                                                                 surface_cam_loc,
                                                                 surface_ray_dirs)
+            del surface_sdf_values, surface_points_grad
 
         else:
             surface_mask = network_object_mask

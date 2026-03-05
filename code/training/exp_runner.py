@@ -1,5 +1,7 @@
 import sys
+import os
 sys.path.append('../code')
+sys.path.append('.')  # For real-time package
 import argparse
 import GPUtil
 import warnings
@@ -24,14 +26,20 @@ if __name__ == '__main__':
     parser.add_argument('--scan_id', type=int, default=-1, help='If set, taken to be the scan id.')
     parser.add_argument('--validation_slope_print', default=False, action='store_true',help='If set, prints the slope of the validation loss.')
     parser.add_argument('--calc_image_similarity', default=False, action='store_true', help='If set, calculates image similarity metrics during training.')
+    parser.add_argument('--realtime', default=False, action='store_true', help='Enable real-time rendering.')
     opt = parser.parse_args()
     if opt.gpu == "auto":
-        deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=False, excludeID=[], excludeUUID=[])
-        gpu = deviceIDs[0]
+        try:
+            deviceIDs = GPUtil.getAvailable(order='memory', limit=1, maxLoad=1.0, maxMemory=1.0, includeNan=False, excludeID=[], excludeUUID=[])
+            gpu = deviceIDs[0] if deviceIDs else 0
+        except:
+            gpu = 0
     else:
         gpu = opt.gpu
 
     from training.idr_train import IDRTrainRunner
+    
+    # Create trainer
     trainrunner = IDRTrainRunner(conf=opt.conf,
                                  batch_size=opt.batch_size,
                                  nepochs=opt.nepoch,
@@ -45,5 +53,18 @@ if __name__ == '__main__':
                                  train_cameras=opt.train_cameras,
                                  validation_slope_print=opt.validation_slope_print,
                                  calc_image_similarity=opt.calc_image_similarity)
+
+    # Apply real-time patch if requested
+    if opt.realtime:
+        try:
+            import sys
+            sys.path.append('.')
+            from realtime.patches import patch_idr_trainer
+            trainrunner = patch_idr_trainer(trainrunner, enable_realtime=True)
+            print("[OK] Real-time rendering enabled!")
+        except ImportError:
+            print("[WARNING] Real-time package not available. Running normal training.")
+        except Exception as e:
+            print(f"[WARNING] Real-time patch failed: {e}. Running normal training.")
 
     trainrunner.run()

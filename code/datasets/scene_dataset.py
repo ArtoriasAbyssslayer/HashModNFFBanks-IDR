@@ -66,9 +66,6 @@ class SceneDataset(torch.utils.data.Dataset):
         return self.n_images
    
     def __getitem__(self, idx):
-        # trying to free up memory 
-        self.__free_mem__()
-        
         uv = np.mgrid[0:self.img_res[0], 0:self.img_res[1]].astype(np.int32)
         uv = torch.from_numpy(np.flip(uv, axis=0).copy()).float()
         uv = uv.reshape(2, -1).transpose(1, 0)

@@ -49,7 +49,9 @@ class IDRLoss(nn.Module):
         return mask_loss
 
     def forward(self, model_outputs, ground_truth):
-        rgb_gt = ground_truth['rgb'].cuda()
+        rgb_gt = ground_truth['rgb']
+        if not rgb_gt.is_cuda:
+            rgb_gt = rgb_gt.cuda()
         network_object_mask = model_outputs['network_object_mask']
         object_mask = model_outputs['object_mask']
 
