@@ -21,7 +21,7 @@ matplotlib>=3.7,<3.9
 numpy>=1.21.2,<1.27
 scipy>=1.10.0
 opencv-python>=4.8.0
-Pillow==10.3.0
+Pillow==12.2.0
 plotly==5.15.0
 pyrender==0.1.45
 ninja==1.11.1
